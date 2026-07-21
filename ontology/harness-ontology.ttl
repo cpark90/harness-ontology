@@ -18,12 +18,12 @@
     rdfs:comment "Composes the harness ontology union by importing the schema and every ABox data unit." ;
     owl:imports <https://harness-ontology.dev/schema> ,
                 <https://harness-ontology.dev/data/core> ,
-                <https://harness-ontology.dev/data/lpranging> ,
                 <https://harness-ontology.dev/data/authored> .
-# NOTE: the `lpranging` domain is staged for externalisation into a pure-data
-# repo (harness-data-lpranging) but the physical split is PENDING (inspection
-# session + user GitHub account); it therefore REMAINS imported into central's
-# union for now (schema + core + lpranging). Its data-repo payload is staged at
-# staging/lpranging-data-repo/. It will be dropped from this owl:imports and the
-# catalog ONLY after the external repo is confirmed pushed; see
-# docs/federation-design.md Migration + "Composing the full federated union".
+# NOTE: no external domain data unit is currently imported. The `lpranging`
+# domain-specific modeling was RETIRED per the neutral-parts principle — the
+# ontology stores generalised, domain-independent reusable parts, not a specific
+# harness's description; its reusable governance parts now live neutralised in
+# the `core` data unit (ontology/abox/seed.ttl). The owl:imports + catalog
+# federation infra remains available for future external domain part-
+# collections; add such a repo by listing its ontology IRI here and in
+# catalog-v001.xml. See docs/federation-design.md.

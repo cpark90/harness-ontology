@@ -8,15 +8,15 @@
     <uri id="root"       name="https://harness-ontology.dev/ontology"       uri="ontology/harness-ontology.ttl"/>
     <uri id="schema"     name="https://harness-ontology.dev/schema"         uri="ontology/tbox/harness.ttl"/>
     <uri id="data-core"  name="https://harness-ontology.dev/data/core"      uri="ontology/abox/seed.ttl"/>
-    <uri id="data-lpr"   name="https://harness-ontology.dev/data/lpranging" uri="ontology/abox/lpranging-sysdesign.ttl"/>
     <uri id="data-auth"  name="https://harness-ontology.dev/data/authored"  uri="ontology/abox/authored.ttl"/>
-    <!-- NOTE: the `lpranging` domain is staged for externalisation into a
-         pure-data repo (harness-data-lpranging) but the physical split is
-         PENDING (inspection session + user GitHub account); it therefore
-         REMAINS part of central's loaded union for now. Its standalone
-         data-repo payload is staged at staging/lpranging-data-repo/. The
-         removal from central happens ONLY after the external repo is confirmed
-         pushed — see docs/federation-design.md Migration + "Composing the full
-         federated union". -->
+    <!-- NOTE: no external domain data unit is currently part of the federation.
+         The `lpranging` domain-specific modeling was RETIRED per the neutral-
+         parts principle (the ontology stores generalised, domain-independent
+         reusable parts, not a specific harness's description); its reusable
+         governance parts now live neutralised in the `core` data unit
+         (ontology/abox/seed.ttl). The D1 owl:imports + catalog federation infra
+         and the D3 IRI scheme remain available: a future external domain part-
+         collection joins the union by adding its ontology IRI + local path here
+         and to the root owl:imports. See docs/federation-design.md. -->
 
 </catalog>

@@ -69,6 +69,22 @@
 - **docs는 "PENDING"으로**: split을 "executed/removed from central"로 적지 말 것 — 중앙이 아직
   도메인을 보유. federation-design.md Migration·"Composing the full union"절 + catalog/root NOTE 동기화.
 
+## split 실행(EXECUTED) 시 payload staleness 재동기화 (중요)
+- **staged payload는 스냅샷** — 스테이징 이후 중앙 abox가 더 편집되면(예: `mc-sonnet`→`mc-opus`,
+  `draft`→`reviewed` promotion) payload가 **stale**해진다. 중앙에서 도메인을 drop하기 **전에**
+  payload를 중앙 현재 상태로 재동기화하지 않으면 public data-repo가 낡은 결정을 담게 됨.
+- **불변식: payload vs central 유일 차이 = 헤더 주석뿐.** 나머지(owl:Ontology triple·모든
+  individual·predicate)는 **동일**해야 함. 재직렬화 금지, text-surgical: `mc-sonnet`→`mc-opus`
+  1곳, `ho:maturity "draft"`→`"reviewed"` replace_all, ABox 주석블록의 모델 근거 문구도 central과 일치시킴.
+  검증: `diff <(sed -n '<abox-start>,$p' central) <(sed -n '<abox-start>,$p' payload)` → 완전 일치.
+  잔여 확인: payload에 `mc-sonnet`/`"draft"` 0건.
+- **drop 안전조건 갱신**: 앞 절의 "durably push된 뒤에만"은 충족됨 — 중앙의 현재 결정
+  (opus+8 reviewed)이 `origin/main`(==HEAD)에 커밋+푸시되어 git 이력에서 복구 가능하면 중앙
+  워킹트리에서 삭제해도 손실 없음. 이 조건이 서면 docs를 **PENDING→EXECUTED**로 전환:
+  federation-design.md Migration·"Composing the full union"절·catalog/root NOTE 모두 동기화
+  (central=schema+core 41, lpranging=외부 repo, full union=클론해 재구성). data-repo 이름은
+  실제 repo(`cpark90/harness-data-lpranging`)로 — recipe clone URL도 맞춤(central은 hhmm2728).
+
 ## 함정
 - **Write 툴이 파일 끝에 `</content>`(가끔 `</invoke>`)를 흘림** — Write 후 `grep -n '</content>\|</invoke>'`
   로 확인하고 `sed -i '/^<\/content>$/d; /^<\/invoke>$/d'`로 제거. TTL이면 parse가 EOF 에러로 잡아줌.

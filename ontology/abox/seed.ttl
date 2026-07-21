@@ -159,3 +159,106 @@ id:h-support a ho:Harness ;
 
 #===================== Concept scheme ==================================
 id:scheme a skos:ConceptScheme ; skos:prefLabel "Harness ontology vocabulary" .
+
+########################################################################
+# Reusable parts decomposed from harness governance docs
+#
+# Neutral, domain-INDEPENDENT building blocks extracted from the design /
+# multi-agent governance methodology (CLAUDE.md, CODESTYLE.md,
+# DESIGN_HARNESS_STANDARD.md). These are library PARTS: generalised
+# guardrail policies, an orchestration pattern/workflow and a methodical
+# persona that any future harness can assemble. The h-multiagent harness
+# below only exists to wire the parts (anti-orphan) and stands as a neutral
+# template — it names no specific problem domain, tool or technology.
+########################################################################
+
+#===================== Domains =========================================
+id:dom-design a ho:Domain ; skos:prefLabel "Design engineering" ; skos:altLabel "structured design work" ; ho:salience 0.6 .
+
+#===================== Tasks ===========================================
+id:task-architecture a ho:Task ; skos:prefLabel "Architecture design" ;
+    skos:definition "Define the end-to-end structure, components and interfaces of a system from goals and quantitative targets." .
+id:task-designdecision a ho:Task ; skos:prefLabel "Design issue resolution" ; skos:altLabel "decision lifecycle" ;
+    skos:definition "Drive an open design question to a confirmed, grounded decision while preserving traceability from issue to requirement." .
+
+#===================== Capabilities ====================================
+id:cap-orchestration a ho:Capability ; skos:prefLabel "Multi-agent orchestration" ;
+    skos:definition "Decompose work into node-scoped briefs, dispatch them to specialised worker agents under least-privilege, and integrate the results." .
+id:cap-traceability a ho:Capability ; skos:prefLabel "Traceability" ;
+    skos:definition "Preserve a single source of truth: never delete a decision, only deprecate it with a reason and replacement, and increment identifiers without reuse." .
+
+#===================== Concepts (controlled vocabulary) ================
+id:c-design a ho:Concept ; skos:prefLabel "Design methodology" ; skos:topConceptOf id:scheme .
+id:c-multiagent a ho:Concept ; skos:prefLabel "Multi-agent orchestration" ; skos:topConceptOf id:scheme ; skos:related id:c-autonomy .
+id:c-traceability a ho:Concept ; skos:prefLabel "Traceability" ; skos:topConceptOf id:scheme .
+
+#===================== Design patterns =================================
+id:pat-orchestrator-workers a ho:DesignPattern ; skos:prefLabel "Orchestrator-workers" ;
+    skos:definition "A central orchestrator decomposes work into node-scoped tasks, dispatches them to specialised worker agents, and integrates the results; roles carry least-privilege file boundaries." .
+
+#===================== Workflows =======================================
+id:wf-multiagent a ho:Workflow ; skos:prefLabel "Multi-agent orchestration loop" ;
+    skos:definition "Orchestrator plans and dispatches node-scoped briefs to worker agents that author, verify and inspect, then integrates and gates the results; separates authoring, judgment and application. Choose for work that must stay traceable across specialised roles." ;
+    ho:providesCapability id:cap-orchestration ;
+    ho:derivedFrom id:wf-planexec ;
+    ho:tagged id:c-multiagent, id:c-design ; ho:tokenEstimate 74 ; ho:maturity "reviewed" .
+
+#===================== Guardrails ======================================
+id:gr-verify-proceed a ho:Guardrail ; skos:prefLabel "Verify then proceed" ; skos:altLabel "no time assumptions" ;
+    ho:promptText "Never assume readiness from elapsed time; advance only on confirmed state (received response, ACK, verified flag). Timeouts are give-up bounds, not correctness premises." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 38 ; ho:maturity "reviewed" .
+id:gr-design-for-loss a ho:Guardrail ; skos:prefLabel "Design for loss" ;
+    ho:promptText "Treat message and data loss as a normal event, not an exception: judge completion by the final receiver's confirmation, hold custody until the next stage confirms receipt, report cumulative absolute state rather than deltas, and make every loss observable via counters." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 55 ; ho:maturity "reviewed" .
+id:gr-traceability a ho:Guardrail ; skos:prefLabel "Traceable single source of truth" ;
+    ho:promptText "Single source of truth with full traceability: never delete a decision or record -- mark it deprecated with a reason and a replacement link, and only ever increment identifiers, never reuse them." ;
+    ho:providesCapability id:cap-traceability ;
+    ho:tagged id:c-traceability ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .
+id:gr-grounding a ho:Guardrail ; skos:prefLabel "Ground every artifact" ;
+    ho:promptText "Link every derived artifact to its grounding decision or rationale; do not restate another document, reference its single source. Describe an interface identically on both sides and let the requirement win on conflict." ;
+    ho:tagged id:c-traceability ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .
+id:gr-no-arbitrary-decision a ho:Guardrail ; skos:prefLabel "No arbitrary decisions" ;
+    ho:promptText "Do not resolve an undecided question on your own; register each open judgment as an issue and escalate it to the decision authority." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 32 ; ho:maturity "reviewed" .
+id:gr-least-privilege a ho:Guardrail ; skos:prefLabel "Least-privilege role boundaries" ;
+    ho:promptText "Each role edits only the files inside its own responsibility boundary and holds the minimum permissions for its task; authoring, judgment, application and version control stay in separate hands." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+id:gr-report-over-prompt a ho:Guardrail ; skos:prefLabel "Report over prompt" ;
+    ho:promptText "Write status, decisions, questions and reports to durable channels rather than volatile chat, and leave only a one-line pointer to where each was written." ;
+    ho:tagged id:c-communication ; ho:tokenEstimate 36 ; ho:maturity "reviewed" .
+id:gr-controlled-vocabulary a ho:Guardrail ; skos:prefLabel "Controlled vocabulary" ; skos:altLabel "anti-drift" ;
+    ho:promptText "Reuse the registered vocabulary and established domain terms; do not coin near-synonyms or private abbreviations. New terms are added to the single terminology source, not improvised." ;
+    ho:tagged id:c-communication ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+id:gr-root-cause a ho:Guardrail ; skos:prefLabel "Fix root cause" ;
+    ho:promptText "Resolve problems at their root cause; do not mask a symptom with a guard that leaves the underlying fault in place." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 28 ; ho:maturity "reviewed" .
+id:gr-simplicity a ho:Guardrail ; skos:prefLabel "Prefer the simplest working form" ; skos:altLabel "YAGNI" ;
+    ho:promptText "Prefer the simplest form that works; remove branches rather than add them, and do not build speculative configuration, callbacks or generalization that nothing uses yet." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 38 ; ho:maturity "reviewed" .
+id:gr-bounded-context a ho:Guardrail ; skos:prefLabel "Bounded context projection" ; skos:altLabel "anti-context-rot" ;
+    ho:promptText "Never ingest the whole knowledge store into context; retrieve only a request-scoped, budget-capped projection and keep the working context bounded to defend against context rot." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+
+#===================== System prompts ==================================
+id:sp-methodical a ho:SystemPrompt ; skos:prefLabel "Methodical design agent persona" ;
+    ho:promptText "You are a methodical design agent. Capture every confirmed decision and open question as a traceable record. Prefer structures that minimise and localise error over premature features. Never resolve an unknown by yourself -- register it as an issue and escalate to the decision authority." ;
+    ho:tokenEstimate 68 ; ho:maturity "draft" .
+
+#===================== HARNESSES =======================================
+
+id:h-multiagent a ho:Harness ;
+    skos:prefLabel "Multi-agent orchestration harness" ; skos:altLabel "orchestrator-workers harness" ;
+    skos:definition "A neutral, domain-independent harness that assembles the reusable governance parts decomposed from harness governance docs: an orchestrator plans and dispatches node-scoped briefs to specialised workers (author / verify / inspect) under least-privilege, with traceability, verify-then-proceed and escalation guardrails. Use as a template for any structured, multi-agent design or authoring workflow." ;
+    ho:targetsDomain id:dom-design ;
+    ho:addressesTask id:task-architecture, id:task-designdecision ;
+    ho:hasSystemPrompt id:sp-methodical ;
+    ho:usesTool id:tool-shell, id:tool-editor ;
+    ho:hasWorkflow id:wf-multiagent ;
+    ho:hasGuardrail id:gr-lang, id:gr-verify-proceed, id:gr-design-for-loss, id:gr-traceability,
+        id:gr-grounding, id:gr-no-arbitrary-decision, id:gr-least-privilege, id:gr-report-over-prompt,
+        id:gr-controlled-vocabulary, id:gr-root-cause, id:gr-simplicity, id:gr-bounded-context ;
+    ho:usesModel id:mc-opus ;
+    ho:appliesPattern id:pat-orchestrator-workers ;
+    ho:requiresCapability id:cap-orchestration, id:cap-traceability, id:cap-codeexec, id:cap-fileedit ;
+    ho:tagged id:c-design, id:c-multiagent, id:c-traceability ;
+    ho:maturity "draft" .

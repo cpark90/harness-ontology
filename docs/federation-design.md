@@ -86,7 +86,7 @@ against the union, push / open a PR.
    | `…/ontology` | `ontology/harness-ontology.ttl` |
    | `…/schema` | `ontology/tbox/harness.ttl` |
    | `…/data/core` | `ontology/abox/seed.ttl` |
-   | `…/data/lpranging` | `ontology/abox/lpranging-sysdesign.ttl` |
+   | `…/data/<domain>` | *external pure-data repo — none active today (see Status below)* |
    | `…/data/authored` | `ontology/abox/authored.ttl` (webui output, optional) |
 
 3. `tools/ontology_lib.load_graph()` reads the catalog, then does a BFS from the
@@ -99,9 +99,9 @@ against the union, push / open a PR.
    `shapes/`), so a partial checkout still loads.
 
 Each importable file declares its own `owl:Ontology` and imports what it depends
-on: the central `core` data imports the schema; the `lpranging` data imports the
-schema **and** `core` (because it references core individuals — see D3). This
-makes the dependency explicit and is what a real external data repo would do:
+on: the central `core` data imports the schema; an external `<domain>` data unit
+would import the schema **and** `core` if it references core individuals (see D3).
+This makes the dependency explicit and is what a real external data repo does:
 `owl:imports <https://harness-ontology.dev/schema>`.
 
 An external data repo joins the federation by (a) adding its ontology IRI +
@@ -160,32 +160,35 @@ Done in this dispatch (code + docs only, no new repos, no git):
 2. **Catalog + root (D1).** Added `catalog-v001.xml` and
    `ontology/harness-ontology.ttl`; added `owl:Ontology` headers to the ABox
    files so they are importable units.
-3. **IRI migration (D3).** Re-based the existing individuals: `seed.ttl` →
-   `core` domain (`…/id/core/<slug>`), `lpranging-sysdesign.ttl` → `lpranging`
-   domain, with its references to central nodes rewritten through a `core:`
-   prefix. This is text-surgical (prefix rebind + the specific cross-domain
-   references) — the TTL is not machine-reserialized.
+3. **IRI migration (D3).** Re-based the central individuals: `seed.ttl` →
+   `core` domain (`…/id/core/<slug>`). An external data unit would bind its own
+   `@prefix id: <…/id/<domain>/>` and rewrite references to central nodes through
+   a `core:` prefix — text-surgical (prefix rebind + the specific cross-domain
+   references), the TTL is not machine-reserialized.
 4. **Guideline + CI template (D4).** `docs/CONTRIBUTING-ONTOLOGY.md` and
    `docs/ci/data-repo-validate.yml`.
 
-Follow-up that needs **inspection + the user's GitHub account** (out of scope
-for developer; noted for the orchestrator to route):
+Status of external data units:
 
-- **Physical repo creation.** *PENDING (inspection session + user GitHub
-  account) — NOT yet executed.* The pure-data `lpranging` ABox has **not** been
-  externalized: `ontology/abox/lpranging-sysdesign.ttl` **remains in central**
-  and is still listed in `catalog-v001.xml` and the root `owl:imports`, so
-  central's loaded union is **schema + core + lpranging** (62 individuals). What
-  is ready is the standalone data-repo **payload**, staged on-disk at
-  `staging/lpranging-data-repo/` (`lpranging.ttl` + `catalog-v001.xml` +
-  `.github/workflows/validate.yml` + `README.md` + `LICENSE` + `.gitignore`) for
-  a new `harness-data-lpranging` GitHub repo. `staging/` is gitignored — the
-  payload belongs to a different repo and is handed to inspection on-disk, never
-  committed into central. Creating/pushing the actual GitHub repo is a
-  git/hosting operation for inspection. The removal of lpranging from central
-  (dropping it from the root `owl:imports` and the catalog) happens **only after
-  the external repo is confirmed pushed**; until then central keeps the domain so
-  the session-authored model is not lost. `core` stays in central regardless.
+- **No active external data repo.** The federation currently loads **schema +
+  core** only. The earlier `lpranging` domain-specific modeling — a concrete
+  worked pilot of the split — was **RETIRED** per the neutral-parts principle:
+  the ontology is a library of generalised, domain-independent reusable parts,
+  not the description of one specific harness. Its reusable governance parts
+  (verify-then-proceed, design-for-loss, traceability, no-arbitrary-decision,
+  least-privilege, report-over-prompt, controlled-vocabulary guardrails; the
+  orchestrator-workers pattern + multi-agent workflow; a methodical persona) were
+  neutralised and folded into the `core` data unit (`ontology/abox/seed.ttl`),
+  and the domain-coupled nodes (UWB/RTLS/low-power tasks, tools, persona and
+  concepts) were dropped. Consequently `…/data/lpranging` appears in **no**
+  catalog entry or root `owl:imports`, and `staging/` holds no payload. The
+  federation infra (D1 owl:imports + catalog, D3 IRI scheme, D4 two-tier gate)
+  remains fully available for a **future** external domain part-collection.
+  *(The previously-published pilot data repo, if any, is retired by inspection at
+  git time — out of scope here.)*
+
+Follow-ups for any future external data repo still need **inspection + the
+user's GitHub account** (out of scope for developer; noted for orchestrator):
 - **Central-repo publication + a stable resolver.** For catalogs across machines
   to agree, the `https://harness-ontology.dev/…` IRIs should eventually resolve
   (GitHub Pages / release tarball, as `auto` does with GitHub releases). Today
@@ -198,43 +201,36 @@ for developer; noted for the orchestrator to route):
 
 ## Example external data-repo layout (D2 made concrete)
 
-The `lpranging` harness is the worked example of what an external pure-data repo
-would contain. Extracted into its own repo it would be:
+No external data repo is active today (see Status of external data units). The
+layout below is the **generic template** a future pure-data `<domain>` repo would
+follow — a concrete instance simply substitutes its own domain segment:
 
 ```
-harness-data-lpranging/            # pure data, no tools
-├── lpranging.ttl                  # == ontology/abox/lpranging-sysdesign.ttl
-│                                  #   owl:Ontology  …/data/lpranging
+harness-data-<domain>/             # pure data, no tools
+├── <domain>.ttl                   # owl:Ontology  …/data/<domain>
 │                                  #   owl:imports   …/schema , …/data/core
 ├── catalog-v001.xml               # maps …/schema and …/data/core to local
 │                                  #   clones of the central + core repos
 └── .github/workflows/validate.yml # == docs/ci/data-repo-validate.yml
 ```
 
-Its individuals are `…/id/lpranging/<slug>`; its references to shared central
+Its individuals are `…/id/<domain>/<slug>`; its references to shared central
 components (`core:tool-editor`, `core:h-coding`, `core:gr-lang`, …) are
 `…/id/core/<slug>`, resolved in the union. Running the central `validate.py`
-over `schema ∪ core ∪ lpranging` is what proves the cross-domain harness is
+over `schema ∪ core ∪ <domain>` is what proves a cross-domain harness is
 connected, well-typed and buildable.
 
-## Composing the full federated union (after the lpranging split)
+## Composing the full federated union (when an external data repo exists)
 
-**Status:** the lpranging split is **PENDING** (see Migration above). Central's
-loaded union currently still **includes** `lpranging` (`catalog-v001.xml` and
-`ontology/harness-ontology.ttl` still list `…/data/lpranging`), so central today
-loads **schema + core + lpranging** (62 individuals). The recipe below is how the
-full federated union will be recomposed **once lpranging is externalized** and
-dropped from central; it is also how the staged payload at
-`staging/lpranging-data-repo/` is proven to compose the same union today.
+**Status:** there is no active external data repo; central loads **schema +
+core** only (see Status of external data units). The recipe below is how the
+full federated union would be recomposed **once** a `<domain>` data repo exists —
+central's own loaded union stays `schema + core`, but the federated invariants
+(anti-orphan / anti-drift / buildable) must be checked over the **full** union
+that includes every external data repo, so a split must never silently drop a
+domain from federated validation.
 
-Once the split is executed, central's own loaded union becomes **schema + core**,
-which keeps central buildable on its own; but the federated invariants
-(anti-orphan / anti-drift / buildable) must still be checked over the **full**
-union that includes every external data repo. Do that by cloning each external
-repo and composing it in — the split must never silently drop a domain from
-federated validation.
-
-There are two equivalent ways to recompose `schema ∪ core ∪ lpranging`, both
+There are two equivalent ways to recompose `schema ∪ core ∪ <domain>`, both
 using the **central** `validate.py` (shapes and tools always come from central):
 
 1. **Run from the data repo (the D4 gate — preferred).** Clone central next to
@@ -243,25 +239,23 @@ using the **central** `validate.py` (shapes and tools always come from central):
    data repo's CI does:
 
    ```bash
-   git clone https://github.com/hhmm2728/harness-data-lpranging lpranging
-   git clone https://github.com/hhmm2728/harness_ontology lpranging/central
-   HARNESS_CATALOG="$PWD/lpranging/catalog-v001.xml" \
-   HARNESS_ROOT_ONTOLOGY="https://harness-ontology.dev/data/lpranging" \
-   /usr/bin/python3 lpranging/central/tools/validate.py     # PASS = full union OK
+   git clone https://github.com/<owner>/harness-data-<domain> <domain>
+   git clone https://github.com/hhmm2728/harness_ontology <domain>/central
+   HARNESS_CATALOG="$PWD/<domain>/catalog-v001.xml" \
+   HARNESS_ROOT_ONTOLOGY="https://harness-ontology.dev/data/<domain>" \
+   /usr/bin/python3 <domain>/central/tools/validate.py     # PASS = full union OK
    ```
 
    The data repo's catalog maps `…/schema` → `central/ontology/tbox/harness.ttl`,
-   `…/data/core` → `central/ontology/abox/seed.ttl`, and `…/data/lpranging` →
-   its local `lpranging.ttl`. Nothing in central changes.
+   `…/data/core` → `central/ontology/abox/seed.ttl`, and `…/data/<domain>` →
+   its local `<domain>.ttl`. Nothing in central changes.
 
 2. **Run from central over all repos.** Clone the external data repo somewhere,
    then supply a catalog that lists `…/schema`, `…/data/core` **and**
-   `…/data/lpranging` (pointing at the clone's `lpranging.ttl`), with a root
+   `…/data/<domain>` (pointing at the clone's `<domain>.ttl`), with a root
    ontology that imports all three. Point `HARNESS_CATALOG` /
    `HARNESS_ROOT_ONTOLOGY` at it. (Equivalently, temporarily add the
-   `…/data/lpranging` entry back to central's catalog/root against the clone.)
+   `…/data/<domain>` entry back to central's catalog/root against the clone.)
 
 Because a data repo carries its own catalog and imports (option 1), it is the
-canonical "compose the full union" recipe and needs no edit to central. This is
-the smoke the federation was proven against: `schema ∪ core ∪ lpranging` = 62
-individuals, `PASS`.
+canonical "compose the full union" recipe and needs no edit to central.
