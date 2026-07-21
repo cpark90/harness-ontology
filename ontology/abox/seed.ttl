@@ -1,10 +1,16 @@
 @prefix ho:    <https://harness-ontology.dev/schema#> .
-@prefix id:    <https://harness-ontology.dev/id/> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Data unit for the federation: importable as .../data/core, imports the central
+# TBox. Individuals live under the `core` domain (id: -> .../id/core/). See
+# docs/federation-design.md (D1/D3).
+<https://harness-ontology.dev/data/core> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
 
 ########################################################################
 # Seed ABox — three example harnesses that deliberately SHARE

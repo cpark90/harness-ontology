@@ -1,0 +1,114 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/lpranging/> .
+@prefix core:  <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Data unit for the federation: importable as .../data/lpranging, imports the
+# central TBox AND the core data (it references core individuals via the core:
+# prefix). Its own individuals live under the `lpranging` domain
+# (id: -> .../id/lpranging/). This is a central-hosted ABox data unit; the
+# lpranging domain is staged for externalisation into a pure-data repo but the
+# physical split is still PENDING — see docs/federation-design.md (D1/D3) and
+# its "Composing the full federated union" / Migration sections.
+<https://harness-ontology.dev/data/lpranging> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> ,
+                <https://harness-ontology.dev/data/core> .
+
+########################################################################
+# ABox — lpranging system-design harness
+#
+# Models the EXTERNAL multi-agent, design-stage harness at
+# device_harvest_lp/lpranging (low-power UWB ranging / RTLS device
+# system design). Derived from the seed coding harness; reuses shared
+# vocabulary (file-edit / code-exec / web-search caps, shell / editor /
+# web-search tools, language guardrail) and adds the design-domain
+# vocabulary it needs. Uses the opus high-reasoning model tier: the
+# multi-agent orchestrator-workers design reasoning warrants it
+# (consistent with the pat-orchestrator-workers pattern and the h-coding
+# template lineage), rather than mirroring the source subagents' sonnet.
+########################################################################
+
+#===================== Domains =========================================
+id:dom-sysdesign a ho:Domain ; skos:prefLabel "Embedded system design" ; skos:altLabel "hardware-software co-design" ; ho:salience 0.7 .
+
+#===================== Tasks ===========================================
+id:task-sysarch a ho:Task ; skos:prefLabel "System architecture design" ;
+    skos:definition "Define the end-to-end structure, components and interfaces of a device system from concept and quantitative targets." .
+id:task-designdecision a ho:Task ; skos:prefLabel "Design issue resolution" ; skos:altLabel "decision lifecycle" ;
+    skos:definition "Drive an open design question to a confirmed, grounded decision while preserving traceability (issue -> requirement)." .
+
+#===================== Capabilities ====================================
+id:cap-designgraph a ho:Capability ; skos:prefLabel "Design-graph management" ;
+    skos:definition "Validate, index and impact-analyse a typed graph of design documents (decisions, issues, components, terms)." .
+id:cap-simulation a ho:Capability ; skos:prefLabel "Design simulation" ;
+    skos:definition "Quantitatively validate a design choice by discrete-event or numerical simulation before committing to it." .
+
+#===================== Concepts (controlled vocabulary) ================
+id:c-sysdesign a ho:Concept ; skos:prefLabel "System design" ; skos:topConceptOf core:scheme .
+id:c-embedded a ho:Concept ; skos:prefLabel "Embedded systems" ; skos:broader id:c-sysdesign .
+id:c-lowpower a ho:Concept ; skos:prefLabel "Low power" ; skos:broader id:c-embedded .
+id:c-rtls a ho:Concept ; skos:prefLabel "Real-time location system" ; skos:altLabel "UWB ranging" ; skos:broader id:c-embedded .
+id:c-multiagent a ho:Concept ; skos:prefLabel "Multi-agent orchestration" ; skos:topConceptOf core:scheme ; skos:related core:c-autonomy .
+id:c-traceability a ho:Concept ; skos:prefLabel "Traceability" ; skos:broader id:c-sysdesign .
+
+#===================== Design patterns =================================
+id:pat-orchestrator-workers a ho:DesignPattern ; skos:prefLabel "Orchestrator-workers" ;
+    skos:definition "A central orchestrator decomposes work into node-scoped tasks, dispatches them to specialised worker agents, and integrates the results; roles carry least-privilege file boundaries." .
+
+#===================== Tools ===========================================
+id:tool-docgraph a ho:Tool ; skos:prefLabel "Design-graph tool" ; skos:altLabel "docgraph" ;
+    skos:definition "Runs consistency validation, index generation and impact analysis over the design-document ontology; use when a design change must stay traceable and its ripple bounded." ;
+    ho:providesCapability id:cap-designgraph ;
+    ho:tagged id:c-traceability ; ho:tokenEstimate 48 ; ho:maturity "stable" .
+id:tool-simulator a ho:Tool ; skos:prefLabel "Design simulator tool" ;
+    skos:definition "Discrete-event simulation of a scheduling/ranging design to obtain quantitative evidence (convergence, success rate, duty) before the design is confirmed." ;
+    ho:providesCapability id:cap-simulation ;
+    ho:tagged id:c-rtls ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .
+
+#===================== Workflows =======================================
+id:wf-multiagent-design a ho:Workflow ; skos:prefLabel "Multi-agent design loop" ;
+    skos:definition "Orchestrator plans and dispatches node-scoped briefs to worker agents (author / verify / inspect), then integrates and gates results; separates authoring, judgment and application. Choose for design work that must stay traceable across roles." ;
+    ho:dependsOn id:tool-docgraph ;
+    ho:derivedFrom core:wf-planexec ;
+    ho:tagged id:c-multiagent ; ho:tokenEstimate 72 ; ho:maturity "reviewed" .
+
+#===================== Guardrails ======================================
+id:gr-verify-proceed a ho:Guardrail ; skos:prefLabel "Verify then proceed" ; skos:altLabel "no time assumptions" ;
+    ho:promptText "Never assume readiness from elapsed time; advance only on confirmed state (received response, ACK, verified flag). Timeouts are give-up bounds, not correctness premises." ;
+    ho:tagged core:c-safety ; ho:tokenEstimate 38 ; ho:maturity "reviewed" .
+id:gr-design-for-loss a ho:Guardrail ; skos:prefLabel "Design for loss" ;
+    ho:promptText "Treat message and data loss as a normal event, not an exception: judge completion by the final receiver's confirmation, hold custody until the next stage confirms receipt, report cumulative absolute state rather than deltas, and make every loss observable via counters." ;
+    ho:tagged core:c-safety ; ho:tokenEstimate 55 ; ho:maturity "reviewed" .
+id:gr-traceability a ho:Guardrail ; skos:prefLabel "Traceable single source of truth" ;
+    ho:promptText "Single source of truth with full traceability: never delete a decision or record -- mark it deprecated with a reason and a replacement link, and only ever increment identifiers, never reuse them." ;
+    ho:tagged id:c-traceability ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .
+id:gr-no-arbitrary-decision a ho:Guardrail ; skos:prefLabel "No arbitrary decisions" ;
+    ho:promptText "Do not resolve an undecided design question on your own; register each open judgment as an issue and escalate it to the decision authority." ;
+    ho:tagged core:c-safety ; ho:tokenEstimate 32 ; ho:maturity "reviewed" .
+
+#===================== System prompts ==================================
+id:sp-sysdesign a ho:SystemPrompt ; skos:prefLabel "System-design agent persona" ;
+    ho:promptText "You are a rigorous low-power embedded system-design agent for a UWB ranging (RTLS) device system. Capture every confirmed decision and open question as a traceable design record, prefer structures that minimise and localise error over premature features, and never resolve an unknown by yourself -- register it as an issue and escalate." ;
+    ho:tokenEstimate 100 ; ho:maturity "reviewed" .
+
+#===================== HARNESSES =======================================
+
+id:h-lpranging-sysdesign a ho:Harness ;
+    skos:prefLabel "Low-power ranging system-design agent" ; skos:altLabel "lpranging design harness" ;
+    skos:definition "A multi-agent, design-stage harness that produces traceable design records for a low-power UWB ranging (RTLS) device system; an orchestrator plans and dispatches node-scoped briefs while workers author, verify and inspect under least-privilege boundaries." ;
+    ho:targetsDomain id:dom-sysdesign ;
+    ho:addressesTask id:task-sysarch, id:task-designdecision ;
+    ho:hasSystemPrompt id:sp-sysdesign ;
+    ho:usesTool core:tool-editor, core:tool-shell, id:tool-docgraph, id:tool-simulator, core:tool-websearch ;
+    ho:hasWorkflow id:wf-multiagent-design ;
+    ho:hasGuardrail core:gr-lang, id:gr-verify-proceed, id:gr-design-for-loss, id:gr-traceability, id:gr-no-arbitrary-decision ;
+    ho:usesModel core:mc-opus ;
+    ho:appliesPattern id:pat-orchestrator-workers ;
+    ho:requiresCapability core:cap-fileedit, core:cap-codeexec, id:cap-designgraph, id:cap-simulation, core:cap-websearch ;
+    ho:derivedFrom core:h-coding ;
+    ho:tagged id:c-sysdesign, id:c-embedded, id:c-lowpower, id:c-rtls, id:c-multiagent ;
+    ho:maturity "reviewed" .

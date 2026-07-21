@@ -1,0 +1,29 @@
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+
+########################################################################
+# Root ontology — federation entry point.
+#
+# This node imports nothing of substance itself; it exists so the union
+# graph is composed by owl:imports resolution (via catalog-v001.xml)
+# rather than a directory glob. See docs/federation-design.md (D1).
+# Add an external data repo to the federation by listing its ontology IRI
+# here and in the catalog. Shapes are validation-only and NOT imported.
+########################################################################
+
+<https://harness-ontology.dev/ontology> a owl:Ontology ;
+    dct:title "Agent Harness Ontology (federation root)" ;
+    owl:versionInfo "0.1.0" ;
+    rdfs:comment "Composes the harness ontology union by importing the schema and every ABox data unit." ;
+    owl:imports <https://harness-ontology.dev/schema> ,
+                <https://harness-ontology.dev/data/core> ,
+                <https://harness-ontology.dev/data/lpranging> ,
+                <https://harness-ontology.dev/data/authored> .
+# NOTE: the `lpranging` domain is staged for externalisation into a pure-data
+# repo (harness-data-lpranging) but the physical split is PENDING (inspection
+# session + user GitHub account); it therefore REMAINS imported into central's
+# union for now (schema + core + lpranging). Its data-repo payload is staged at
+# staging/lpranging-data-repo/. It will be dropped from this owl:imports and the
+# catalog ONLY after the external repo is confirmed pushed; see
+# docs/federation-design.md Migration + "Composing the full federated union".

@@ -37,13 +37,18 @@ STRING_PREDS = {"skos:prefLabel", "skos:altLabel", "skos:definition",
 
 _SUBJECT_RE = re.compile(r"^(id:[A-Za-z0-9_-]+)\b")
 
+# The webui authors into the `core` domain (D3, docs/federation-design.md); the
+# authored.ttl unit is importable as .../data/authored and is already listed in
+# catalog-v001.xml + the root ontology, so it joins the union when first created.
 _HEADER = (
     "@prefix ho:    <https://harness-ontology.dev/schema#> .\n"
-    "@prefix id:    <https://harness-ontology.dev/id/> .\n"
+    "@prefix id:    <https://harness-ontology.dev/id/core/> .\n"
     "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
     "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n"
     "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n"
     "@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .\n\n"
+    "<https://harness-ontology.dev/data/authored> a owl:Ontology ;\n"
+    "    owl:imports <https://harness-ontology.dev/schema> .\n\n"
     "# Nodes authored via the web UI (tools/webui). Same TBox vocabulary as the\n"
     "# other abox files — kept separate only so authored nodes are easy to find.\n\n"
 )

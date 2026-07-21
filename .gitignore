@@ -2,6 +2,12 @@ __pycache__/
 *.pyc
 *.ttl.tmp
 
+# Staged payload(s) for external pure-data federation repos. These belong to a
+# DIFFERENT repo (e.g. staging/lpranging-data-repo/ -> harness-data-lpranging)
+# and are handed to the inspection session on-disk; they must never be committed
+# into central. See docs/federation-design.md (Migration).
+/staging/
+
 # frontend (Svelte + Vite): deps and build outputs are produced at build time
 # (Docker multi-stage, or `npm run build` locally), not committed.
 node_modules/

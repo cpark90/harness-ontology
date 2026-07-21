@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Protégé-style OASIS XML catalog: maps ontology IRIs to local files so the
+     union graph is assembled by owl:imports resolution (see docs/federation-design.md,
+     D1). tools/ontology_lib.load_graph() reads this; an external data repo ships
+     its own catalog mapping the central IRIs (.../schema, .../data/core) to local
+     clones. Paths are relative to this catalog's directory (the repo root). -->
+<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <uri id="root"       name="https://harness-ontology.dev/ontology"       uri="ontology/harness-ontology.ttl"/>
+    <uri id="schema"     name="https://harness-ontology.dev/schema"         uri="ontology/tbox/harness.ttl"/>
+    <uri id="data-core"  name="https://harness-ontology.dev/data/core"      uri="ontology/abox/seed.ttl"/>
+    <uri id="data-lpr"   name="https://harness-ontology.dev/data/lpranging" uri="ontology/abox/lpranging-sysdesign.ttl"/>
+    <uri id="data-auth"  name="https://harness-ontology.dev/data/authored"  uri="ontology/abox/authored.ttl"/>
+    <!-- NOTE: the `lpranging` domain is staged for externalisation into a
+         pure-data repo (harness-data-lpranging) but the physical split is
+         PENDING (inspection session + user GitHub account); it therefore
+         REMAINS part of central's loaded union for now. Its standalone
+         data-repo payload is staged at staging/lpranging-data-repo/. The
+         removal from central happens ONLY after the external repo is confirmed
+         pushed — see docs/federation-design.md Migration + "Composing the full
+         federated union". -->
+
+</catalog>

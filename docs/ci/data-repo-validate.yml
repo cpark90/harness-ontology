@@ -1,0 +1,61 @@
+# Data-repo CI gate (D4, docs/federation-design.md).
+#
+# Drop this into a PURE-DATA ontology repo as .github/workflows/validate.yml.
+# It pulls the central schema+tooling repo, composes the UNION (central TBox +
+# core data + this repo's data unit) and runs the central validate.py so every
+# PR is held to the same anti-orphan / anti-drift / buildable invariants as the
+# central repo. A non-zero exit fails the check.
+#
+# Assumptions (edit the three env values for your repo):
+#   * this repo contains one data unit TTL that declares
+#       <https://harness-ontology.dev/data/<domain>> a owl:Ontology ;
+#           owl:imports <https://harness-ontology.dev/schema> ,
+#                       <https://harness-ontology.dev/data/core> .
+#     and mints individuals under .../id/<domain>/<slug> (ONTOLOGYSTYLE §2a).
+#   * this repo ships a catalog-v001.xml mapping the central IRIs to the checked
+#     -out central clone and its own data unit to the local file, e.g.:
+#       <uri name="https://harness-ontology.dev/schema"    uri="central/ontology/tbox/harness.ttl"/>
+#       <uri name="https://harness-ontology.dev/data/core" uri="central/ontology/abox/seed.ttl"/>
+#       <uri name="https://harness-ontology.dev/data/<domain>" uri="<domain>.ttl"/>
+name: validate-ontology-data
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # The central schema+tooling repo (owner/name). Change to your fork/mirror.
+  CENTRAL_REPO: hhmm2728/harness_ontology
+  CENTRAL_REF: main
+  # This data repo's ontology (document) IRI — its import closure IS the union.
+  HARNESS_ROOT_ONTOLOGY: https://harness-ontology.dev/data/lpranging
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this data repo
+        uses: actions/checkout@v4
+
+      - name: Check out the central schema + tooling repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.CENTRAL_REPO }}
+          ref: ${{ env.CENTRAL_REF }}
+          path: central
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies (from the central repo)
+        run: pip install -r central/requirements.txt
+
+      - name: Validate the union (central tools + this repo's data)
+        # HARNESS_CATALOG points the central loader at THIS repo's catalog, which
+        # maps the central IRIs to ./central/** and its data unit to the local
+        # TTL. Shapes come from the central checkout (lib.ONT_DIR). PASS required.
+        env:
+          HARNESS_CATALOG: ${{ github.workspace }}/catalog-v001.xml
+        run: python3 central/tools/validate.py

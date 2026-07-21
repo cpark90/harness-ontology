@@ -42,7 +42,10 @@ import retrieve                                             # noqa: E402
 import ttl_writer                                           # noqa: E402
 
 HO_NS = "https://harness-ontology.dev/schema#"
-ID_NS = "https://harness-ontology.dev/id/"
+# The webui authors/edits in the `core` domain (D3, docs/federation-design.md);
+# `id:` binds to the core sub-namespace so qnames round-trip for central nodes.
+# Nodes in other domains (e.g. .../id/lpranging/) surface as full IRIs.
+ID_NS = "https://harness-ontology.dev/id/core/"
 _NS = {"ho": HO_NS, "id": ID_NS, "skos": str(SKOS), "rdfs": str(RDFS),
        "rdf": str(RDF), "owl": str(OWL)}
 

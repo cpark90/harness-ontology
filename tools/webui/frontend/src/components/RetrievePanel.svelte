@@ -3,7 +3,7 @@
   // 예산 사용량 + 스코프 노드. 노드 클릭 → 그래프 포커스 + 편집기 로드.
   import { retrievePack, openNode } from "../lib/stores.js";
 
-  const ID_NS = "https://harness-ontology.dev/id/";
+  const ID_NS = "https://harness-ontology.dev/id/core/";
   const toQname = (uri) => (uri && uri.startsWith(ID_NS) ? "id:" + uri.slice(ID_NS.length) : uri);
 
   $: pack = $retrievePack;

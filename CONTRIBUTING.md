@@ -5,6 +5,12 @@ git**: fork, edit locally (the web UI makes this easy), and open a pull request.
 CI holds every PR to the same anti-orphan / anti-drift / buildable invariants
 the tools enforce locally, so the knowledge base compounds instead of rotting.
 
+> **Keeping your ABox in your own repo?** This page covers editing the central
+> repo directly. To federate a **pure-data** ontology repo (your own GitHub repo
+> of Turtle individuals, connected via `owl:imports` + catalog), see
+> **`docs/CONTRIBUTING-ONTOLOGY.md`** and the architecture in
+> `docs/federation-design.md`.
+
 ## The loop
 
 1. **Fork & clone** the repo.
