@@ -8,3 +8,4 @@
   `docs/feedback/verified/`에 보고. 조사는 `retrieve.py` pack에서 시작(전체 로드 금지).
 
 <!-- 학습 인덱스 (한 줄씩) -->
+- [refresh 판정 + 안전 커밋 절차](refresh-and-git-baseline.md) — refresh는 inspection 후속 완료까지 유지; 항목은 baseline 커밋에 보존 후 별도 커밋으로 git rm; repo엔 gh·remote 없음
