@@ -1,0 +1,113 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+########################################################################
+# SHACL shapes — structural invariants.
+# Run against the *reasoned* graph (owlrl materialises subclass +
+# inverse + sub-property closure first), so incoming/inverse paths and
+# subclass typing are visible.
+#
+# These shapes encode the anti-orphan / anti-drift guarantees:
+#   * every component is wired into at least one harness (no orphans)
+#   * every edge points at the correct type (no vocabulary drift)
+#   * every harness is complete enough to be composable
+########################################################################
+
+#--- A harness must be intentful and complete -------------------------
+ho:HarnessShape a sh:NodeShape ;
+    sh:targetClass ho:Harness ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "Harness must have a skos:prefLabel (identity, prevents drift/dedup)." ] ;
+    sh:property [
+        sh:path ho:targetsDomain ;
+        sh:minCount 1 ;
+        sh:class ho:Domain ;
+        sh:message "Harness must target >=1 Domain." ] ;
+    sh:property [
+        sh:path ho:addressesTask ;
+        sh:minCount 1 ;
+        sh:class ho:Task ;
+        sh:message "Harness must address >=1 Task." ] ;
+    sh:property [
+        sh:path ho:hasSystemPrompt ;
+        sh:minCount 1 ;
+        sh:class ho:SystemPrompt ;
+        sh:message "Harness must have >=1 SystemPrompt component." ] ;
+    sh:property [
+        sh:path ho:hasWorkflow ;
+        sh:minCount 1 ;
+        sh:class ho:Workflow ;
+        sh:message "Harness must have >=1 Workflow component." ] .
+
+#--- No orphaned components: each must belong to a harness ------------
+# componentOf is the (inferred) inverse of hasComponent and its sub-props.
+ho:ComponentConnectivityShape a sh:NodeShape ;
+    sh:targetClass ho:HarnessComponent ;
+    sh:property [
+        sh:path [ sh:inversePath ho:hasComponent ] ;
+        sh:minCount 1 ;
+        sh:message "Orphaned component: not wired into any Harness via hasComponent (or a sub-property)." ] ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "Component must have a skos:prefLabel." ] .
+
+#--- No orphaned tasks: must be addressed or sit in a taxonomy --------
+ho:TaskConnectivityShape a sh:NodeShape ;
+    sh:targetClass ho:Task ;
+    sh:or (
+        [ sh:path [ sh:inversePath ho:addressesTask ] ; sh:minCount 1 ]
+        [ sh:path skos:broader ; sh:minCount 1 ]
+        [ sh:path [ sh:inversePath skos:broader ] ; sh:minCount 1 ]
+    ) ;
+    sh:message "Orphaned task: neither addressed by a harness nor placed in the task taxonomy." .
+
+#--- No orphaned capabilities: must be required or provided -----------
+ho:CapabilityConnectivityShape a sh:NodeShape ;
+    sh:targetClass ho:Capability ;
+    sh:or (
+        [ sh:path [ sh:inversePath ho:requiresCapability ] ; sh:minCount 1 ]
+        [ sh:path [ sh:inversePath ho:providesCapability ] ; sh:minCount 1 ]
+    ) ;
+    sh:message "Orphaned capability: never required nor provided by anything." .
+
+#--- No orphaned vocabulary: every Concept must connect ---------------
+ho:ConceptConnectivityShape a sh:NodeShape ;
+    sh:targetClass ho:Concept ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "Concept must have skos:prefLabel." ] ;
+    sh:or (
+        [ sh:path [ sh:inversePath ho:tagged ] ; sh:minCount 1 ]
+        [ sh:path skos:broader ; sh:minCount 1 ]
+        [ sh:path [ sh:inversePath skos:broader ] ; sh:minCount 1 ]
+        [ sh:path skos:related ; sh:minCount 1 ]
+    ) ;
+    sh:message "Orphaned concept: tags nothing and is disconnected from the concept taxonomy." .
+
+#--- Typed-edge enforcement (anti-drift) ------------------------------
+# OWL rdfs:range does not *constrain*; SHACL does. These stop an edge
+# from silently pointing at an untyped or wrong-typed node.
+ho:EdgeTypingShape a sh:NodeShape ;
+    sh:targetClass ho:Harness ;
+    sh:property [ sh:path ho:usesTool ;    sh:class ho:Tool ] ;
+    sh:property [ sh:path ho:hasGuardrail ; sh:class ho:Guardrail ] ;
+    sh:property [ sh:path ho:appliesPattern ; sh:class ho:DesignPattern ] ;
+    sh:property [ sh:path ho:requiresCapability ; sh:class ho:Capability ] ;
+    sh:property [ sh:path ho:constrainedBy ; sh:class ho:Constraint ] .
+
+#--- SystemPrompt must carry text so it is actually usable -----------
+ho:SystemPromptShape a sh:NodeShape ;
+    sh:targetClass ho:SystemPrompt ;
+    sh:property [
+        sh:path ho:promptText ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "SystemPrompt must have ho:promptText." ] .

@@ -1,0 +1,114 @@
+/* 전역 스타일 — vanilla static/style.css를 계승·확장(오프라인, system-ui 폰트).
+   컴포넌트 고유 UI(picker chip, 그래프 툴바 등)만 아래에 추가한다. */
+:root {
+  --bg: #f6f7f9; --panel: #fff; --line: #e2e5ea; --ink: #1c2430;
+  --muted: #6b7280; --accent: #2f6fed; --ok: #1a7f4b; --bad: #c0392b;
+  --warn: #b8860b;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 system-ui, "Segoe UI", sans-serif;
+  color: var(--ink); background: var(--bg); }
+h1 { font-size: 16px; margin: 0; }
+h2 { font-size: 13px; margin: 0; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--muted); }
+
+header { display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--line); }
+header .tools { display: flex; align-items: center; gap: 8px; flex: 1; }
+#retrieve-q { flex: 1; max-width: 460px; }
+
+input, select, textarea, button { font: inherit; }
+input, select, textarea { padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 6px; background: #fff; color: var(--ink); width: 100%; }
+button { padding: 6px 12px; border: 1px solid var(--line); border-radius: 6px;
+  background: #fff; cursor: pointer; white-space: nowrap; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .55; cursor: default; }
+
+.status { font-size: 12px; color: var(--muted); }
+.status.ok { color: var(--ok); } .status.bad { color: var(--bad); }
+
+main { display: grid; grid-template-columns: 260px 1fr 400px; gap: 1px;
+  height: calc(100vh - 53px); background: var(--line); }
+.pane { background: var(--bg); overflow: auto; padding: 12px;
+  display: flex; flex-direction: column; min-height: 0; }
+#center { overflow: hidden; }
+.pane-head { display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-bottom: 10px; }
+.pane-head .hint { font-size: 11px; color: var(--muted); }
+
+/* --- node list --- */
+.type-group { margin-bottom: 8px; }
+.type-group > .type-name { font-size: 11px; color: var(--muted);
+  text-transform: uppercase; margin: 6px 0 3px; display: flex; gap: 6px;
+  align-items: center; }
+.type-group > .type-name .swatch { width: 9px; height: 9px; border-radius: 2px; }
+.node-item { padding: 4px 8px; border-radius: 5px; cursor: pointer;
+  display: flex; justify-content: space-between; gap: 6px; }
+.node-item:hover { background: #eef2fb; }
+.node-item.active { background: #dbe6ff; }
+.node-item .mat { font-size: 10px; color: var(--muted); }
+
+/* --- graph (cytoscape) --- */
+.graph-toolbar { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.graph-toolbar input { flex: 1; }
+.graph-toolbar button { padding: 5px 9px; }
+.cy-wrap { flex: 1; min-height: 320px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.cy-wrap .cy { width: 100%; height: 100%; }
+.graph-legend { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 6px;
+  font-size: 11px; color: var(--muted); }
+.graph-legend .lg { display: flex; gap: 4px; align-items: center; }
+.graph-legend .swatch { width: 9px; height: 9px; border-radius: 2px; }
+
+/* --- editor form --- */
+form label, form .cap { display: block; font-size: 12px; color: var(--muted);
+  margin: 10px 0 3px; }
+.editor-scroll { overflow: auto; padding-right: 4px; }
+.req { color: var(--bad); }
+.editor-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;
+  position: sticky; bottom: 0; background: var(--bg); padding-top: 8px; }
+.rel-toggle { margin-top: 10px; font-size: 11px; }
+
+/* --- prop picker (range autocomplete) --- */
+.prop-row { margin-top: 8px; }
+.prop-row > .plabel { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.prop-row > .plabel .rng { color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 3px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+  background: #eef2fb; border: 1px solid #cfdcff; border-radius: 10px;
+  padding: 1px 4px 1px 8px; }
+.chip button { border: none; background: none; padding: 0 2px; cursor: pointer;
+  color: var(--muted); font-size: 13px; line-height: 1; }
+.chip button:hover { color: var(--bad); }
+.picker { position: relative; }
+.dropdown { position: absolute; z-index: 20; left: 0; right: 0; top: 100%;
+  background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  margin-top: 2px; max-height: 200px; overflow: auto;
+  box-shadow: 0 6px 18px rgba(20,30,50,.12); }
+.dropdown .opt { padding: 5px 8px; cursor: pointer; display: flex;
+  justify-content: space-between; gap: 8px; }
+.dropdown .opt:hover, .dropdown .opt.hi { background: #eef2fb; }
+.dropdown .opt .oid { font-size: 10px; color: var(--muted); }
+.dropdown .empty { padding: 6px 8px; color: var(--muted); font-size: 12px; }
+
+/* --- result / retrieve panels --- */
+.panel { margin-top: 12px; padding: 10px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--panel); font-size: 13px; }
+.panel h3 { margin: 0 0 6px; font-size: 13px; }
+.verdict-pass { color: var(--ok); font-weight: 600; }
+.verdict-fail { color: var(--bad); font-weight: 600; }
+.msg { color: var(--bad); }
+.gap { color: var(--warn); }
+pre.diff { max-height: 240px; overflow: auto; background: #0f1729; color: #d7e0f4;
+  padding: 8px; border-radius: 6px; font-size: 12px; white-space: pre;
+  margin: 6px 0 0; }
+pre.diff .add { color: #7ee787; display: block; }
+pre.diff .del { color: #ff7b72; display: block; }
+pre.diff .ctx { display: block; }
+.cand { display: flex; justify-content: space-between; }
+.pack-node { padding: 3px 0; border-top: 1px dashed var(--line); cursor: pointer; }
+.pack-node:hover { color: var(--accent); }
+.small { font-size: 11px; color: var(--muted); }
+.hidden { display: none; }

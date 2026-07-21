@@ -1,0 +1,12 @@
+.git
+__pycache__/
+*.pyc
+*.ttl.tmp
+ontology/          # bind-mounted at runtime, never baked into the image
+docs/
+.github/
+# frontend deps/outputs: the multi-stage build runs `npm ci` inside the image
+# from package*.json, so host node_modules (~35M) never needs to enter the context.
+node_modules/
+tools/webui/frontend/node_modules/
+tools/webui/frontend/dist/

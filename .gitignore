@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.ttl.tmp
+
+# frontend (Svelte + Vite): deps and build outputs are produced at build time
+# (Docker multi-stage, or `npm run build` locally), not committed.
+node_modules/
+tools/webui/frontend/dist/
+tools/webui/static/

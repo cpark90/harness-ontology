@@ -1,0 +1,22 @@
+# CI gate for contributions. Every push / pull request must keep the ontology
+# connected, well-typed and buildable — the same invariants the local tools and
+# the web UI enforce. A non-zero exit fails the check (see docs/DESIGN.md).
+name: validate-ontology
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Validate ontology (anti-orphan / anti-drift / buildable)
+        run: python3 tools/validate.py

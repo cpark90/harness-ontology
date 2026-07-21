@@ -1,0 +1,26 @@
+# Ontology management web UI.
+#   docker compose up   →   http://127.0.0.1:8000
+#
+# ontology/ is bind-mounted read-write so edits made in the UI land in the host's
+# TTL files (the single source of truth) and the container stays stateless.
+#
+# tools/ is intentionally NOT mounted: the Dockerfile builds the Svelte frontend
+# into tools/webui/static/ and bakes tools/ into the image. Mounting the host's
+# tools/ would shadow that built static/ with the host's (un-built) one — a blank
+# page. ttl_writer/ontology_lib resolve paths from ontology/ (which IS mounted),
+# so SSOT persistence and validation are unaffected; code changes just require an
+# image rebuild (`docker compose build`), which is fine for a dev tool.
+#
+# Bound to 127.0.0.1 only: this tool writes TTL and runs reasoning and has no
+# authentication — it is a local authoring aid, not a public service
+# (collaboration happens via git/PRs; see CONTRIBUTING.md).
+services:
+  webui:
+    build:
+      context: .
+      dockerfile: tools/webui/Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./ontology:/app/ontology
+    restart: unless-stopped

@@ -1,0 +1,155 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+########################################################################
+# Seed ABox — three example harnesses that deliberately SHARE
+# components (vector-retriever, cite-sources, opus model) and vocabulary
+# (information-retrieval), so the graph is connected and retrieval has
+# something interesting to traverse.
+########################################################################
+
+#===================== Domains =========================================
+id:dom-coding a ho:Domain ; skos:prefLabel "Software coding" ; skos:altLabel "programming" ; ho:salience 0.9 .
+id:dom-research a ho:Domain ; skos:prefLabel "Research" ; skos:altLabel "literature research" ; ho:salience 0.8 .
+id:dom-support a ho:Domain ; skos:prefLabel "Customer support" ; skos:altLabel "helpdesk" ; ho:salience 0.7 .
+
+#===================== Tasks ===========================================
+id:task-bugfix a ho:Task ; skos:prefLabel "Bug fixing" ; skos:altLabel "debugging" ;
+    skos:definition "Locate and repair a defect in a codebase." .
+id:task-codereview a ho:Task ; skos:prefLabel "Code review" ;
+    skos:definition "Assess a code change for correctness and quality." .
+id:task-litreview a ho:Task ; skos:prefLabel "Literature review" ;
+    skos:definition "Survey and synthesise sources on a topic with citations." .
+id:task-triage a ho:Task ; skos:prefLabel "Ticket triage" ;
+    skos:definition "Classify and route an incoming support ticket." .
+
+#===================== Capabilities ====================================
+id:cap-codeexec a ho:Capability ; skos:prefLabel "Code execution" .
+id:cap-fileedit a ho:Capability ; skos:prefLabel "File editing" .
+id:cap-websearch a ho:Capability ; skos:prefLabel "Web search" .
+id:cap-retrieval a ho:Capability ; skos:prefLabel "Document retrieval" ; skos:altLabel "RAG" .
+id:cap-citation a ho:Capability ; skos:prefLabel "Source citation" .
+
+#===================== Concepts (controlled vocabulary) ================
+id:c-softeng a ho:Concept ; skos:prefLabel "Software engineering" ; skos:topConceptOf id:scheme .
+id:c-debugging a ho:Concept ; skos:prefLabel "Debugging" ; skos:broader id:c-softeng .
+id:c-inforetrieval a ho:Concept ; skos:prefLabel "Information retrieval" ; skos:topConceptOf id:scheme .
+id:c-summarization a ho:Concept ; skos:prefLabel "Summarization" ; skos:broader id:c-inforetrieval .
+id:c-safety a ho:Concept ; skos:prefLabel "Safety" ; skos:topConceptOf id:scheme .
+id:c-autonomy a ho:Concept ; skos:prefLabel "Autonomy" ; skos:related id:c-safety .
+id:c-communication a ho:Concept ; skos:prefLabel "Communication" ; skos:topConceptOf id:scheme .
+
+#===================== Design patterns =================================
+id:pat-react a ho:DesignPattern ; skos:prefLabel "ReAct" ;
+    skos:definition "Interleave reasoning and tool actions in a loop." .
+id:pat-planexec a ho:DesignPattern ; skos:prefLabel "Plan-then-execute" ;
+    skos:definition "Draft a full plan, then execute steps." .
+id:pat-reflection a ho:DesignPattern ; skos:prefLabel "Reflection" ;
+    skos:definition "Critique and revise an initial answer before returning it." .
+
+#===================== Constraints =====================================
+id:con-lowlatency a ho:Constraint ; skos:prefLabel "Low latency" ;
+    skos:definition "Response must return quickly; limits multi-step loops." .
+
+#===================== Model configs ===================================
+id:mc-opus a ho:ModelConfig ; skos:prefLabel "Opus high-reasoning" ;
+    ho:promptText "model=claude-opus-4-8; temperature=0.2" ; ho:tokenEstimate 12 ; ho:maturity "stable" .
+id:mc-sonnet a ho:ModelConfig ; skos:prefLabel "Sonnet balanced" ;
+    ho:promptText "model=claude-sonnet-5; temperature=0.3" ; ho:tokenEstimate 12 ; ho:maturity "stable" .
+
+#===================== Tools ===========================================
+id:tool-shell a ho:Tool ; skos:prefLabel "Shell tool" ; skos:altLabel "bash tool" ;
+    ho:providesCapability id:cap-codeexec ; ho:tokenEstimate 40 ; ho:maturity "stable" ; ho:tagged id:c-softeng .
+id:tool-editor a ho:Tool ; skos:prefLabel "Code editor tool" ;
+    ho:providesCapability id:cap-fileedit ; ho:tokenEstimate 45 ; ho:maturity "stable" ; ho:tagged id:c-softeng .
+id:tool-websearch a ho:Tool ; skos:prefLabel "Web search tool" ;
+    ho:providesCapability id:cap-websearch ; ho:tokenEstimate 35 ; ho:maturity "stable" ; ho:tagged id:c-inforetrieval .
+id:tool-retriever a ho:Tool ; skos:prefLabel "Vector retriever tool" ; skos:altLabel "RAG retriever" ;
+    ho:providesCapability id:cap-retrieval ; ho:tokenEstimate 38 ; ho:maturity "stable" ; ho:tagged id:c-inforetrieval .
+
+#===================== Workflows =======================================
+id:wf-react a ho:Workflow ; skos:prefLabel "ReAct loop" ;
+    ho:dependsOn id:tool-shell ; ho:tokenEstimate 60 ; ho:maturity "stable" ; ho:tagged id:c-autonomy .
+id:wf-planexec a ho:Workflow ; skos:prefLabel "Plan-execute loop" ;
+    ho:dependsOn id:tool-retriever ; ho:tokenEstimate 65 ; ho:maturity "reviewed" .
+id:wf-singleshot a ho:Workflow ; skos:prefLabel "Single-shot" ;
+    ho:tokenEstimate 20 ; ho:maturity "stable" .
+
+#===================== Guardrails ======================================
+id:gr-nodestruct a ho:Guardrail ; skos:prefLabel "No destructive actions" ;
+    ho:promptText "Never run irreversible or destructive commands without explicit confirmation." ;
+    ho:tokenEstimate 30 ; ho:maturity "stable" ; ho:tagged id:c-safety .
+id:gr-cite a ho:Guardrail ; skos:prefLabel "Cite sources" ;
+    ho:promptText "Every factual claim must carry a citation to a retrieved source." ;
+    ho:providesCapability id:cap-citation ; ho:tokenEstimate 25 ; ho:maturity "stable" ; ho:tagged id:c-safety .
+id:gr-lang a ho:Guardrail ; skos:prefLabel "Korean/English only" ; skos:altLabel "language policy" ;
+    ho:promptText "Use only Korean and English for documentation, development, and user-facing I/O, unless another language is essential to the task." ;
+    ho:tokenEstimate 32 ; ho:maturity "draft" ; ho:tagged id:c-communication .
+
+#===================== System prompts ==================================
+id:sp-coding a ho:SystemPrompt ; skos:prefLabel "Coding agent persona" ;
+    ho:promptText "You are a meticulous software engineer. Reproduce the bug, fix it, and verify with tests." ;
+    ho:tokenEstimate 90 ; ho:maturity "stable" .
+id:sp-research a ho:SystemPrompt ; skos:prefLabel "Research agent persona" ;
+    ho:promptText "You are a rigorous research assistant. Gather sources, synthesise, and cite everything." ;
+    ho:tokenEstimate 85 ; ho:maturity "stable" .
+id:sp-support a ho:SystemPrompt ; skos:prefLabel "Support agent persona" ;
+    ho:promptText "You are a concise support agent. Classify the issue and route or resolve it quickly." ;
+    ho:tokenEstimate 70 ; ho:maturity "reviewed" .
+
+#===================== HARNESSES =======================================
+
+id:h-coding a ho:Harness ;
+    skos:prefLabel "Autonomous coding agent" ; skos:altLabel "coding harness" ;
+    skos:definition "An autonomous agent that fixes bugs and reviews code with shell + editor tools." ;
+    ho:targetsDomain id:dom-coding ;
+    ho:addressesTask id:task-bugfix, id:task-codereview ;
+    ho:hasSystemPrompt id:sp-coding ;
+    ho:usesTool id:tool-shell, id:tool-editor ;
+    ho:hasWorkflow id:wf-react ;
+    ho:hasGuardrail id:gr-nodestruct, id:gr-lang ;
+    ho:usesModel id:mc-opus ;
+    ho:appliesPattern id:pat-react ;
+    ho:requiresCapability id:cap-codeexec, id:cap-fileedit ;
+    ho:tagged id:c-softeng, id:c-debugging, id:c-autonomy ;
+    ho:maturity "stable" .
+
+id:h-research a ho:Harness ;
+    skos:prefLabel "Research synthesis agent" ; skos:altLabel "research harness" ;
+    skos:definition "A plan-execute agent that surveys sources and writes cited syntheses." ;
+    ho:targetsDomain id:dom-research ;
+    ho:addressesTask id:task-litreview ;
+    ho:hasSystemPrompt id:sp-research ;
+    ho:usesTool id:tool-websearch, id:tool-retriever ;
+    ho:hasWorkflow id:wf-planexec ;
+    ho:hasGuardrail id:gr-cite, id:gr-lang ;
+    ho:usesModel id:mc-opus ;
+    ho:appliesPattern id:pat-planexec ;
+    ho:requiresCapability id:cap-websearch, id:cap-retrieval, id:cap-citation ;
+    ho:tagged id:c-inforetrieval, id:c-summarization ;
+    ho:maturity "reviewed" .
+
+id:h-support a ho:Harness ;
+    skos:prefLabel "Support triage agent" ; skos:altLabel "support harness" ;
+    skos:definition "A low-latency single-shot agent that triages support tickets with retrieval." ;
+    ho:targetsDomain id:dom-support ;
+    ho:addressesTask id:task-triage ;
+    ho:hasSystemPrompt id:sp-support ;
+    ho:usesTool id:tool-retriever ;
+    ho:hasWorkflow id:wf-singleshot ;
+    ho:hasGuardrail id:gr-cite, id:gr-lang ;
+    ho:usesModel id:mc-sonnet ;
+    ho:appliesPattern id:pat-reflection ;
+    ho:requiresCapability id:cap-retrieval ;
+    ho:constrainedBy id:con-lowlatency ;
+    ho:tagged id:c-inforetrieval ;
+    ho:specializes id:h-research ;
+    ho:maturity "reviewed" .
+
+#===================== Concept scheme ==================================
+id:scheme a skos:ConceptScheme ; skos:prefLabel "Harness ontology vocabulary" .

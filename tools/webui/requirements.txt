@@ -1,0 +1,4 @@
+# Web UI extras — the ontology deps (rdflib, pyshacl, owlrl) come from the
+# repo-root requirements.txt; install both in the image.
+fastapi>=0.110
+uvicorn[standard]>=0.29

@@ -1,0 +1,236 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+
+########################################################################
+# Ontology header (TBox) — agent/LLM harness ontology
+#
+# Design intent:
+#   * Formal OWL 2 semantics = single source of truth. Reasoning + SHACL
+#     give connectivity guarantees (kills orphaned nodes) and a controlled
+#     vocabulary (kills context drift).
+#   * The graph is NEVER loaded whole into an agent. tools/retrieve.py
+#     projects a bounded, request-scoped subgraph (kills context rot).
+########################################################################
+
+<https://harness-ontology.dev/schema> a owl:Ontology ;
+    dct:title "Agent Harness Ontology (schema/TBox)" ;
+    owl:versionInfo "0.1.0" ;
+    rdfs:comment "Schema for describing, validating and composing agent/LLM harnesses." .
+
+#-----------------------------------------------------------------------
+# Core classes
+#-----------------------------------------------------------------------
+
+ho:Harness a owl:Class ;
+    rdfs:label "Harness" ;
+    skos:definition "A complete, runnable agent/LLM configuration: a composition of components (system prompt, tools, guardrails, workflow, model config) aimed at a domain and set of tasks." .
+
+ho:HarnessComponent a owl:Class ;
+    rdfs:label "Harness Component" ;
+    skos:definition "An abstract reusable building block that a harness is composed of." .
+
+ho:SystemPrompt a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "System Prompt" ;
+    skos:definition "The persona/instruction text that frames an agent's behaviour." .
+
+ho:Instruction a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Instruction" ;
+    skos:definition "A discrete behavioural rule or procedure snippet injected into a harness." .
+
+ho:Tool a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Tool" ;
+    skos:definition "An external capability the agent can invoke (function, API, retrieval, code execution)." .
+
+ho:Guardrail a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Guardrail" ;
+    skos:definition "A safety/policy constraint that bounds agent behaviour." .
+
+ho:Workflow a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Workflow" ;
+    skos:definition "A control-flow strategy (single-shot, ReAct, plan-execute, multi-agent) the harness follows." .
+
+ho:ModelConfig a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Model Config" ;
+    skos:definition "Model selection and inference parameters (model id, temperature, token budget)." .
+
+ho:Example a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Example" ;
+    skos:definition "A few-shot exemplar demonstrating desired input/output behaviour." .
+
+# Non-component concepts
+
+ho:Capability a owl:Class ;
+    rdfs:label "Capability" ;
+    skos:definition "An abstract ability (e.g. web-search, code-exec, citation). Harnesses/tasks REQUIRE capabilities; components PROVIDE them. This required/provided pairing drives composition." .
+
+ho:Domain a owl:Class ;
+    rdfs:label "Domain" ;
+    skos:definition "A problem area a harness targets (coding, research, customer-support, data-analysis)." .
+
+ho:Task a owl:Class ;
+    rdfs:label "Task" ;
+    skos:definition "A concrete use-case / request pattern a harness addresses." .
+
+ho:DesignPattern a owl:Class ;
+    rdfs:label "Design Pattern" ;
+    skos:definition "A reusable composition pattern (ReAct, plan-then-execute, orchestrator-workers, reflection)." .
+
+ho:Constraint a owl:Class ;
+    rdfs:label "Constraint" ;
+    skos:definition "A non-functional requirement or limitation (latency, cost, privacy, offline)." .
+
+# Controlled-vocabulary layer: every taggable term is a skos:Concept.
+ho:Concept a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Concept" ;
+    skos:definition "A controlled-vocabulary tag used to index and connect nodes." .
+
+#-----------------------------------------------------------------------
+# Object properties
+#-----------------------------------------------------------------------
+
+# --- composition: Harness -> HarnessComponent -------------------------
+ho:hasComponent a owl:ObjectProperty ;
+    rdfs:label "has component" ;
+    rdfs:domain ho:Harness ;
+    rdfs:range ho:HarnessComponent ;
+    owl:inverseOf ho:componentOf ;
+    skos:definition "General composition edge. Specialised sub-properties below carry the component type." .
+
+ho:componentOf a owl:ObjectProperty ;
+    rdfs:label "component of" ;
+    rdfs:domain ho:HarnessComponent ;
+    rdfs:range ho:Harness .
+
+ho:hasSystemPrompt a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:SystemPrompt ;
+    rdfs:label "has system prompt" .
+
+ho:usesTool a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:Tool ;
+    rdfs:label "uses tool" .
+
+ho:hasGuardrail a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:Guardrail ;
+    rdfs:label "has guardrail" .
+
+ho:hasWorkflow a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:Workflow ;
+    rdfs:label "has workflow" .
+
+ho:usesModel a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:ModelConfig ;
+    rdfs:label "uses model" .
+
+ho:hasExample a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:Example ;
+    rdfs:label "has example" .
+
+ho:hasInstruction a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:Instruction ;
+    rdfs:label "has instruction" .
+
+# --- targeting / intent ----------------------------------------------
+ho:targetsDomain a owl:ObjectProperty ;
+    rdfs:domain ho:Harness ;
+    rdfs:range ho:Domain ;
+    rdfs:label "targets domain" .
+
+ho:addressesTask a owl:ObjectProperty ;
+    rdfs:domain ho:Harness ;
+    rdfs:range ho:Task ;
+    rdfs:label "addresses task" ;
+    owl:inverseOf ho:addressedBy .
+
+ho:addressedBy a owl:ObjectProperty ;
+    rdfs:domain ho:Task ;
+    rdfs:range ho:Harness ;
+    rdfs:label "addressed by" .
+
+# --- capability matching (composition engine) -------------------------
+ho:requiresCapability a owl:ObjectProperty ;
+    rdfs:range ho:Capability ;
+    rdfs:label "requires capability" ;
+    skos:definition "A harness or task needs this capability to be fulfilled." .
+
+ho:providesCapability a owl:ObjectProperty ;
+    rdfs:domain ho:HarnessComponent ;
+    rdfs:range ho:Capability ;
+    rdfs:label "provides capability" ;
+    skos:definition "A component supplies this capability. Composer matches provides->requires." .
+
+# --- patterns & constraints ------------------------------------------
+ho:appliesPattern a owl:ObjectProperty ;
+    rdfs:domain ho:Harness ;
+    rdfs:range ho:DesignPattern ;
+    rdfs:label "applies pattern" .
+
+ho:constrainedBy a owl:ObjectProperty ;
+    rdfs:range ho:Constraint ;
+    rdfs:label "constrained by" .
+
+# --- structural relations --------------------------------------------
+ho:dependsOn a owl:ObjectProperty, owl:TransitiveProperty ;
+    rdfs:domain ho:HarnessComponent ;
+    rdfs:range ho:HarnessComponent ;
+    rdfs:label "depends on" ;
+    skos:definition "A component requires another to function (e.g. a workflow depends on a tool)." .
+
+ho:specializes a owl:ObjectProperty, owl:TransitiveProperty ;
+    rdfs:domain ho:Harness ;
+    rdfs:range ho:Harness ;
+    rdfs:label "specializes" ;
+    skos:definition "This harness is a more specific variant of a more general harness." .
+
+ho:derivedFrom a owl:ObjectProperty ;
+    rdfs:label "derived from" ;
+    skos:definition "Provenance: this node was generated/adapted from another." .
+
+# --- indexing / vocabulary -------------------------------------------
+ho:tagged a owl:ObjectProperty ;
+    rdfs:range ho:Concept ;
+    rdfs:label "tagged" ;
+    skos:definition "Associates any node with a controlled-vocabulary concept. Primary retrieval entry edge." .
+
+#-----------------------------------------------------------------------
+# Datatype properties
+#-----------------------------------------------------------------------
+
+ho:promptText a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "prompt text" ;
+    skos:definition "The literal text of a system prompt / instruction / example." .
+
+ho:tokenEstimate a owl:DatatypeProperty ;
+    rdfs:range xsd:integer ;
+    rdfs:label "token estimate" ;
+    skos:definition "Approx. token cost of this node's text. Used by the projector to stay within budget (context-rot defense)." .
+
+ho:salience a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "salience" ;
+    skos:definition "0..1 prior importance, used to rank nodes during bounded traversal." .
+
+ho:maturity a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "maturity" ;
+    skos:definition "Lifecycle status: draft | reviewed | stable | deprecated." .
