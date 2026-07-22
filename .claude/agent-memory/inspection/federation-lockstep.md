@@ -18,5 +18,11 @@ brief가 "중앙 validate PASS"만 게이트로 걸어도, inspection은 **recip
 이미 push된 중앙이 federation을 깼으면 **force-push revert보다 forward fix**(recipe catalog 매핑
 추가)가 정석 — 공개 이력 재작성 회피. 즉시 복원 필요 시에만 사용자 판단으로 revert.
 
+## 구조적 해소 (2026-07-22 methodology 라운드에서 적용)
+recipe가 **개별 core 유닛이 아니라 중앙 root ontology(`.../ontology`)를 owl:imports**하게 바꾸면
+신규 core 유닛이 **자동 전파**돼 이 회귀 클래스가 사라진다(catalog엔 root + 각 유닛 매핑 유지).
+또한 **push 전 로컬 federate dry-run**(working-tree 중앙 + staging 레시피 조립)을 게이트로 두면
+회귀를 push 전에 잡는다 — 이번에 그렇게 검증하고 통과 후 push함.
+
 ## 관련
 [[federation-physical-split]] (recipes repo 구조·federate 재현 명령).
