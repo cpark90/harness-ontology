@@ -10,3 +10,4 @@
 <!-- 학습 인덱스 (한 줄씩) -->
 - [refresh 판정 + 안전 커밋 절차](refresh-and-git-baseline.md) — refresh는 inspection 후속 완료까지 유지; 항목은 baseline 커밋에 보존 후 별도 커밋으로 git rm; repo엔 gh·remote 없음
 - [물리 repo 분할 실행 (federation)](federation-physical-split.md) — cpark90/harness-ontology(중앙)+harness-data-<domain>; gh를 ~/.local/bin에 설치; 연합 validate 재현(catalog env); 중앙 커밋 선행 후 외부 확인 뒤 제거(Step5=developer); classifier git 차단은 재시도
+- [연합 lockstep](federation-lockstep.md) — 중앙에 신규 core 유닛 추가·wire 시 recipe catalog 동반 안 하면 published recipe federate 회귀(MinCount); 중앙 push 전 기존 recipe federate PASS 확인 게이트; 복구는 forward catalog fix(revert 아님)
