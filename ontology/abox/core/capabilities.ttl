@@ -1,0 +1,24 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Capability partition of the `core` domain. Imports the
+# central TBox only; cross-unit references resolve in the root union
+# (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/capabilities> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+#===================== Capabilities ====================================
+id:cap-codeexec a ho:Capability ; skos:prefLabel "Code execution" .
+id:cap-fileedit a ho:Capability ; skos:prefLabel "File editing" .
+id:cap-websearch a ho:Capability ; skos:prefLabel "Web search" .
+id:cap-retrieval a ho:Capability ; skos:prefLabel "Document retrieval" ; skos:altLabel "RAG" .
+id:cap-citation a ho:Capability ; skos:prefLabel "Source citation" .
+id:cap-orchestration a ho:Capability ; skos:prefLabel "Multi-agent orchestration" ;
+    skos:definition "Decompose work into node-scoped briefs, dispatch them to specialised worker agents under least-privilege, and integrate the results." .
+id:cap-traceability a ho:Capability ; skos:prefLabel "Traceability" ;
+    skos:definition "Preserve a single source of truth: never delete a decision, only deprecate it with a reason and replacement, and increment identifiers without reuse." .

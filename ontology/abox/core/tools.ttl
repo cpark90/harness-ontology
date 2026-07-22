@@ -1,0 +1,23 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Tool partition of the `core` domain. Imports the
+# central TBox only; cross-unit references resolve in the root union
+# (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/tools> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+#===================== Tools ===========================================
+id:tool-shell a ho:Tool ; skos:prefLabel "Shell tool" ; skos:altLabel "bash tool" ;
+    ho:providesCapability id:cap-codeexec ; ho:tokenEstimate 40 ; ho:maturity "stable" ; ho:tagged id:c-softeng .
+id:tool-editor a ho:Tool ; skos:prefLabel "Code editor tool" ;
+    ho:providesCapability id:cap-fileedit ; ho:tokenEstimate 45 ; ho:maturity "stable" ; ho:tagged id:c-softeng .
+id:tool-websearch a ho:Tool ; skos:prefLabel "Web search tool" ;
+    ho:providesCapability id:cap-websearch ; ho:tokenEstimate 35 ; ho:maturity "stable" ; ho:tagged id:c-inforetrieval .
+id:tool-retriever a ho:Tool ; skos:prefLabel "Vector retriever tool" ; skos:altLabel "RAG retriever" ;
+    ho:providesCapability id:cap-retrieval ; ho:tokenEstimate 38 ; ho:maturity "stable" ; ho:tagged id:c-inforetrieval .

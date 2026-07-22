@@ -85,7 +85,7 @@ against the union, push / open a PR.
    |---|---|
    | `…/ontology` | `ontology/harness-ontology.ttl` |
    | `…/schema` | `ontology/tbox/harness.ttl` |
-   | `…/data/core` | `ontology/abox/seed.ttl` |
+   | `…/data/core/<type>` | `ontology/abox/core/<type>.ttl` (11 per-component-type units) |
    | `…/data/<domain>` | *external pure-data repo — none active today (see Status below)* |
    | `…/data/authored` | `ontology/abox/authored.ttl` (webui output, optional) |
 
@@ -117,7 +117,7 @@ federation over a hardcoded glob.
   - `<domain>` is a short kebab segment naming the repo/contributor scope.
     `core` is **reserved** for the central ontology. A contributor picks a
     domain segment that is unlikely to collide (project or org name, e.g.
-    `lpranging`, `acme-support`).
+    `robotics`, `acme-support`).
 - **Ontology (document) IRIs** are separate from entity IRIs:
   `https://harness-ontology.dev/data/<domain>`. (The document that *contains*
   the individuals, used by `owl:imports`/catalog, is not the same as the IRIs of
@@ -128,7 +128,7 @@ federation over a hardcoded glob.
   references core nodes binds a second prefix `@prefix core: <…/id/core/> .`
   and writes `core:tool-editor`. Because two prefixes can point at the same
   namespace, cross-domain references resolve to the same IRI in the union
-  (e.g. `lpranging`'s `core:h-coding` == `core`'s `id:h-coding`).
+  (e.g. `robotics`'s `core:h-coding` == `core`'s `id:h-coding`).
 
 ### Validation gate (D4)
 
@@ -178,7 +178,8 @@ Status of external data units:
   (verify-then-proceed, design-for-loss, traceability, no-arbitrary-decision,
   least-privilege, report-over-prompt, controlled-vocabulary guardrails; the
   orchestrator-workers pattern + multi-agent workflow; a methodical persona) were
-  neutralised and folded into the `core` data unit (`ontology/abox/seed.ttl`),
+  neutralised and folded into the `core` data units (`ontology/abox/core/*.ttl`,
+  split per component type),
   and the domain-coupled nodes (UWB/RTLS/low-power tasks, tools, persona and
   concepts) were dropped. Consequently `…/data/lpranging` appears in **no**
   catalog entry or root `owl:imports`, and `staging/` holds no payload. The
@@ -247,8 +248,9 @@ using the **central** `validate.py` (shapes and tools always come from central):
    ```
 
    The data repo's catalog maps `…/schema` → `central/ontology/tbox/harness.ttl`,
-   `…/data/core` → `central/ontology/abox/seed.ttl`, and `…/data/<domain>` →
-   its local `<domain>.ttl`. Nothing in central changes.
+   each central `…/data/core/<type>` → `central/ontology/abox/core/<type>.ttl`
+   (the core unit is split per component type), and `…/data/<domain>` → its local
+   `<domain>.ttl`. Nothing in central changes.
 
 2. **Run from central over all repos.** Clone the external data repo somewhere,
    then supply a catalog that lists `…/schema`, `…/data/core` **and**
@@ -259,3 +261,16 @@ using the **central** `validate.py` (shapes and tools always come from central):
 
 Because a data repo carries its own catalog and imports (option 1), it is the
 canonical "compose the full union" recipe and needs no edit to central.
+
+## Recipe repos: composing harnesses from the neutral parts
+
+The federated data-repo mechanism above has a concrete, first-class use: a
+**recipe repo** that stores many harness **blueprints**, each `owl:imports`-ing
+the central neutral parts and composing a complete `ho:Harness` from them (adding
+only the domain bindings a specialization needs). This keeps central a neutral
+parts library while "how the parts are assembled" lives in recipes. The first
+such repo is `cpark90/harness-recipes` (renamed from the retired
+`harness-data-lpranging`), whose worked example recipe reconstructs the retired
+`lpranging` harness as a composition over the core parts. Its layout, the anatomy
+of a recipe unit, and its clone-central → compose-union → central-`validate.py`
+gate are specified in **`docs/recipes-design.md`**.

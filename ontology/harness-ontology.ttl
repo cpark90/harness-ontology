@@ -17,13 +17,28 @@
     owl:versionInfo "0.1.0" ;
     rdfs:comment "Composes the harness ontology union by importing the schema and every ABox data unit." ;
     owl:imports <https://harness-ontology.dev/schema> ,
-                <https://harness-ontology.dev/data/core> ,
+                <https://harness-ontology.dev/data/core/concepts> ,
+                <https://harness-ontology.dev/data/core/capabilities> ,
+                <https://harness-ontology.dev/data/core/constraints> ,
+                <https://harness-ontology.dev/data/core/model-configs> ,
+                <https://harness-ontology.dev/data/core/tools> ,
+                <https://harness-ontology.dev/data/core/guardrails> ,
+                <https://harness-ontology.dev/data/core/patterns> ,
+                <https://harness-ontology.dev/data/core/workflows> ,
+                <https://harness-ontology.dev/data/core/system-prompts> ,
+                <https://harness-ontology.dev/data/core/domains-tasks> ,
+                <https://harness-ontology.dev/data/core/harnesses> ,
                 <https://harness-ontology.dev/data/authored> .
+# NOTE: the central `core` data unit is stored as MULTIPLE documents split by
+# component type (ontology/abox/core/*.ttl), not one seed.ttl — a neutral parts
+# library partitioned per ho: type. Each per-type unit imports only the schema;
+# cross-unit references (a Harness naming its Tools/Guardrails, etc.) resolve in
+# THIS root union. See ONTOLOGYSTYLE §4 and docs/federation-design.md (D1).
 # NOTE: no external domain data unit is currently imported. The `lpranging`
 # domain-specific modeling was RETIRED per the neutral-parts principle — the
 # ontology stores generalised, domain-independent reusable parts, not a specific
 # harness's description; its reusable governance parts now live neutralised in
-# the `core` data unit (ontology/abox/seed.ttl). The owl:imports + catalog
-# federation infra remains available for future external domain part-
-# collections; add such a repo by listing its ontology IRI here and in
-# catalog-v001.xml. See docs/federation-design.md.
+# the `core` data units. The owl:imports + catalog federation infra remains
+# available for future external domain part-collections; add such a repo by
+# listing its ontology IRI here and in catalog-v001.xml. See
+# docs/federation-design.md.

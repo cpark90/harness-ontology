@@ -14,7 +14,7 @@ See [`docs/DESIGN.md`](docs/DESIGN.md) for the full rationale.
 ```
 ontology/
   tbox/harness.ttl            # OWL 2 schema: classes + properties + SKOS vocab
-  abox/seed.ttl               # example harnesses (coding / research / support)
+  abox/core/*.ttl             # central neutral parts library, split per component type
   shapes/harness-shapes.ttl   # SHACL: connectivity + typed-edge invariants
 tools/
   ontology_lib.py             # shared loader + OWL RL reasoning

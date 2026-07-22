@@ -1,0 +1,28 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Concept + ConceptScheme partition of the `core` domain. Imports the
+# central TBox only; cross-unit references resolve in the root union
+# (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/concepts> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+#===================== Concepts (controlled vocabulary) ================
+id:c-softeng a ho:Concept ; skos:prefLabel "Software engineering" ; skos:topConceptOf id:scheme .
+id:c-debugging a ho:Concept ; skos:prefLabel "Debugging" ; skos:broader id:c-softeng .
+id:c-inforetrieval a ho:Concept ; skos:prefLabel "Information retrieval" ; skos:topConceptOf id:scheme .
+id:c-summarization a ho:Concept ; skos:prefLabel "Summarization" ; skos:broader id:c-inforetrieval .
+id:c-safety a ho:Concept ; skos:prefLabel "Safety" ; skos:topConceptOf id:scheme .
+id:c-autonomy a ho:Concept ; skos:prefLabel "Autonomy" ; skos:related id:c-safety .
+id:c-communication a ho:Concept ; skos:prefLabel "Communication" ; skos:topConceptOf id:scheme .
+id:c-design a ho:Concept ; skos:prefLabel "Design methodology" ; skos:topConceptOf id:scheme .
+id:c-multiagent a ho:Concept ; skos:prefLabel "Multi-agent orchestration" ; skos:topConceptOf id:scheme ; skos:related id:c-autonomy .
+id:c-traceability a ho:Concept ; skos:prefLabel "Traceability" ; skos:topConceptOf id:scheme .
+
+#===================== Concept scheme ==================================
+id:scheme a skos:ConceptScheme ; skos:prefLabel "Harness ontology vocabulary" .

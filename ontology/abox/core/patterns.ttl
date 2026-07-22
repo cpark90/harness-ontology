@@ -1,0 +1,23 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- DesignPattern partition of the `core` domain. Imports the
+# central TBox only; cross-unit references resolve in the root union
+# (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/patterns> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+#===================== Design patterns =================================
+id:pat-react a ho:DesignPattern ; skos:prefLabel "ReAct" ;
+    skos:definition "Interleave reasoning and tool actions in a loop." .
+id:pat-planexec a ho:DesignPattern ; skos:prefLabel "Plan-then-execute" ;
+    skos:definition "Draft a full plan, then execute steps." .
+id:pat-reflection a ho:DesignPattern ; skos:prefLabel "Reflection" ;
+    skos:definition "Critique and revise an initial answer before returning it." .
+id:pat-orchestrator-workers a ho:DesignPattern ; skos:prefLabel "Orchestrator-workers" ;
+    skos:definition "A central orchestrator decomposes work into node-scoped tasks, dispatches them to specialised worker agents, and integrates the results; roles carry least-privilege file boundaries." .

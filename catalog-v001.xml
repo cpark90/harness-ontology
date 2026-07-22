@@ -7,14 +7,27 @@
 <catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <uri id="root"       name="https://harness-ontology.dev/ontology"       uri="ontology/harness-ontology.ttl"/>
     <uri id="schema"     name="https://harness-ontology.dev/schema"         uri="ontology/tbox/harness.ttl"/>
-    <uri id="data-core"  name="https://harness-ontology.dev/data/core"      uri="ontology/abox/seed.ttl"/>
+    <!-- The central `core` data unit is split into MULTIPLE per-component-type
+         documents (ontology/abox/core/*.ttl); each maps its own ontology IRI
+         .../data/core/<type> to a local file. See ONTOLOGYSTYLE §4. -->
+    <uri id="core-concepts"      name="https://harness-ontology.dev/data/core/concepts"       uri="ontology/abox/core/concepts.ttl"/>
+    <uri id="core-capabilities"  name="https://harness-ontology.dev/data/core/capabilities"   uri="ontology/abox/core/capabilities.ttl"/>
+    <uri id="core-constraints"   name="https://harness-ontology.dev/data/core/constraints"    uri="ontology/abox/core/constraints.ttl"/>
+    <uri id="core-model-configs" name="https://harness-ontology.dev/data/core/model-configs"  uri="ontology/abox/core/model-configs.ttl"/>
+    <uri id="core-tools"         name="https://harness-ontology.dev/data/core/tools"          uri="ontology/abox/core/tools.ttl"/>
+    <uri id="core-guardrails"    name="https://harness-ontology.dev/data/core/guardrails"     uri="ontology/abox/core/guardrails.ttl"/>
+    <uri id="core-patterns"      name="https://harness-ontology.dev/data/core/patterns"       uri="ontology/abox/core/patterns.ttl"/>
+    <uri id="core-workflows"     name="https://harness-ontology.dev/data/core/workflows"      uri="ontology/abox/core/workflows.ttl"/>
+    <uri id="core-system-prompts" name="https://harness-ontology.dev/data/core/system-prompts" uri="ontology/abox/core/system-prompts.ttl"/>
+    <uri id="core-domains-tasks" name="https://harness-ontology.dev/data/core/domains-tasks"  uri="ontology/abox/core/domains-tasks.ttl"/>
+    <uri id="core-harnesses"     name="https://harness-ontology.dev/data/core/harnesses"      uri="ontology/abox/core/harnesses.ttl"/>
     <uri id="data-auth"  name="https://harness-ontology.dev/data/authored"  uri="ontology/abox/authored.ttl"/>
     <!-- NOTE: no external domain data unit is currently part of the federation.
          The `lpranging` domain-specific modeling was RETIRED per the neutral-
          parts principle (the ontology stores generalised, domain-independent
          reusable parts, not a specific harness's description); its reusable
-         governance parts now live neutralised in the `core` data unit
-         (ontology/abox/seed.ttl). The D1 owl:imports + catalog federation infra
+         governance parts now live neutralised in the `core` data units. The D1
+         owl:imports + catalog federation infra
          and the D3 IRI scheme remain available: a future external domain part-
          collection joins the union by adding its ontology IRI + local path here
          and to the root owl:imports. See docs/federation-design.md. -->

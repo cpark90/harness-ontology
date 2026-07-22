@@ -1,0 +1,58 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Guardrail partition of the `core` domain. Imports the
+# central TBox only; cross-unit references resolve in the root union
+# (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/guardrails> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+#===================== Guardrails ======================================
+id:gr-nodestruct a ho:Guardrail ; skos:prefLabel "No destructive actions" ;
+    ho:promptText "Never run irreversible or destructive commands without explicit confirmation." ;
+    ho:tokenEstimate 30 ; ho:maturity "stable" ; ho:tagged id:c-safety .
+id:gr-cite a ho:Guardrail ; skos:prefLabel "Cite sources" ;
+    ho:promptText "Every factual claim must carry a citation to a retrieved source." ;
+    ho:providesCapability id:cap-citation ; ho:tokenEstimate 25 ; ho:maturity "stable" ; ho:tagged id:c-safety .
+id:gr-lang a ho:Guardrail ; skos:prefLabel "Korean/English only" ; skos:altLabel "language policy" ;
+    ho:promptText "Use only Korean and English for documentation, development, and user-facing I/O, unless another language is essential to the task." ;
+    ho:tokenEstimate 32 ; ho:maturity "draft" ; ho:tagged id:c-communication .
+id:gr-verify-proceed a ho:Guardrail ; skos:prefLabel "Verify then proceed" ; skos:altLabel "no time assumptions" ;
+    ho:promptText "Never assume readiness from elapsed time; advance only on confirmed state (received response, ACK, verified flag). Timeouts are give-up bounds, not correctness premises." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 38 ; ho:maturity "reviewed" .
+id:gr-design-for-loss a ho:Guardrail ; skos:prefLabel "Design for loss" ;
+    ho:promptText "Treat message and data loss as a normal event, not an exception: judge completion by the final receiver's confirmation, hold custody until the next stage confirms receipt, report cumulative absolute state rather than deltas, and make every loss observable via counters." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 55 ; ho:maturity "reviewed" .
+id:gr-traceability a ho:Guardrail ; skos:prefLabel "Traceable single source of truth" ;
+    ho:promptText "Single source of truth with full traceability: never delete a decision or record -- mark it deprecated with a reason and a replacement link, and only ever increment identifiers, never reuse them." ;
+    ho:providesCapability id:cap-traceability ;
+    ho:tagged id:c-traceability ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .
+id:gr-grounding a ho:Guardrail ; skos:prefLabel "Ground every artifact" ;
+    ho:promptText "Link every derived artifact to its grounding decision or rationale; do not restate another document, reference its single source. Describe an interface identically on both sides and let the requirement win on conflict." ;
+    ho:tagged id:c-traceability ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .
+id:gr-no-arbitrary-decision a ho:Guardrail ; skos:prefLabel "No arbitrary decisions" ;
+    ho:promptText "Do not resolve an undecided question on your own; register each open judgment as an issue and escalate it to the decision authority." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 32 ; ho:maturity "reviewed" .
+id:gr-least-privilege a ho:Guardrail ; skos:prefLabel "Least-privilege role boundaries" ;
+    ho:promptText "Each role edits only the files inside its own responsibility boundary and holds the minimum permissions for its task; authoring, judgment, application and version control stay in separate hands." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+id:gr-report-over-prompt a ho:Guardrail ; skos:prefLabel "Report over prompt" ;
+    ho:promptText "Write status, decisions, questions and reports to durable channels rather than volatile chat, and leave only a one-line pointer to where each was written." ;
+    ho:tagged id:c-communication ; ho:tokenEstimate 36 ; ho:maturity "reviewed" .
+id:gr-controlled-vocabulary a ho:Guardrail ; skos:prefLabel "Controlled vocabulary" ; skos:altLabel "anti-drift" ;
+    ho:promptText "Reuse the registered vocabulary and established domain terms; do not coin near-synonyms or private abbreviations. New terms are added to the single terminology source, not improvised." ;
+    ho:tagged id:c-communication ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+id:gr-root-cause a ho:Guardrail ; skos:prefLabel "Fix root cause" ;
+    ho:promptText "Resolve problems at their root cause; do not mask a symptom with a guard that leaves the underlying fault in place." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 28 ; ho:maturity "reviewed" .
+id:gr-simplicity a ho:Guardrail ; skos:prefLabel "Prefer the simplest working form" ; skos:altLabel "YAGNI" ;
+    ho:promptText "Prefer the simplest form that works; remove branches rather than add them, and do not build speculative configuration, callbacks or generalization that nothing uses yet." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 38 ; ho:maturity "reviewed" .
+id:gr-bounded-context a ho:Guardrail ; skos:prefLabel "Bounded context projection" ; skos:altLabel "anti-context-rot" ;
+    ho:promptText "Never ingest the whole knowledge store into context; retrieve only a request-scoped, budget-capped projection and keep the working context bounded to defend against context rot." ;
+    ho:tagged id:c-safety ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .

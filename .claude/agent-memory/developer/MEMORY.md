@@ -21,6 +21,17 @@
 - [webui-svelte-frontend](webui-svelte-frontend.md) — tools/webui 프론트 Svelte+Vite 재작성:
   vite outDir=../static·emptyOutDir, compose ./tools 마운트 제거(shadowing), Dockerfile 멀티스테이지,
   Svelte5 mount/a11y, /api/* 응답 형태·retrieve id는 full URI.
+- [split-core-per-type-units](split-core-per-type-units.md) — 중앙 core seed.ttl→컴포넌트
+  타입별 다중 문서(`ontology/abox/core/<type>.ttl`, 11 units/64 개체) 재파일: 라인 슬라이스
+  스크립트로 byte-identical 이동(triple diff 0 검증), wiring=root union(각 유닛 schema만 import·
+  root가 11개 나열), Constraint 별도 파일 함정, 두 로더 경로 동치 증명, retrieve 동점 tie-order만
+  재배열(candidates/gaps 불변), ONTOLOGYSTYLE §4 다중 core 규칙 추가. seed.ttl live ref만 갱신.
+- [recipe-repo-composition](recipe-repo-composition.md) — 중립 core에서 Harness 조립하는
+  recipe repo(harness-recipes): recipe=assembly spec(core owl:imports+IRI 참조로 Harness 조립,
+  도메인 노드만 LOCAL). 함정=transitive import(core/harnesses가 다른 유닛 전부 참조→core 11유닛
+  전부 import해야 union 완결, gate=중앙64+recipe locals). cap짝은 gr/wf 컴포넌트도 provider.
+  검증=clone central→env override(HARNESS_CATALOG/ROOT_ONTOLOGY)로 중앙 validate.py, 로컬 proof
+  심링크는 실행후 삭제(payload symlink-free). CI=recipe root IRI matrix. docs/recipes-design.md.
 - [federation-owl-imports-catalog](federation-owl-imports-catalog.md) — GitHub 연합(D1–D4):
   glob→owl:imports+catalog 로더(glob fallback 유지·shapes skip·env override로 data repo CI),
   IRI `.../id/<domain>/<slug>` 마이그(prefix 바인딩만·cross-domain은 core: prefix·union에서 병합),

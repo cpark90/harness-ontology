@@ -91,7 +91,7 @@ SHACL 연결성 shape + 전역 reachability BFS가 이를 강제한다. (설계 
 - **[지킴]** 다음은 쓰지 않는다: label 재진술("Coding harness는 coding harness다"), 수정
   이력·리뷰 대화성 코멘트, 주석 처리된 죽은 트리플. (발견 시 삭제 대상.)
 - **[지킴]** TTL 파일 상단 배너는 그 abox의 역할 요약 1–3줄 + 공개 계약(어떤 harness군을
-  담는지)만. seed.ttl의 배너 스타일(`####`, `#====`)을 따른다.
+  담는지)만. 중앙 core 부품 파일(`ontology/abox/core/*.ttl`)의 배너 스타일(`####`, `#====`)을 따른다.
 - **[지킴]** 언어는 **한글 설명 + 용어는 영어**(CLAUDE 계열 언어 규칙). 단 `skos:prefLabel`·
   `definition` 같은 그래프 데이터 값은 **영어**로 쓴다(seed abox와 일관 — 검색 대상 텍스트).
 
@@ -172,6 +172,13 @@ kebab 세그먼트로, 독립 repo 간 slug 충돌·orphan을 막는다.
   (문서 IRI `.../data/<domain>`, `owl:imports`로 중앙 TBox `.../schema` — 다른 도메인 노드를
   참조하면 그 data 문서 IRI도 import). federation loader가 이 imports를 catalog로 해석해
   union을 조립한다(`docs/federation-design.md` D1). shapes는 import하지 않는다(검증 전용).
+- **[지킴]** 한 도메인의 data를 **여러 문서로 쪼개도 된다** — 중앙 `core`는 컴포넌트 타입별로
+  분할해 `ontology/abox/core/<type>.ttl`에 담는다(중립 부품 라이브러리). 각 per-type 문서는
+  자기 `owl:Ontology` 헤더(문서 IRI `.../data/<domain>/<type>`, 예: `.../data/core/guardrails`)를
+  갖고 **중앙 TBox만** import한다. cross-unit 참조(harness가 자기 Tool/Guardrail을 지목하는 등)는
+  각 unit을 서로 import하지 않고 **root union에서 해석**한다(root `owl:imports`가 모든 per-type
+  unit을 나열하고 catalog가 IRI→파일을 매핑) — 한 방식으로 일관되게 한다. 개체 IRI는 문서 위치와
+  무관하게 그대로 `.../id/core/<slug>`에 남는다(파일만 옮김).
 - **[지킴]** 스키마(클래스·프로퍼티)는 `tbox/`, 개체는 `abox/`. abox에서 새 클래스·프로퍼티를
   선언하지 않는다.
 - **[권장]** 짧은 노드(레이블만)는 **한 줄**로:

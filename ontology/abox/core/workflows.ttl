@@ -1,0 +1,26 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Workflow partition of the `core` domain. Imports the
+# central TBox only; cross-unit references resolve in the root union
+# (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/workflows> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+#===================== Workflows =======================================
+id:wf-react a ho:Workflow ; skos:prefLabel "ReAct loop" ;
+    ho:dependsOn id:tool-shell ; ho:tokenEstimate 60 ; ho:maturity "stable" ; ho:tagged id:c-autonomy .
+id:wf-planexec a ho:Workflow ; skos:prefLabel "Plan-execute loop" ;
+    ho:dependsOn id:tool-retriever ; ho:tokenEstimate 65 ; ho:maturity "reviewed" .
+id:wf-singleshot a ho:Workflow ; skos:prefLabel "Single-shot" ;
+    ho:tokenEstimate 20 ; ho:maturity "stable" .
+id:wf-multiagent a ho:Workflow ; skos:prefLabel "Multi-agent orchestration loop" ;
+    skos:definition "Orchestrator plans and dispatches node-scoped briefs to worker agents that author, verify and inspect, then integrates and gates the results; separates authoring, judgment and application. Choose for work that must stay traceable across specialised roles." ;
+    ho:providesCapability id:cap-orchestration ;
+    ho:derivedFrom id:wf-planexec ;
+    ho:tagged id:c-multiagent, id:c-design ; ho:tokenEstimate 74 ; ho:maturity "reviewed" .
