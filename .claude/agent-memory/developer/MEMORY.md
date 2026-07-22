@@ -10,6 +10,13 @@
 - 도구는 `rdflib` 등이 있는 인터프리터로(예: `/usr/bin/python3`). 셸 기본 python3엔 없을 수 있음.
 
 <!-- 학습 인덱스 (한 줄씩) -->
+- [materialize-build-projection](materialize-build-projection.md) — `tools/materialize.py`
+  = retrieve의 DUAL(BUILD 투영: validated harness IRI→`CLAUDE.md`+`MANIFEST.json` 파일트리).
+  validate.run_structured() 게이트 후 build("only validated materializes"), 결정성(IRI sort+
+  sort_keys+무타임스탬프→byte-identical), `most_specific_types` OWL RL 반사 subClassOf 함정은
+  소비자에서 HarnessComponent 드롭으로 우회(lib 불변). P2 `ho:artifactTemplate`(datatype prop,
+  domain HarnessComponent, 파일참조·absent⇒graph fallback·{{prefLabel}}/{{promptText}} 치환,
+  path resolution=repo root→catalog dir). 데모 catalog=절대경로 scratch(central clone 불요).
 - [neutral-parts-decomposition](neutral-parts-decomposition.md) — 온톨로지 = domain-INDEPENDENT
   재사용 PART 라이브러리(특정 harness 서술 아님): governance doc→중립 Guardrail/Pattern/Workflow/
   SystemPrompt로 분해, gr-lang 재사용·도메인 명사 제거·domain tool dependsOn strip. anti-orphan
@@ -32,6 +39,11 @@
   전부 import해야 union 완결, gate=중앙64+recipe locals). cap짝은 gr/wf 컴포넌트도 provider.
   검증=clone central→env override(HARNESS_CATALOG/ROOT_ONTOLOGY)로 중앙 validate.py, 로컬 proof
   심링크는 실행후 삭제(payload symlink-free). CI=recipe root IRI matrix. docs/recipes-design.md.
+- [guardrail-item-datatype-property](guardrail-item-datatype-property.md) — 규칙 세부를 별도
+  노드 아닌 **컴포넌트 item/field**로: 사용자 인가 vocab ext로 TBox datatype property 1개 추가
+  (`ho:languageCondition` domain Guardrail range string, promptText 스타일 모방)+ABox 값 콤마
+  다중 리터럴(artifact당 1, 영어). shapes는 `sh:closed` 없으면 무수정. 중앙 노드 enrich=IRI
+  재사용 recipe에 자동 반영(심링크 검증후 삭제·개체수 불변).
 - [federation-owl-imports-catalog](federation-owl-imports-catalog.md) — GitHub 연합(D1–D4):
   glob→owl:imports+catalog 로더(glob fallback 유지·shapes skip·env override로 data repo CI),
   IRI `.../id/<domain>/<slug>` 마이그(prefix 바인딩만·cross-domain은 core: prefix·union에서 병합),

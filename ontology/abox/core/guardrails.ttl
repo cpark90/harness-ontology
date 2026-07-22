@@ -20,8 +20,11 @@ id:gr-cite a ho:Guardrail ; skos:prefLabel "Cite sources" ;
     ho:promptText "Every factual claim must carry a citation to a retrieved source." ;
     ho:providesCapability id:cap-citation ; ho:tokenEstimate 25 ; ho:maturity "stable" ; ho:tagged id:c-safety .
 id:gr-lang a ho:Guardrail ; skos:prefLabel "Korean/English only" ; skos:altLabel "language policy" ;
-    ho:promptText "Use only Korean and English for documentation, development, and user-facing I/O, unless another language is essential to the task." ;
-    ho:tokenEstimate 32 ; ho:maturity "draft" ; ho:tagged id:c-communication .
+    ho:languageCondition "Prose (documentation, comments, harness .md): Korean" ,
+        "Technical terms, including in answers: English" ,
+        "Code, identifiers, commit messages: English" ;
+    ho:promptText "Use only Korean and English, unless another language is essential to the task: write prose (documentation, comments, harness .md) in Korean but keep technical terms in English; write code, identifiers and commit messages in English." ;
+    ho:tokenEstimate 44 ; ho:maturity "draft" ; ho:tagged id:c-communication .
 id:gr-verify-proceed a ho:Guardrail ; skos:prefLabel "Verify then proceed" ; skos:altLabel "no time assumptions" ;
     ho:promptText "Never assume readiness from elapsed time; advance only on confirmed state (received response, ACK, verified flag). Timeouts are give-up bounds, not correctness premises." ;
     ho:tagged id:c-safety ; ho:tokenEstimate 38 ; ho:maturity "reviewed" .

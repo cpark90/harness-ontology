@@ -69,6 +69,11 @@ ho:Example a owl:Class ;
     rdfs:label "Example" ;
     skos:definition "A few-shot exemplar demonstrating desired input/output behaviour." .
 
+ho:Role a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Role" ;
+    skos:definition "A first-class sub-agent role in a multi-agent harness: it bundles a persona (a SystemPrompt), a least-privilege scope of tools and guardrails it may use, and a memory policy. Choose this over a bare SystemPrompt when the harness dispatches distinct agents (orchestrator/worker/reviewer) whose tool/guardrail boundaries must be captured and materialized as separate .claude/agents/<role>.md files." .
+
 # Non-component concepts
 
 ho:Capability a owl:Class ;
@@ -149,6 +154,31 @@ ho:hasInstruction a owl:ObjectProperty ;
     rdfs:range ho:Instruction ;
     rdfs:label "has instruction" .
 
+ho:hasRole a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:Role ;
+    rdfs:label "has role" ;
+    skos:definition "Binds a first-class sub-agent Role to a (multi-agent) harness. A sub-property of hasComponent so a Role individual is harness-reachable and counted like any other component." .
+
+# --- role scope: Role -> its persona / tool / guardrail boundary ------
+ho:rolePersona a owl:ObjectProperty ;
+    rdfs:domain ho:Role ;
+    rdfs:range ho:SystemPrompt ;
+    rdfs:label "role persona" ;
+    skos:definition "The SystemPrompt that frames this role's behaviour. The persona is also bound to the harness via hasSystemPrompt so it stays a connected component; rolePersona records WHICH persona belongs to WHICH role for materialization." .
+
+ho:roleTool a owl:ObjectProperty ;
+    rdfs:domain ho:Role ;
+    rdfs:range ho:Tool ;
+    rdfs:label "role tool" ;
+    skos:definition "A tool this role is permitted to use — its least-privilege tool scope. Points at Tools the harness already binds via usesTool; the subset here is the boundary written into the role's agent file." .
+
+ho:roleGuardrail a owl:ObjectProperty ;
+    rdfs:domain ho:Role ;
+    rdfs:range ho:Guardrail ;
+    rdfs:label "role guardrail" ;
+    skos:definition "A guardrail that applies to this role. Points at Guardrails the harness already binds via hasGuardrail; the subset here is the policy boundary written into the role's agent file." .
+
 # --- targeting / intent ----------------------------------------------
 ho:targetsDomain a owl:ObjectProperty ;
     rdfs:domain ho:Harness ;
@@ -219,6 +249,35 @@ ho:promptText a owl:DatatypeProperty ;
     rdfs:range xsd:string ;
     rdfs:label "prompt text" ;
     skos:definition "The literal text of a system prompt / instruction / example." .
+
+ho:languageCondition a owl:DatatypeProperty ;
+    rdfs:domain ho:Guardrail ;
+    rdfs:range xsd:string ;
+    rdfs:label "language condition" ;
+    skos:definition "A specific language rule the guardrail enforces — which language applies to which artifact class (prose vs terms vs code/identifiers/commits). One item per artifact class; enriches a language guardrail without splitting it into separate nodes." .
+
+ho:artifactTemplate a owl:DatatypeProperty ;
+    rdfs:domain ho:HarnessComponent ;
+    rdfs:range xsd:string ;
+    rdfs:label "artifact template" ;
+    skos:definition "Repo-relative path to a template fragment that materialize.py renders for this component's section; absent => render from graph data. The build projection (tools/materialize.py) reads the file and substitutes the node's graph data ({{prefLabel}}/{{promptText}}); the READ projection (retrieve.py) ignores it." .
+
+ho:implementationRef a owl:DatatypeProperty ;
+    rdfs:domain ho:Tool ;
+    rdfs:range xsd:string ;
+    rdfs:label "implementation ref" ;
+    skos:definition "Path (repo-relative or absolute) or URL to the tool's real implementation. On build, materialize.py fetches/copies the file into tools/<basename> of the output tree; if it cannot be resolved it writes a tools/<basename>.ref stub naming the ref. Build-only, like artifactTemplate; retrieve.py ignores it." .
+
+ho:roleMemoryPolicy a owl:DatatypeProperty ;
+    rdfs:domain ho:Role ;
+    rdfs:range xsd:string ;
+    rdfs:label "role memory policy" ;
+    skos:definition "The role's memory/state discipline as a short directive (e.g. which memory directory it reads/writes, read-only vs read-write scope). Rendered into the role's .claude/agents/<role>.md by materialize.py." .
+
+ho:scaffold a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "scaffold" ;
+    skos:definition "Repo-relative path to a standard-document / docs-tree fragment attached to a Harness (or Domain). materialize.py renders each fragment into the output tree, mirroring its path with a leading 'scaffold/' segment stripped (so scaffold/docs/x.md => docs/x.md, scaffold/STANDARD.md => STANDARD.md). Distinct from artifactTemplate — that renders a COMPONENT's CLAUDE.md section and its domain (ho:HarnessComponent) would, under OWL RL, mistype a Harness/Domain as a component (tripping the orphan shape); scaffold carries no rdfs:domain and emits standalone files, not sections." .
 
 ho:tokenEstimate a owl:DatatypeProperty ;
     rdfs:range xsd:integer ;
