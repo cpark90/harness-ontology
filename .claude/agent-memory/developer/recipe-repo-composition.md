@@ -39,3 +39,15 @@ catalog는 중앙 IRI→`central/…`, recipe IRI→`recipes/<name>/<name>.ttl` 
 디렉토리 기준). 로컬 proof는 `central` 심링크로 이 repo 가리켜 실행 후 **삭제**(payload
 symlink-free 유지). CI는 recipe root IRI matrix로 recipe별 union 검증. 문서:
 `docs/recipes-design.md`(federation-design.md에서 링크).
+
+## reuse-max 레시피 (techdoc 예 — 신규 tool/cap 0개)
+
+- 도메인이 core tool로 다 커버되면 **신규 tool·capability 없이** 조립 가능. techdoc(h-research
+  파생)은 LOCAL 4개만: dom-, c-(broader core:c-communication), task-, sp-persona. requiresCapability
+  4개 전부 core 컴포넌트가 provider: cap-retrieval←tool-retriever, cap-websearch←tool-websearch,
+  **cap-citation←gr-cite(가드레일이 provider)**, cap-fileedit←tool-editor. tool만이 provider가
+  아님을 재확인.
+- union 개체수 = 중앙 64 + recipe local N (techdoc N=5 harness 포함 → 69). lpranging은 병존 유지(75).
+- 로컬 concept은 `skos:broader core:<concept>`로 중앙 SKOS 트리에 바로 매달아도 됨(topConceptOf
+  core:scheme 대신) — reachable. persona/task는 maturity draft, base가 mc-opus면 accuracy-review
+  rigor 근거로 mc-opus 유지가 자연스러움.
