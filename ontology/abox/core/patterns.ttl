@@ -21,3 +21,6 @@ id:pat-reflection a ho:DesignPattern ; skos:prefLabel "Reflection" ;
     skos:definition "Critique and revise an initial answer before returning it." .
 id:pat-orchestrator-workers a ho:DesignPattern ; skos:prefLabel "Orchestrator-workers" ;
     skos:definition "A central orchestrator decomposes work into node-scoped tasks, dispatches them to specialised worker agents, and integrates the results; roles carry least-privilege file boundaries." .
+id:pat-ontology-composition a ho:DesignPattern ; skos:prefLabel "Ontology-driven composition" ;
+    skos:definition "Assemble a harness by composing reusable, typed ontology parts -- a bill of materials -- rather than authoring from scratch: reuse existing parts, bind every required capability to a provider that supplies it, satisfy the harness shape's minimums, and keep every node connected and discoverable so nothing is orphaned. Choose when a validated library of neutral parts exists and a new harness should be built by selection and wiring." ;
+    ho:maturity "reviewed" .

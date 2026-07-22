@@ -11,7 +11,11 @@ implementation refs (P3/P4/P5).
 METHODOLOGY.md names four axes — SPEC (what, tech-neutral), BIND (which
 implementation), EMIT (deterministic render), VERIFY (spec-conformance) — and a
 six-step cycle whose third step, **③ Lock**, snapshots "what was actually
-selected this generation" so a build reproduces. Before this increment the repo
+selected this generation" so a build reproduces. The **SPEC** that these axes
+render is *assembled* by the composition methodology
+(`docs/composition-methodology.md`, workflow `wf-compose-harness`): composition
+authors and validates the neutral spec, ODR BIND/EMIT/Lock render and reproduce
+it. Before this increment the repo
 had a strong SPEC and a deterministic EMIT but **no BIND layer and no lock**
 (inspection's audit, METHODOLOGY.md §"가장 약한 지점" #1). This closes that gap.
 

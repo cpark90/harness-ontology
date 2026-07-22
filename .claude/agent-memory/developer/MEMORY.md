@@ -10,6 +10,17 @@
 - 도구는 `rdflib` 등이 있는 인터프리터로(예: `/usr/bin/python3`). 셸 기본 python3엔 없을 수 있음.
 
 <!-- 학습 인덱스 (한 줄씩) -->
+- [methodology-as-nodes](methodology-as-nodes.md) — 산문 절차(예: CLAUDE 워크플로)를 노드로:
+  한 methodology=Workflow(step들 definition)+DesignPattern(접근)+Guardrail(규율)+Concept term ×N
+  (broader c-agent-methodology), 전부 h-multiagent에 배선. Harness는 hasWorkflow/appliesPattern
+  ≥2 가능(콤마 append). Workflow와 Concept가 prefLabel 겹쳐도 (class,label) dup이라 OK. 91→96(+5).
+  ODR 연계: composition=SPEC 저작, ODR EMIT=render, materialize=step7 뒤 진입점. docs/composition-methodology.md.
+- [glossary-term-layer](glossary-term-layer.md) — 거버넌스 원칙을 독립 term으로: `skos:Concept`=
+  term(prefLabel+definition), `ho:Term` 발명 금지(drift). 검증기 사실: reachability/SHACL 모두
+  **topConceptOf는 연결 안 침**(ConceptScheme는 non-instance)→top concept는 자식 skos:broader
+  (inverse)로 삼. dup검사는 (class,label) 단위 advisory라 Guardrail/Concept 라벨 겹쳐도 OK.
+  패턴=원칙term 1:1 guardrail 재tag(promptText tail 앵커, tokenEstimate 겹침 주의), cross-cutting은
+  새 top c-agent-methodology 밑·도메인특정은 기존 top 밑. 77→91, gate 그린.
 - [recipe-inherits-shared-parts-by-iri](recipe-inherits-shared-parts-by-iri.md) — `ho:derivedFrom`은
   lineage(provenance)일 뿐 컴포넌트 상속이 아님: 템플릿(core:h-multiagent)이 가진 hasChannel/hasRole
   등을 recipe harness가 자동으로 갖지 않음→충실 반영하려면 recipe ttl의 harness에 명시 edge 추가.

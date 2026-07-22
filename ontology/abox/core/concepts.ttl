@@ -6,23 +6,142 @@
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 
-# Core data unit -- Concept + ConceptScheme partition of the `core` domain. Imports the
-# central TBox only; cross-unit references resolve in the root union
-# (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+# Core data unit -- Concept + ConceptScheme partition of the `core` domain. This is the
+# terminology (glossary) layer: every Concept is a defined term (prefLabel + definition),
+# not a bare tag. Imports the central TBox only; cross-unit references resolve in the root
+# union (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
 <https://harness-ontology.dev/data/core/concepts> a owl:Ontology ;
     owl:imports <https://harness-ontology.dev/schema> .
 
-#===================== Concepts (controlled vocabulary) ================
-id:c-softeng a ho:Concept ; skos:prefLabel "Software engineering" ; skos:topConceptOf id:scheme .
-id:c-debugging a ho:Concept ; skos:prefLabel "Debugging" ; skos:broader id:c-softeng .
-id:c-inforetrieval a ho:Concept ; skos:prefLabel "Information retrieval" ; skos:topConceptOf id:scheme .
-id:c-summarization a ho:Concept ; skos:prefLabel "Summarization" ; skos:broader id:c-inforetrieval .
-id:c-safety a ho:Concept ; skos:prefLabel "Safety" ; skos:topConceptOf id:scheme .
-id:c-autonomy a ho:Concept ; skos:prefLabel "Autonomy" ; skos:related id:c-safety .
-id:c-communication a ho:Concept ; skos:prefLabel "Communication" ; skos:topConceptOf id:scheme .
-id:c-design a ho:Concept ; skos:prefLabel "Design methodology" ; skos:topConceptOf id:scheme .
-id:c-multiagent a ho:Concept ; skos:prefLabel "Multi-agent orchestration" ; skos:topConceptOf id:scheme ; skos:related id:c-autonomy .
-id:c-traceability a ho:Concept ; skos:prefLabel "Traceability" ; skos:topConceptOf id:scheme .
+#===================== Subject-matter concepts (what a harness is about) ====
+id:c-softeng a ho:Concept ;
+    skos:prefLabel "Software engineering" ;
+    skos:definition "The practice of building, modifying and maintaining software systems; tag harnesses and components whose subject matter is code authorship and engineering work." ;
+    skos:topConceptOf id:scheme .
+id:c-debugging a ho:Concept ;
+    skos:prefLabel "Debugging" ;
+    skos:definition "The activity of locating and fixing defects in existing software; tag harnesses focused on diagnosis and repair rather than greenfield authorship." ;
+    skos:broader id:c-softeng .
+id:c-inforetrieval a ho:Concept ;
+    skos:prefLabel "Information retrieval" ;
+    skos:definition "Finding and surfacing relevant information from a corpus or knowledge store; tag harnesses and tools whose core job is search and retrieval." ;
+    skos:topConceptOf id:scheme .
+id:c-summarization a ho:Concept ;
+    skos:prefLabel "Summarization" ;
+    skos:definition "Condensing source material into a shorter faithful rendering; tag components that compress or abstract retrieved content." ;
+    skos:broader id:c-inforetrieval .
+id:c-safety a ho:Concept ;
+    skos:prefLabel "Safety" ;
+    skos:definition "Avoidance of harmful, irreversible or unsafe actions; tag guardrails and components whose purpose is to keep agent behaviour within safe bounds." ;
+    skos:topConceptOf id:scheme .
+id:c-autonomy a ho:Concept ;
+    skos:prefLabel "Autonomy" ;
+    skos:definition "The degree to which an agent acts without human intervention; tag harnesses whose design turns on how much independent initiative the agent is granted." ;
+    skos:related id:c-safety .
+id:c-communication a ho:Concept ;
+    skos:prefLabel "Communication" ;
+    skos:definition "How agents and users exchange information and status; tag components governing message form, channels and reporting discipline." ;
+    skos:topConceptOf id:scheme .
+id:c-design a ho:Concept ;
+    skos:prefLabel "Design methodology" ;
+    skos:definition "Principles for structuring a system or solution well; tag components that encode engineering-design discipline such as simplicity and root-cause reasoning." ;
+    skos:topConceptOf id:scheme .
+id:c-multiagent a ho:Concept ;
+    skos:prefLabel "Multi-agent orchestration" ;
+    skos:definition "Coordinating multiple specialised agents toward one goal; tag harnesses and principles about role division, dispatch and delegation." ;
+    skos:topConceptOf id:scheme ; skos:related id:c-autonomy .
+id:c-traceability a ho:Concept ;
+    skos:prefLabel "Traceability" ;
+    skos:definition "Keeping every decision and artifact linked to its source and history; tag components that enforce provenance, non-deletion and grounded records." ;
+    skos:topConceptOf id:scheme .
+
+#===================== Governance methodology (cross-cutting principles) =====
+# Each term below is the *principle* a governance guardrail enforces, kept distinct from
+# the enforceable Guardrail rule itself (concept = the defined idea, guardrail = the policy
+# that applies it). Domain-specific principles hang under an existing top (safety/design/
+# communication/traceability/multi-agent); the remaining operational disciplines hang under
+# the methodology top concept. Every term is connected via skos:broader + guardrail tags.
+id:c-agent-methodology a ho:Concept ;
+    skos:prefLabel "Agent governance methodology" ;
+    skos:altLabel "operational discipline" ;
+    skos:definition "Cross-cutting operational disciplines that govern how an agent or multi-agent harness conducts its work, independent of the task domain; the parent term for principles like least privilege, verify-then-proceed and design-for-loss." ;
+    skos:topConceptOf id:scheme .
+
+id:c-least-privilege a ho:Concept ;
+    skos:prefLabel "Least privilege" ;
+    skos:altLabel "separation of duties" ;
+    skos:definition "The principle that each role edits only its own responsibility boundary and holds the minimum permissions needed, keeping authoring, judgment, application and version control in separate hands." ;
+    skos:broader id:c-agent-methodology .
+id:c-verify-proceed a ho:Concept ;
+    skos:prefLabel "Verify then proceed" ;
+    skos:altLabel "no time assumptions" ;
+    skos:definition "The principle of advancing only on confirmed state rather than assuming readiness from elapsed time, treating timeouts as give-up bounds and not as correctness premises." ;
+    skos:broader id:c-agent-methodology .
+id:c-design-for-loss a ho:Concept ;
+    skos:prefLabel "Design for loss" ;
+    skos:definition "The principle of treating message and data loss as a normal event -- judging completion by the receiver's confirmation, holding custody until the next stage confirms receipt, and making every loss observable." ;
+    skos:broader id:c-agent-methodology .
+id:c-escalation a ho:Concept ;
+    skos:prefLabel "Escalate open decisions" ;
+    skos:altLabel "no arbitrary decisions" ;
+    skos:definition "The principle of never resolving an undecided question alone but registering each open judgment as an issue and escalating it to the decision authority." ;
+    skos:broader id:c-agent-methodology .
+id:c-bounded-context a ho:Concept ;
+    skos:prefLabel "Bounded context projection" ;
+    skos:altLabel "anti-context-rot" ;
+    skos:definition "The principle of never ingesting the whole knowledge store but retrieving only a request-scoped, budget-capped projection, keeping the working context bounded to defend against context rot." ;
+    skos:broader id:c-agent-methodology .
+id:c-composition a ho:Concept ;
+    skos:prefLabel "Harness composition" ;
+    skos:altLabel "assembly from parts" ;
+    skos:definition "The practice of assembling a harness from reusable ontology parts -- selecting a base template or pattern, binding required capabilities to providers and satisfying the harness shape -- rather than authoring one from scratch; tag components that encode the composition process." ;
+    skos:broader id:c-agent-methodology .
+id:c-reuse-first a ho:Concept ;
+    skos:prefLabel "Reuse-first authoring" ;
+    skos:altLabel "anti-orphan authoring discipline" ;
+    skos:definition "The discipline of reusing an existing typed part before authoring a new one, and connecting any new part in the same change (a broader parent, a tag or a provider) so the graph never gains an orphan; tag components that enforce reuse-first, anti-drift, anti-orphan authoring." ;
+    skos:broader id:c-agent-methodology .
+
+id:c-root-cause a ho:Concept ;
+    skos:prefLabel "Root-cause resolution" ;
+    skos:definition "The principle of resolving problems at their underlying cause rather than masking a symptom with a guard that leaves the fault in place." ;
+    skos:broader id:c-design .
+id:c-simplicity a ho:Concept ;
+    skos:prefLabel "Simplicity" ;
+    skos:altLabel "YAGNI" ;
+    skos:definition "The principle of preferring the simplest form that works, removing branches rather than adding them and avoiding speculative generalization that nothing uses yet." ;
+    skos:broader id:c-design .
+
+id:c-report-over-prompt a ho:Concept ;
+    skos:prefLabel "Report over prompt" ;
+    skos:definition "The principle of writing status, decisions, questions and reports to durable channels rather than volatile chat, leaving only a one-line pointer to where each was written." ;
+    skos:broader id:c-communication .
+id:c-controlled-vocabulary a ho:Concept ;
+    skos:prefLabel "Controlled vocabulary" ;
+    skos:altLabel "anti-drift" ;
+    skos:definition "The principle of reusing registered terms and established domain vocabulary rather than coining near-synonyms or private abbreviations, adding new terms to a single terminology source." ;
+    skos:broader id:c-communication .
+
+id:c-grounding a ho:Concept ;
+    skos:prefLabel "Grounding" ;
+    skos:definition "The principle of linking every derived artifact or claim to its originating decision, rationale or source rather than restating another document." ;
+    skos:broader id:c-traceability .
+id:c-structural-coverage a ho:Concept ;
+    skos:prefLabel "Structural coverage" ;
+    skos:altLabel "source-fidelity reflection" ;
+    skos:definition "The principle of exhaustively mapping every structural element of a source into the model, extending the schema for anything unrepresented rather than silently skipping it." ;
+    skos:broader id:c-traceability .
+
+id:c-dispatch a ho:Concept ;
+    skos:prefLabel "Dispatch-based execution" ;
+    skos:altLabel "no standalone workers" ;
+    skos:definition "The principle that worker agents act only when dispatched by the orchestrator and are never run standalone or invoked directly outside a dispatch." ;
+    skos:broader id:c-multiagent .
+id:c-delegation a ho:Concept ;
+    skos:prefLabel "Delegated orchestration" ;
+    skos:altLabel "orchestrator does not work directly" ;
+    skos:definition "The principle that the user-facing orchestrator does no substantive work directly but only plans and dispatches, with all execution flowing through the worker agents." ;
+    skos:broader id:c-multiagent .
 
 #===================== Concept scheme ==================================
 id:scheme a skos:ConceptScheme ; skos:prefLabel "Harness ontology vocabulary" .

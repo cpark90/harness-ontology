@@ -89,16 +89,16 @@ id:h-multiagent a ho:Harness ;
     ho:addressesTask id:task-architecture, id:task-designdecision ;
     ho:hasSystemPrompt id:sp-methodical ;
     ho:usesTool id:tool-shell, id:tool-editor ;
-    ho:hasWorkflow id:wf-multiagent ;
+    ho:hasWorkflow id:wf-multiagent, id:wf-compose-harness ;
     ho:hasGuardrail id:gr-lang, id:gr-verify-proceed, id:gr-design-for-loss, id:gr-traceability,
         id:gr-grounding, id:gr-no-arbitrary-decision, id:gr-least-privilege, id:gr-report-over-prompt,
         id:gr-controlled-vocabulary, id:gr-root-cause, id:gr-simplicity, id:gr-bounded-context,
-        id:gr-dispatch-execution, id:gr-delegated-orchestration, id:gr-structural-coverage ;
+        id:gr-dispatch-execution, id:gr-delegated-orchestration, id:gr-structural-coverage, id:gr-reuse-first ;
     ho:usesModel id:mc-opus ;
     ho:hasRole id:role-orchestrator, id:role-inspection, id:role-developer, id:role-research,
         id:role-inspection-worker, id:role-vnv, id:role-design ;
     ho:hasChannel id:chan-agent-user, id:chan-orchestrator-inspection, id:chan-dispatch ;
-    ho:appliesPattern id:pat-orchestrator-workers ;
+    ho:appliesPattern id:pat-orchestrator-workers, id:pat-ontology-composition ;
     ho:requiresCapability id:cap-orchestration, id:cap-traceability, id:cap-codeexec, id:cap-fileedit ;
     ho:tagged id:c-design, id:c-multiagent, id:c-traceability ;
     ho:maturity "draft" .
