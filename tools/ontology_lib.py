@@ -55,7 +55,7 @@ INSTANCE_LINK_PREDICATES = {
 INSTANCE_CLASSES = {
     HO.Harness, HO.HarnessComponent, HO.SystemPrompt, HO.Instruction,
     HO.Tool, HO.Guardrail, HO.Workflow, HO.ModelConfig, HO.Example,
-    HO.Role, HO.Candidate, HO.Capability, HO.Domain, HO.Task,
+    HO.Role, HO.Channel, HO.Candidate, HO.Capability, HO.Domain, HO.Task,
     HO.DesignPattern, HO.Constraint, HO.Concept,
 }
 
@@ -184,5 +184,6 @@ def most_specific_types(g: Graph, node: URIRef) -> list[URIRef]:
     specific = set(types)
     for t in types:
         for sup in g.objects(t, RDFS.subClassOf):
-            specific.discard(sup)
+            if sup != t:  # skip reflexive edge (OWL RL materialises t subClassOf t)
+                specific.discard(sup)
     return sorted(specific) if specific else sorted(types)

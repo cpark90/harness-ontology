@@ -39,6 +39,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 
 from rdflib import Graph, RDF, URIRef
 from rdflib.namespace import SKOS
@@ -135,23 +136,45 @@ def render_component(g: Graph, node: URIRef, fallback: str) -> tuple[str, str | 
 
 # --- 3. CLAUDE.md assembly --------------------------------------------
 def _component_type(g: Graph, node: URIRef) -> str:
-    """Most specific ontology type of a component. lib.most_specific_types can
-    keep the generic ho:HarnessComponent alongside the real subtype (reflexive
-    rdfs:subClassOf under OWL RL defeats its superclass-drop); prefer any
-    concrete subtype so the manifest records Tool/Workflow/… not the abstract."""
+    """Most specific ontology type of a component (Tool/Role/Channel/ModelConfig/…),
+    so the manifest records the concrete subtype not the abstract HarnessComponent.
+    lib.most_specific_types now yields the concrete subtype directly (its reflexive
+    rdfs:subClassOf self-edge is guarded); the list is IRI-sorted, so on the rare
+    node with several concrete types we deterministically take the first."""
     types = lib.most_specific_types(g, node)
-    specific = [t for t in types if t != HO.HarnessComponent]
-    chosen = specific or types
-    return chosen[0].split("#")[-1] if chosen else "HarnessComponent"
+    return types[0].split("#")[-1] if types else "HarnessComponent"
+
+
+def channel_record(g: Graph, chan: URIRef) -> dict:
+    """One ho:Channel's manifest/render record: iri, label, definition, the
+    participant roles (as {iri,label}, sorted by IRI), whether the user is an
+    endpoint (ho:involvesUser), and the conduit (ho:channelMedium). Deterministic
+    — participant ordering is IRI-sorted."""
+    parts = _sorted(g.objects(chan, HO.channelParticipant))
+    involves = g.value(chan, HO.involvesUser)
+    return {
+        "iri": str(chan),
+        "label": lib.label_of(g, chan),
+        "definition": str(g.value(chan, SKOS.definition) or ""),
+        "participants": [{"iri": str(p), "label": lib.label_of(g, p)} for p in parts],
+        "involvesUser": bool(involves.toPython()) if involves is not None else False,
+        "medium": str(g.value(chan, HO.channelMedium) or ""),
+    }
 
 
 def build_claude_md(g: Graph, h: URIRef, sources: list[str],
-                    roles: list[URIRef]) -> str:
+                    roles: list[URIRef], channels: list[URIRef],
+                    instructions: list[URIRef]) -> str:
     """Assemble CLAUDE.md deterministically from the harness's components.
     `sources` is appended to with every template path actually used. `roles`
     (the harness's ho:hasRole objects, sorted) are summarised in a Roles section
     and their personas are omitted from the top-level Persona section — each
-    role persona is rendered into its own .claude/agents/<role>.md instead."""
+    role persona is rendered into its own .claude/agents/<role>.md instead.
+    `channels` (the harness's ho:hasChannel objects, sorted) are summarised in a
+    Coordination channels section (participants, user involvement, medium).
+    `instructions` (the harness's ho:hasInstruction objects, sorted) are
+    summarised in a Skills section (name, what it does, its skill file); a
+    skill-less harness omits the section entirely."""
     out: list[str] = []
     role_personas = {p for r in roles for p in g.objects(r, HO.rolePersona)}
 
@@ -225,6 +248,41 @@ def build_claude_md(g: Graph, h: URIRef, sources: list[str],
                        f"{role_slug(r)}.md`){tail}")
         out.append("")
 
+    # -- coordination channels (hasChannel) — how roles/user exchange work --
+    if channels:
+        out.append("## Coordination channels")
+        out.append("")
+        out.append("The roles (and the user) coordinate over the following "
+                   "channels; each names its participants, whether the user is "
+                   "an endpoint, and the medium it rides on.")
+        out.append("")
+        for chan in channels:
+            rec = channel_record(g, chan)
+            out.append(f"- **{rec['label']}**"
+                       + (f" — {rec['definition']}" if rec["definition"] else ""))
+            if rec["participants"]:
+                names = ", ".join(p["label"] for p in rec["participants"])
+                out.append(f"    - participants: {names}")
+            out.append(f"    - involves user: {'yes' if rec['involvesUser'] else 'no'}")
+            if rec["medium"]:
+                out.append(f"    - medium: {rec['medium']}")
+        out.append("")
+
+    # -- skills (hasInstruction) — named on-demand procedures the agent runs --
+    if instructions:
+        out.append("## Skills")
+        out.append("")
+        out.append("This harness ships the following skills (named on-demand "
+                   "procedures); each has its own file under `.claude/skills/`.")
+        out.append("")
+        for ins in instructions:
+            name = instruction_name(g, ins)
+            desc = g.value(ins, SKOS.definition)
+            tail = f" — {desc}" if desc else ""
+            out.append(f"- **{lib.label_of(g, ins)}** (`.claude/skills/"
+                       f"{name}/SKILL.md`){tail}")
+        out.append("")
+
     return "\n".join(out)
 
 
@@ -277,6 +335,8 @@ def build_manifest(g: Graph, h: URIRef, sources: list[str]) -> dict:
         "components": [{"iri": iri, "type": typ, "label": label}
                        for iri, typ, label in comps],
         "capabilityBindings": capability_bindings(g, h),
+        "channels": [channel_record(g, c)
+                     for c in _sorted(g.objects(h, HO.hasChannel))],
         "templateSources": sorted(set(sources)),
         "tokenEstimate": total_tokens,
     }
@@ -439,12 +499,18 @@ def _policy_for(g: Graph, h: URIRef, tool: URIRef) -> str:
     return DEFAULT_POLICY
 
 
+ACCEPTED_POLICIES = "latest-stable / conservative / pinned:<tag>"
+
+
 def select_candidate(policy: str, candidates: list[dict], tool_iri: str) -> dict:
     """Pick exactly one candidate under `policy`, totally and deterministically.
       * "pinned:<tag>": only candidates with that tag; else hard error.
       * "latest-stable" (default): prefer tag=="stable"; highest version wins.
       * "conservative": prefer tag=="stable"; LOWEST version wins.
-    Ties break by candidate IRI (ascending). `candidates` is non-empty."""
+    Ties break by candidate IRI (ascending). `candidates` is non-empty. The
+    policy set is CLOSED: an unrecognised policy string is a hard error (a
+    misconfigured policy must never silently pick a default), mirroring the
+    hard error a `pinned:<tag>` matching nothing already raises."""
     if policy.startswith("pinned:"):
         want = policy[len("pinned:"):]
         pool = [c for c in candidates if c["tag"] == want]
@@ -454,13 +520,16 @@ def select_candidate(policy: str, candidates: list[dict], tool_iri: str) -> dict
                 f"candidate (tags present: "
                 f"{sorted({c['tag'] for c in candidates})})")
         return sorted(pool, key=lambda c: (_version_key(c["version"]), c["iri"]))[-1]
+    if policy not in ("latest-stable", "conservative"):
+        raise ValueError(
+            f"unrecognised ho:selectionPolicy '{policy}' for {tool_iri}; "
+            f"accepted policies are: {ACCEPTED_POLICIES}")
     stable = [c for c in candidates if c["tag"] == "stable"]
     pool = stable or candidates
     ordered = sorted(pool, key=lambda c: (_version_key(c["version"]), c["iri"]))
     if policy == "conservative":
         return ordered[0]
-    # latest-stable and any unrecognised policy fall back to newest-first
-    return ordered[-1]
+    return ordered[-1]  # latest-stable: newest-first
 
 
 def _bound_impl_tools(g: Graph, h: URIRef) -> list[URIRef]:
@@ -694,26 +763,153 @@ def emit_scaffold(g: Graph, h: URIRef, out_dir: str,
     return records
 
 
+# --- 7b. instruction / skill emitter ----------------------------------
+def instruction_name(g: Graph, ins: URIRef) -> str:
+    """Invocation name (and directory stem) for an ho:Instruction skill: prefer
+    its skos:notation (the source's trigger name), else the IRI's last segment
+    with a leading 'ins-' stripped (ins-check-docs -> 'check-docs'), mirroring
+    the source .claude/skills/<name>/ layout."""
+    notation = g.value(ins, SKOS.notation)
+    if notation is not None:
+        return str(notation)
+    tail = str(ins).rsplit("/", 1)[-1].rsplit("#", 1)[-1]
+    return tail[len("ins-"):] if tail.startswith("ins-") else tail
+
+
+def _render_instruction_fallback(g: Graph, ins: URIRef, name: str) -> str:
+    """Faithful-otherwise SKILL.md body when a skill is NOT vendored: a minimal
+    frontmatter (name + definition) plus the ho:promptText procedure, so an
+    instruction that carries only graph data still emits a usable skill file."""
+    out = ["---", f"name: {name}"]
+    definition = g.value(ins, SKOS.definition)
+    if definition:
+        out.append(f"description: {definition}")
+    out.append("---")
+    out.append("")
+    out.append(f"# {lib.label_of(g, ins)}")
+    prompt = g.value(ins, HO.promptText)
+    if prompt:
+        out.append("")
+        out.append(str(prompt))
+    return "\n".join(out)
+
+
+def emit_instructions(g: Graph, instructions: list[URIRef], out_dir: str,
+                      sources: list[str]) -> list[dict]:
+    """Write .claude/skills/<name>/SKILL.md for each ho:Instruction bound to the
+    harness, mirroring the source skill layout. When the instruction carries an
+    ho:artifactTemplate the vendored body is copied BYTE-IDENTICALLY (faithful);
+    otherwise the file is rendered from graph data. Return manifest records
+    sorted by IRI. A skill-less harness yields no files and an empty list."""
+    if not instructions:
+        return []
+    skills_root = os.path.join(out_dir, ".claude", "skills")
+    records = []
+    for ins in instructions:
+        name = instruction_name(g, ins)
+        dest_rel = f".claude/skills/{name}/SKILL.md"
+        dest = os.path.join(out_dir, dest_rel)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        tmpl = g.value(ins, HO.artifactTemplate)
+        if tmpl is not None:
+            shutil.copyfile(resolve_template(str(tmpl)), dest)
+            sources.append(str(tmpl))
+            vendored = str(tmpl)
+        else:
+            body = _render_instruction_fallback(g, ins, name)
+            with open(dest, "w", encoding="utf-8") as fh:
+                fh.write(body if body.endswith("\n") else body + "\n")
+            vendored = None
+        records.append({
+            "instruction": str(ins),
+            "label": lib.label_of(g, ins),
+            "name": name,
+            "definition": str(g.value(ins, SKOS.definition) or ""),
+            "skillFile": dest_rel,
+            "vendoredFrom": vendored,
+        })
+    return records
+
+
 # --- 8. emit ----------------------------------------------------------
 def materialize(g: Graph, h: URIRef, out_dir: str,
                 lock: dict | None = None) -> dict:
-    """Render the harness file tree into out_dir. Returns the manifest dict.
-    When `lock` is given, implementations are reproduced strictly from it
-    (byte-identically, or the build fails); otherwise the selection policy is
-    applied and a fresh harness.lock.json snapshot is written."""
+    """Render the harness file tree into out_dir, ATOMICALLY. Returns the
+    manifest dict. When `lock` is given, implementations are reproduced strictly
+    from it (byte-identically, or the build fails); otherwise the selection
+    policy is applied and a fresh harness.lock.json snapshot is written.
+
+    Atomicity contract ("nothing half-written"): the whole tree is emitted into
+    a sibling temp staging dir (same filesystem as `out_dir`, so the final
+    placement is an atomic rename). Every gate — the selection-policy resolution
+    and the `--lock` content-hash check — runs while writing into staging. Only
+    on FULL success is staging placed at `out_dir`; on ANY failure the staging
+    dir is removed and `out_dir` is left untouched (or absent). A previously
+    non-existent `out_dir` therefore never appears at all when a build fails,
+    and an existing one is never partially overwritten."""
+    out_dir = os.path.abspath(out_dir)
+    parent = os.path.dirname(out_dir) or os.getcwd()
+    os.makedirs(parent, exist_ok=True)
+    # Staging lives in out_dir's PARENT so os.replace into place is a same-
+    # filesystem atomic rename (a cross-device temp would fall back to a
+    # non-atomic copy). The name is unique so concurrent builds don't collide.
+    staging = tempfile.mkdtemp(
+        prefix="." + (os.path.basename(out_dir) or "harness") + ".tmp-",
+        dir=parent)
+    try:
+        manifest = _emit_tree(g, h, staging, lock)
+    except BaseException:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    _place_atomically(staging, out_dir)
+    return manifest
+
+
+def _place_atomically(staging: str, out_dir: str) -> None:
+    """Move a fully-built staging tree onto `out_dir` atomically. If `out_dir`
+    does not exist this is a single atomic rename. If it pre-exists, the old
+    tree is renamed aside first and removed only after the new tree is in place
+    (and restored if the swap fails), so `out_dir` always names a complete tree
+    — never a half-merged one. Only ever reached after a fully successful
+    build, so a FAILED build never disturbs `out_dir`."""
+    if not os.path.exists(out_dir):
+        os.replace(staging, out_dir)
+        return
+    backup = out_dir + f".bak-{os.getpid()}"
+    if os.path.exists(backup):
+        shutil.rmtree(backup)
+    os.replace(out_dir, backup)
+    try:
+        os.replace(staging, out_dir)
+    except BaseException:
+        os.replace(backup, out_dir)  # restore the original tree on failure
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    shutil.rmtree(backup, ignore_errors=True)
+
+
+def _emit_tree(g: Graph, h: URIRef, out_dir: str,
+               lock: dict | None) -> dict:
+    """Render the harness file tree into `out_dir` (a fresh staging dir). All
+    resolution/gate steps that can fail run here BEFORE `materialize` places the
+    tree, so a failure aborts inside staging and never touches the real output."""
     os.makedirs(out_dir, exist_ok=True)
     sources: list[str] = []
     roles = _sorted(g.objects(h, HO.hasRole))
+    channels = _sorted(g.objects(h, HO.hasChannel))
+    instructions = _sorted(g.objects(h, HO.hasInstruction))
 
     selections = resolve_selections(g, h, lock)
-    claude_md = build_claude_md(g, h, sources, roles)
+    claude_md = build_claude_md(g, h, sources, roles, channels, instructions)
     role_records = emit_roles(g, roles, out_dir, sources)
     impl_records = emit_implementations(g, h, out_dir, selections, lock)
     scaffold_records = emit_scaffold(g, h, out_dir, sources)
+    skill_records = emit_instructions(g, instructions, out_dir, sources)
     manifest = build_manifest(g, h, sources)
     manifest["roles"] = role_records
     manifest["implementations"] = impl_records
     manifest["scaffold"] = scaffold_records
+    manifest["skills"] = skill_records
 
     # The ODR ③ lock: written on every build. On a fresh build it snapshots the
     # policy-driven selection; when reproducing from a lock it is regenerated
@@ -789,6 +985,8 @@ def main(argv=None) -> int:
               f"{len(manifest['templateSources'])} template source(s))")
         if manifest["roles"]:
             print(f"  .claude/agents/ ({len(manifest['roles'])} role(s))")
+        if manifest["channels"]:
+            print(f"  channels        ({len(manifest['channels'])} coordination channel(s))")
         if manifest["implementations"]:
             n_res = sum(1 for r in manifest["implementations"] if r["status"] == "resolved")
             print(f"  tools/          ({n_res}/{len(manifest['implementations'])} "
@@ -799,6 +997,8 @@ def main(argv=None) -> int:
                       f"[{r['policyApplied']}] -> {r['dest']}")
         if manifest["scaffold"]:
             print(f"  scaffold        ({len(manifest['scaffold'])} fragment(s))")
+        if manifest["skills"]:
+            print(f"  .claude/skills/ ({len(manifest['skills'])} skill(s))")
         mode = "reproduced from lock" if args.lock else "fresh lock written"
         print(f"  {LOCK_FILENAME}  ({mode})")
     return 0

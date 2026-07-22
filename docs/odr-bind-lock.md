@@ -97,6 +97,15 @@ splits on `.`/`-`/`+`/`_`; numeric segments compare numerically and outrank
 non-numeric labels (`1.10.0 > 1.9.0`). A tool-level `ho:selectionPolicy` overrides
 a harness-level default; absent both, `latest-stable`.
 
+**The policy set is CLOSED.** `latest-stable`, `conservative`, and `pinned:<tag>`
+are the *only* accepted values; any other `ho:selectionPolicy` string is a **hard
+error** naming the tool, the bad value, and the accepted set — exactly like a
+`pinned:<tag>` that matches nothing. A misconfigured policy (a typo, an
+unimplemented strategy) must never silently fall back to a default and quietly
+pick something: silent fallback would let a spec think it pinned a strategy it
+did not. The error is raised during selection resolution, before any file is
+written, so a bogus policy refuses the build rather than emitting.
+
 ## The lock — ③ snapshot & reproducibility contract (INV-2)
 
 Every build writes **`harness.lock.json`** into the output tree. It is the
@@ -127,6 +136,25 @@ sorted) so it is itself byte-identical across runs:
   equal the locked hash. **Any mismatch fails loudly** (non-zero exit, nothing
   half-written) — the lock either reproduces exactly or refuses. A lock never
   relaxes validation: the pre-emit `validate` gate still runs regardless.
+
+### Atomic emit — the "nothing half-written" contract holds
+
+"Nothing half-written" is now a **structural guarantee**, not a hope. The lock's
+content-hash check runs mid-emit (after a file is copied), so a naive build that
+wrote straight into `--out` would leave a partial tree (`.claude/agents/`,
+`tools/<impl>`) on a hash mismatch. Instead `materialize()` builds the **whole
+tree into a sibling temp staging dir** (`tempfile.mkdtemp` in `--out`'s parent,
+so it is on the same filesystem) and runs every gate — selection-policy
+resolution *and* the `--lock` content-hash check — while writing into staging.
+Only on **full success** is staging placed at `--out` by an **atomic rename**
+(`os.replace`): when `--out` does not exist this is a single atomic move; when it
+pre-exists the old tree is renamed aside and removed only after the new tree is
+in place (restored if the swap itself fails). On **any** failure the staging dir
+is removed and `--out` is left **untouched** (or absent if it never existed) —
+never a half-merged tree. Determinism and happy-path output are unchanged: the
+staging path never enters any emitted file, so a fresh build is byte-identical to
+before, and a pre-existing `--out` is cleanly replaced rather than partially
+overwritten.
 
 `policyApplied` is carried forward unchanged when reproducing (not relabelled to
 "lock"), so a reproduced tree — lock file included — is **byte-identical** to the

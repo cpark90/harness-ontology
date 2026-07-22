@@ -10,6 +10,30 @@
 - 도구는 `rdflib` 등이 있는 인터프리터로(예: `/usr/bin/python3`). 셸 기본 python3엔 없을 수 있음.
 
 <!-- 학습 인덱스 (한 줄씩) -->
+- [materialize-atomic-emit-closed-policy](materialize-atomic-emit-closed-policy.md) — materialize
+  하드닝(vnv N1/N2, 순수 tooling·validate 96 불변). N1 atomic emit: `--lock` 해시체크가 mid-emit라
+  직접 write는 실패 시 half-written→**sibling temp staging(mkdtemp in out's PARENT, 같은 fs여야
+  os.replace가 atomic rename)**에 통째로 빌드 후 성공 시에만 `_place_atomically`(out 없으면 단일
+  replace, 있으면 bak-<pid>로 aside 후 swap·실패시 복원=clean replace). body는 `_emit_tree`로
+  추출(무수정), staging 경로는 산출파일에 안 들어감=byte-identical 유지. N2 closed set: select_candidate
+  꼬리 `return ordered[-1]`가 모든 policy 삼킴→`if policy not in ("latest-stable","conservative"):
+  raise`(tool+bad value+accepted set, pinned 빈매치 에러와 parity), resolve_selections서 write 전 raise.
+  증명: 변조 lock(마지막 tool contentHash 0, 벤더 lock 아님)로 OLD partial(driver)↔NEW absent/untouched
+  대조; N2는 direct-ref뿐이라 scratch recipe copy+**같은 dir scratch catalog**(상대 ./central 유지)로.
+- [instruction-skill-emitter](instruction-skill-emitter.md) — Claude-Code SKILL(`.claude/skills/`)을
+  `ho:Instruction`(⊑HarnessComponent)+`ho:hasInstruction`(⊑hasComponent)로 반영. 핵심: 둘 다
+  **이미 TBox·INSTANCE_CLASSES에 존재**(0 instance였을 뿐)→스키마 무수정, 중앙 96 불변. 감사부터
+  grep 확인(발명 금지). prefix `ins-`. 도메인특정→recipe LOCAL: prefLabel+`skos:notation`(trigger명)
+  +definition+`ho:artifactTemplate`(vendored 경로)+tokenEstimate. 본문 substantial→byte-identical
+  vendor(`skills/<name>/SKILL.md`, cp -p+cmp). emitter(materialize 7b, roles쌍둥이): copyfile
+  byte-identical(render 아님), `## Skills`섹션 if-가드, MANIFEST `skills`배열, `_iter_components`가
+  이미 hasInstruction 포함=카운트 자동. 게이트=recipe compose 113→116, 2런 IDENTICAL, 회귀=skill-less
+  h-multiagent 여전히 materialize+섹션생략. 소스 레이아웃 dir-per-skill 미러.
+- [materialize-channel-emitter](materialize-channel-emitter.md) — ho:Channel의 EMIT counterpart:
+  roles 쌍둥이 패턴으로 `channel_record()` helper(CLAUDE.md 섹션+MANIFEST `channels` 배열 공유),
+  `## Coordination channels` 섹션(if channels 가드, 없으면 생략), involvesUser는 `.toPython()`후 bool,
+  IRI-sort 결정성. 순수 EMIT(TBox/shapes/ABox 무수정, 중앙96불변). 회귀=채널없는 중앙harness(h-coding),
+  h-techdoc은 recipe라 중앙에 없음. lpranging=staging central 심링크+env override.
 - [methodology-as-nodes](methodology-as-nodes.md) — 산문 절차(예: CLAUDE 워크플로)를 노드로:
   한 methodology=Workflow(step들 definition)+DesignPattern(접근)+Guardrail(규율)+Concept term ×N
   (broader c-agent-methodology), 전부 h-multiagent에 배선. Harness는 hasWorkflow/appliesPattern
@@ -82,8 +106,14 @@
 - [materialize-build-projection](materialize-build-projection.md) — `tools/materialize.py`
   = retrieve의 DUAL(BUILD 투영: validated harness IRI→`CLAUDE.md`+`MANIFEST.json` 파일트리).
   validate.run_structured() 게이트 후 build("only validated materializes"), 결정성(IRI sort+
-  sort_keys+무타임스탬프→byte-identical), `most_specific_types` OWL RL 반사 subClassOf 함정은
-  소비자에서 HarnessComponent 드롭으로 우회(lib 불변). P2 `ho:artifactTemplate`(datatype prop,
+  sort_keys+무타임스탬프→byte-identical), `most_specific_types` OWL RL 반사 subClassOf 버그는
+  **중앙 수정됨**(self-edge 가드 `if sup != t`, 소비자 로컬 strip 제거)→Tool/Role 자동 concrete·
+  byte-identical. **노출→해결된 latent gap**: `HO.Channel`이 `INSTANCE_CLASSES`에 없어 채널이
+  HarnessComponent였음(등록 안 된 subtype 공통)→`HO.Channel` 한 줄 추가(orchestrator 승인)로
+  concrete `['Channel']`. materialize `components[].type` 3줄만 HarnessComponent→Channel
+  =의도된 교정(byte-identical은 "그 3줄 제외" 재해석, 검증=ORIG diff 정확히 3줄·2런 결정성).
+  reachability 96 불변(채널은 HC 멤버십으로 이미 카운트). 감사법=ho: owl:Class 열거해
+  subClassOf-HC∧instances>0∧not-in-set 탐지. P2 `ho:artifactTemplate`(datatype prop,
   domain HarnessComponent, 파일참조·absent⇒graph fallback·{{prefLabel}}/{{promptText}} 치환,
   path resolution=repo root→catalog dir). 데모 catalog=절대경로 scratch(central clone 불요).
 - [neutral-parts-decomposition](neutral-parts-decomposition.md) — 온톨로지 = domain-INDEPENDENT

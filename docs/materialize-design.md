@@ -77,7 +77,7 @@ The full tree a multi-agent recipe now materializes to:
 
 ```
 <out>/
-├── CLAUDE.md                       # the operating doc (overview + roles summary)
+├── CLAUDE.md                       # the operating doc (overview + roles + channels summary)
 ├── MANIFEST.json                   # provenance / build record
 ├── .claude/agents/<role>.md        # one per ho:hasRole (P4)
 ├── tools/<basename>                # real code copied per ho:implementationRef (P3)
@@ -98,6 +98,7 @@ byte-identical output (no timestamps, stable ordering):
 | `## Process` | `ho:hasWorkflow` (+ `ho:appliesPattern`) | bullets: workflow/pattern prefLabel + `skos:definition` |
 | `## Model` | `ho:usesModel` → `ho:promptText` | bullet: prefLabel + config string |
 | `## Roles` | `ho:hasRole` | one bullet per role: prefLabel + `.claude/agents/<slug>.md` path + `skos:definition` (omitted when the harness has no roles) |
+| `## Coordination channels` | `ho:hasChannel` | one bullet per channel: prefLabel + `skos:definition`, with participant role labels, `ho:involvesUser`, and `ho:channelMedium` as sorted sub-bullets (omitted when the harness has no channels) |
 
 ### `MANIFEST.json` — the provenance / build record
 
@@ -113,6 +114,9 @@ A deterministic (`sort_keys`) JSON object with:
   the build budget-accurate, consistent with the anti-rot discipline).
 - `roles` — one record per `ho:hasRole`: `{role, label, agentFile, tools[],
   guardrails[]}` (the emitted agent file + its least-privilege scope).
+- `channels` — one record per `ho:hasChannel`: `{iri, label, definition,
+  participants[], involvesUser, medium}` — coordination channels as first-class
+  manifest entries (not just buried in `components`), mirroring the `roles` style.
 - `implementations` — one record per tool with `ho:implementationRef`:
   `{tool, label, ref, status: resolved|stub, dest}`.
 - `scaffold` — one record per rendered fragment: `{source, dest}`.
@@ -186,6 +190,38 @@ leading `role-` stripped (`id:role-developer` → `developer.md`). The file carr
 YAML frontmatter (`name`, `description`), the persona text, a `## Tools` and
 `## Guardrails` scope list (sorted by IRI), and a `## Memory policy` block. A
 `## Roles` summary is added to `CLAUDE.md`.
+
+## Coordination channels
+
+A multi-agent harness's roles (and the user) coordinate over durable **channels**
+— the conduit + participants + hand-off protocol, modelled as `ho:Channel`
+(`rdfs:subClassOf ho:HarnessComponent`) bound to the harness via `ho:hasChannel`
+(a **sub-property of `ho:hasComponent`**, so a channel is harness-reachable and
+covered by the orphan shape for free, exactly like `ho:hasRole`). Each channel
+carries `skos:definition`, `ho:channelParticipant` (→ the `ho:Role`s on it),
+`ho:involvesUser` (boolean — is the user an endpoint), and `ho:channelMedium`
+(the string conduit description).
+
+Until this increment channels were modelled but had **no dedicated emitter**: they
+rolled up into `MANIFEST.json`'s `components` list (via `hasChannel ⊑ hasComponent`)
+but the emitted tree never surfaced them as readable coordination content. The
+channel emitter closes that projection/EMIT gap, parallel to how roles are emitted:
+
+- **`CLAUDE.md` — `## Coordination channels`** section (mirrors `## Roles`): for
+  each `ho:hasChannel`, a bullet with the channel prefLabel + definition, then
+  sorted sub-bullets for its participant role labels, `involves user: yes|no`, and
+  the medium. Channels are IRI-sorted; participants within a channel are IRI-sorted
+  — byte-deterministic, no timestamps. A channel-less harness omits the section
+  entirely (verified against a central harness with no `hasChannel`).
+- **`MANIFEST.json` — `channels`** array: one `{iri, label, definition,
+  participants[], involvesUser, medium}` record per channel, so channels are
+  first-class in the manifest rather than only implicit in `components`. Mirrors
+  the `roles`/`implementations` manifest style. Absent channels ⇒ `[]`.
+
+`channel_record()` is the single source for both projections (section render and
+manifest record), keeping them consistent. This is a pure read/EMIT addition: the
+TBox, shapes and channel ABox are unchanged — the emitter only projects what the
+graph already models.
 
 ## Tool implementation refs (P3)
 
