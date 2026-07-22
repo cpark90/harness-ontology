@@ -20,7 +20,7 @@ services:
       context: .
       dockerfile: tools/webui/Dockerfile
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8090:8000"
     volumes:
       - ./ontology:/app/ontology
     restart: unless-stopped

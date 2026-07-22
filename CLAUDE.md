@@ -53,6 +53,14 @@ reads its `CODESTYLE.md`.
    - tag it with existing `ho:Concept`s so it is discoverable, not orphaned
 6. Run `validate.py`. Green means the new harness is connected, well-typed, and
    buildable. Promote `maturity` to `reviewed`/`stable` after review.
+7. **Coverage-audit gate (source→representation).** `validate.py`가 초록이어도
+   *반영(reflection)* 은 아직 "완료"가 아니다. **소스의 구조 요소를 하나도 빠짐없이
+   열거해 각각을 표현에 매핑**하는 coverage audit(vnv dispatch)이 통과해야 done이다:
+   모든 소스 구조 요소는 하나의 표현으로 매핑되거나 model 밖으로 두는 **명시적·수용가능한
+   사유**를 가져야 한다. 표현되지 않았는데 harness-구조적인 요소(role, tool, guardrail,
+   **communication channel**, standard 등)는 반드시 메워야 할 **GAP**이며, 담을 **어휘
+   범주 자체가 없다면** 조용히 건너뛰지 말고 **schema(TBox) 확장**을 먼저 트리거한다.
+   (`validate.py`는 그래프 정합성만 보고 source-fidelity는 보지 않는다 — 이 게이트가 그 축이다.)
 
 ## Adding vocabulary
 

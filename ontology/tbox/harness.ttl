@@ -74,6 +74,16 @@ ho:Role a owl:Class ;
     rdfs:label "Role" ;
     skos:definition "A first-class sub-agent role in a multi-agent harness: it bundles a persona (a SystemPrompt), a least-privilege scope of tools and guardrails it may use, and a memory policy. Choose this over a bare SystemPrompt when the harness dispatches distinct agents (orchestrator/worker/reviewer) whose tool/guardrail boundaries must be captured and materialized as separate .claude/agents/<role>.md files." .
 
+ho:Channel a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Channel" ;
+    skos:definition "A coordination/communication channel in a multi-agent harness: the durable conduit over which agent roles (and sometimes the user) exchange status, requests, judgments and results. Choose this to capture HOW roles coordinate — the medium, the participants and the hand-off protocol — as distinct from the roles themselves (ho:Role) or the policies on them (ho:Guardrail). Because sessions can be separate, channels are typically durable files with status markers rather than volatile chat." .
+
+ho:Candidate a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Candidate" ;
+    skos:definition "One implementation option for a Tool (a function/tool bound to a concrete file/URL, version and tag). A Tool may carry several Candidates via ho:implementationCandidate; the build projection (tools/materialize.py) applies ho:selectionPolicy — or a supplied lock — to pick exactly one. This is the ODR BIND axis made first-class: the neutral SPEC names the Tool's capability, while WHICH implementation realises it (and its version) lives here, on the recipe side, so the spec stays technology-neutral (INV-1)." .
+
 # Non-component concepts
 
 ho:Capability a owl:Class ;
@@ -112,7 +122,8 @@ ho:hasComponent a owl:ObjectProperty ;
     rdfs:domain ho:Harness ;
     rdfs:range ho:HarnessComponent ;
     owl:inverseOf ho:componentOf ;
-    skos:definition "General composition edge. Specialised sub-properties below carry the component type." .
+    owl:propertyChainAxiom ( ho:hasComponent ho:implementationCandidate ) ;
+    skos:definition "General composition edge. Specialised sub-properties below carry the component type. The propertyChainAxiom rolls a Tool's implementation Candidates up to the harness that binds the Tool (harness hasComponent tool + tool implementationCandidate cand => harness hasComponent cand), so a Candidate is a reachable, orphan-free HarnessComponent WITHOUT making implementationCandidate a direct sub-property of hasComponent — a direct sub-property would (via rdfs:domain ho:Harness) mistype the Tool subject as a Harness and trip HarnessShape." .
 
 ho:componentOf a owl:ObjectProperty ;
     rdfs:label "component of" ;
@@ -159,6 +170,26 @@ ho:hasRole a owl:ObjectProperty ;
     rdfs:range ho:Role ;
     rdfs:label "has role" ;
     skos:definition "Binds a first-class sub-agent Role to a (multi-agent) harness. A sub-property of hasComponent so a Role individual is harness-reachable and counted like any other component." .
+
+# --- coordination channels: Harness -> Channel -> participant roles ---
+ho:hasChannel a owl:ObjectProperty ;
+    rdfs:subPropertyOf ho:hasComponent ;
+    rdfs:range ho:Channel ;
+    rdfs:label "has channel" ;
+    skos:definition "Binds a coordination/communication Channel to a (multi-agent) harness. A sub-property of hasComponent so a Channel individual is harness-reachable and counted like any other component (no bespoke shape needed, mirroring hasRole)." .
+
+ho:channelParticipant a owl:ObjectProperty ;
+    rdfs:domain ho:Channel ;
+    rdfs:range ho:Role ;
+    rdfs:label "channel participant" ;
+    skos:definition "An agent Role that is an endpoint on this channel. Points at Roles the harness already binds via hasRole; records WHO coordinates over the channel (the user endpoint, if any, is flagged separately by ho:involvesUser)." .
+
+# --- BIND axis: a Tool's implementation candidates -------------------
+ho:implementationCandidate a owl:ObjectProperty ;
+    rdfs:domain ho:Tool ;
+    rdfs:range ho:Candidate ;
+    rdfs:label "implementation candidate" ;
+    skos:definition "Associates a Tool with one implementation option (a ho:Candidate). NOT a sub-property of hasComponent (that would mistype the Tool as a Harness via hasComponent's rdfs:domain); instead the ho:hasComponent propertyChainAxiom (hasComponent o implementationCandidate) rolls each Candidate up to the harness that binds the Tool, so the Candidate is a reachable, SHACL-valid component without a bespoke shape. A Tool with several Candidates lets ho:selectionPolicy / a lock choose one at build time (ODR BIND)." .
 
 # --- role scope: Role -> its persona / tool / guardrail boundary ------
 ho:rolePersona a owl:ObjectProperty ;
@@ -263,16 +294,50 @@ ho:artifactTemplate a owl:DatatypeProperty ;
     skos:definition "Repo-relative path to a template fragment that materialize.py renders for this component's section; absent => render from graph data. The build projection (tools/materialize.py) reads the file and substitutes the node's graph data ({{prefLabel}}/{{promptText}}); the READ projection (retrieve.py) ignores it." .
 
 ho:implementationRef a owl:DatatypeProperty ;
-    rdfs:domain ho:Tool ;
     rdfs:range xsd:string ;
     rdfs:label "implementation ref" ;
-    skos:definition "Path (repo-relative or absolute) or URL to the tool's real implementation. On build, materialize.py fetches/copies the file into tools/<basename> of the output tree; if it cannot be resolved it writes a tools/<basename>.ref stub naming the ref. Build-only, like artifactTemplate; retrieve.py ignores it." .
+    skos:definition "Path (repo-relative or absolute) or URL to a real implementation file. Carried by a ho:Candidate (which file this option resolves to) OR directly by a ho:Tool as a degenerate single-candidate. Precedence at build time: explicit ho:implementationCandidate list > a direct ho:implementationRef on the Tool > stub. On build, materialize.py copies the resolved file into tools/<basename>; if unresolvable it writes a tools/<basename>.ref stub. Build-only, like artifactTemplate; retrieve.py ignores it. (No rdfs:domain: it applies to both Tool and Candidate; a Tool domain would, via prp-dom, mistype a Candidate carrying it as a Tool.)" .
+
+ho:candidateVersion a owl:DatatypeProperty ;
+    rdfs:domain ho:Candidate ;
+    rdfs:range xsd:string ;
+    rdfs:label "candidate version" ;
+    skos:definition "The version string of this implementation candidate (e.g. \"1.4.0\"). Recorded in the lock so a past build is reproducible, and used as a deterministic tie-breaker (higher version wins) when a selection policy ranks candidates of the same tag." .
+
+ho:candidateTag a owl:DatatypeProperty ;
+    rdfs:domain ho:Candidate ;
+    rdfs:range xsd:string ;
+    rdfs:label "candidate tag" ;
+    skos:definition "A stability/family label for this candidate (e.g. \"stable\", \"latest\", or a family name). ho:selectionPolicy interprets these: \"latest-stable\" prefers the \"stable\" tag, \"conservative\" the most cautious, \"pinned:<tag>\" selects exactly this tag." .
+
+ho:selectionPolicy a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "selection policy" ;
+    skos:definition "How the build projection picks among a Tool's implementation Candidates when no lock is supplied. Carried by a Tool (per-tool policy) or a Harness (default for all its tools); a Tool-level policy overrides the Harness default. Recognised values: \"latest-stable\" (prefer tag=stable, then highest candidateVersion), \"conservative\" (prefer tag=stable, then LOWEST candidateVersion), \"pinned:<tag>\" (require exactly that tag). Selection is total and deterministic (ties broken by candidateVersion then candidate IRI) so (spec + policy) reproduces the same choice. No rdfs:domain: it applies to Tool or Harness, and a single conjunctive domain would demand both." .
 
 ho:roleMemoryPolicy a owl:DatatypeProperty ;
     rdfs:domain ho:Role ;
     rdfs:range xsd:string ;
     rdfs:label "role memory policy" ;
     skos:definition "The role's memory/state discipline as a short directive (e.g. which memory directory it reads/writes, read-only vs read-write scope). Rendered into the role's .claude/agents/<role>.md by materialize.py." .
+
+ho:userFacing a owl:DatatypeProperty ;
+    rdfs:domain ho:Role ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "user facing" ;
+    skos:definition "True if the role communicates with the user; false for a work-performing agent invoked only via dispatch." .
+
+ho:involvesUser a owl:DatatypeProperty ;
+    rdfs:domain ho:Channel ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "involves user" ;
+    skos:definition "True if the user is an endpoint on this channel (an agent<->user channel); false for a channel purely between agent roles." .
+
+ho:channelMedium a owl:DatatypeProperty ;
+    rdfs:domain ho:Channel ;
+    rdfs:range xsd:string ;
+    rdfs:label "channel medium" ;
+    skos:definition "The concrete conduit and hand-off mechanism of the channel as a short directive (e.g. \"durable file channel + status markers\", \"dispatch (subagent spawn)\"). Records HOW coordination is carried so it survives separate sessions and is materialized into the harness's coordination docs." .
 
 ho:scaffold a owl:DatatypeProperty ;
     rdfs:range xsd:string ;

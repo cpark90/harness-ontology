@@ -38,6 +38,9 @@ id:gr-traceability a ho:Guardrail ; skos:prefLabel "Traceable single source of t
 id:gr-grounding a ho:Guardrail ; skos:prefLabel "Ground every artifact" ;
     ho:promptText "Link every derived artifact to its grounding decision or rationale; do not restate another document, reference its single source. Describe an interface identically on both sides and let the requirement win on conflict." ;
     ho:tagged id:c-traceability ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .
+id:gr-structural-coverage a ho:Guardrail ; skos:prefLabel "Structural coverage completeness" ; skos:altLabel "source-fidelity reflection" ;
+    ho:promptText "When reflecting a system into the model, exhaustively enumerate the source's structural elements and map each to a representation; an element with no existing vocabulary is a signal to EXTEND the schema, never to silently skip it; verify coverage against the source before declaring the reflection done." ;
+    ho:tagged id:c-traceability ; ho:tokenEstimate 58 ; ho:maturity "reviewed" .
 id:gr-no-arbitrary-decision a ho:Guardrail ; skos:prefLabel "No arbitrary decisions" ;
     ho:promptText "Do not resolve an undecided question on your own; register each open judgment as an issue and escalate it to the decision authority." ;
     ho:tagged id:c-safety ; ho:tokenEstimate 32 ; ho:maturity "reviewed" .
@@ -59,3 +62,9 @@ id:gr-simplicity a ho:Guardrail ; skos:prefLabel "Prefer the simplest working fo
 id:gr-bounded-context a ho:Guardrail ; skos:prefLabel "Bounded context projection" ; skos:altLabel "anti-context-rot" ;
     ho:promptText "Never ingest the whole knowledge store into context; retrieve only a request-scoped, budget-capped projection and keep the working context bounded to defend against context rot." ;
     ho:tagged id:c-safety ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+id:gr-dispatch-execution a ho:Guardrail ; skos:prefLabel "Dispatch-based execution" ; skos:altLabel "no standalone workers" ;
+    ho:promptText "Worker agents perform their assigned work only when dispatched by the orchestrator; they are not run standalone or invoked directly outside a dispatch." ;
+    ho:tagged id:c-multiagent ; ho:tokenEstimate 34 ; ho:maturity "reviewed" .
+id:gr-delegated-orchestration a ho:Guardrail ; skos:prefLabel "Delegated-only orchestration" ; skos:altLabel "orchestrator does not work directly" ;
+    ho:promptText "The user-facing orchestrator performs no substantive work directly -- no authoring, judgment or tool execution; it only plans and dispatches, and all such work is carried out through the worker agents." ;
+    ho:tagged id:c-multiagent ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .

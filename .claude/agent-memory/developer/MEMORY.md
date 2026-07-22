@@ -10,6 +10,57 @@
 - 도구는 `rdflib` 등이 있는 인터프리터로(예: `/usr/bin/python3`). 셸 기본 python3엔 없을 수 있음.
 
 <!-- 학습 인덱스 (한 줄씩) -->
+- [recipe-inherits-shared-parts-by-iri](recipe-inherits-shared-parts-by-iri.md) — `ho:derivedFrom`은
+  lineage(provenance)일 뿐 컴포넌트 상속이 아님: 템플릿(core:h-multiagent)이 가진 hasChannel/hasRole
+  등을 recipe harness가 자동으로 갖지 않음→충실 반영하려면 recipe ttl의 harness에 명시 edge 추가.
+  공유 중립 파트(channels)는 **로컬 개체 저작 금지**, `core:` IRI로 REUSE(root import로 union에
+  이미 존재). 술어순=h-multiagent 관례(hasRole→hasChannel→appliesPattern). materialize엔 channel
+  emitter 없음=MANIFEST 컴포넌트 목록엔 뜨되(hasChannel⊑hasComponent) 전용 파일 미생성=정상.
+  게이트=중앙77불변+심링크 compose PASS 94불변(edge만 추가, 새 개체 0)+2런 diff 결정성.
+- [robust-recipe-import-closure](robust-recipe-import-closure.md) — recipe가 중앙 core를 개별
+  유닛 열거로 import하면 새 core 유닛(roles/channels)이 bare IRI로 union에 들어와 SHACL prefLabel
+  FAIL(P0 회귀). robust fix=recipe ttl이 개별 나열 대신 **중앙 root 온톨로지
+  `<https://harness-ontology.dev/ontology>`** 하나만 owl:imports→전체 스토어 transitive 자동전파,
+  recipe catalog에 root+schema+전 core(roles/channels)+authored 매핑(중앙 root catalog와 동일 목록,
+  없는 파일은 loader가 graceful skip). 게이트는 repo-root cwd(HARNESS_CATALOG 상대경로 함정),
+  central 심링크 fixture 후 rm, staging/는 git-ignored라 central-untouched 자동충족.
+- [coverage-gap-prevention](coverage-gap-prevention.md) — 반영 coverage 갭(channel/skills 누락)
+  recurrence-prevention을 두 축에 동시 반영: 중립 guardrail `gr-structural-coverage`(reviewed·
+  tagged c-traceability·h-multiagent hasGuardrail 배선, gr-traceability/gr-no-arbitrary-decision과
+  "반영 완전성" 축으로 구분) + CLAUDE.md 워크플로 step7 coverage-audit gate(vnv, validate≠done) +
+  docs/lessons/. root cause=assembly-driven라 source-driven 완전열거 부재→어휘 없는 요소 불가시.
+  원칙: 어휘 없는 소스 요소=schema EXTEND 신호, silent skip 아님. TBox 무수정, 76→77.
+- [channel-coordination-core-unit](channel-coordination-core-unit.md) — 멀티에이전트 소통/조정
+  채널을 `ho:Channel`(⊑HarnessComponent) 개체로 반영. roles.ttl과 쌍둥이 패턴: 새 core unit
+  channels.ttl(catalog+root 3점 배선→두 로더 parity) + `ho:hasChannel`⊑hasComponent(domain 생략
+  =Harness 상속, 새 shape 불요)·`ho:channelParticipant`(→Role)·`ho:involvesUser`(bool)·
+  `ho:channelMedium`(string). tokenEstimate는 promptText 없어 Role 선례대로 생략. 3채널=agent-user
+  (involvesUser true·승인게이트)/orchestrator-inspection(status markers·verify+inquiry lane)/dispatch
+  (subagent spawn). h-multiagent에 hasChannel 배선. detail-check: 반영 전무였음(단어만 gr promptText).
+- [role-taxonomy-new-core-unit](role-taxonomy-new-core-unit.md) — 멀티에이전트 역할 분류를
+  `ho:Role` 개체로 반영 + 진짜 신규 core unit 추가: `ho:userFacing`(DatatypeProperty domain Role
+  range boolean, 기존 datatype 스타일 모방·boolean은 따옴표 없는 `true`/`false`), 새
+  `ontology/abox/core/roles.ttl`(자기 owl:Ontology 헤더·schema만 import)을 **catalog(repo root)
+  + root owl:imports 둘 다** 배선해야 imports경로 resolve(glob은 자동)→두 로더 parity 검증
+  (HARNESS_CATALOG=/nonexistent로 glob 강제 vs 기본, individual set·len(g) 동일). Role은 lean
+  분류만(persona/tool-scope optional·YAGNI), hasRole⊑hasComponent로 h-multiagent 배선→non-orphan.
+  user-facing(orchestrator/inspection) vs worker(false); inspection≠inspection-worker 별개 role.
+- [faithful-source-reflection](faithful-source-reflection.md) — 실 소스 하네스를 recipe로
+  FAITHFUL 반영: 합성 데모 제거(provenance `find`/`cmp`), BIND 후보→소스 단일 impl일 때 직접
+  `implementationRef`로 collapse(union 83→81), `{{prefLabel}}` 스캐폴드 stub→실 표준문서 byte-identical
+  vendor(render_from_template은 `{{}}`3토큰+trailing`\n`1개만 건드림→동일), tool이 reference/에
+  있을 수도(cmp는 실경로), role=실 `.claude/agents/*` 1:1, 후보 없으면 vendored lock 제거(ODR§4-③,
+  결정성은 2런 diff), 게이트=중앙64불변+core grep0+심링크 compose후 rm.
+- [odr-bind-lock-candidates](odr-bind-lock-candidates.md) — ODR BIND축+Lock: `ho:Candidate`
+  (⊑HarnessComponent) 구현후보·`ho:selectionPolicy`·`ho:candidateVersion/Tag`. **핵심 함정**:
+  implementationCandidate를 hasComponent 서브프로퍼티로 하면 Tool subject가 prp-dom로 Harness
+  오타입→HarnessShape trip(rolePersona 역방향). 해결=property chain `hasComponent o
+  implementationCandidate ⊑ hasComponent`(후보가 harness로 roll-up, tool 무오염, 새 shape 불요).
+  implementationRef/selectionPolicy는 domain 제거(Tool·Candidate/Harness 양쪽). materialize:
+  결정적 policy(pinned:<tag>/latest-stable/conservative, ver key split·tie IRI), harness.lock.json
+  (spec identity+sha256 content hash, 무타임스탬프), --lock strict 재현(mismatch=hard FAIL),
+  policyApplied는 lock서 원본유지(A==B byte-identical), 후보-backed tool은 안정 파일명(tool stem+ext).
+  _bound_impl_tools는 RDF.type Tool로 제한(후보가 hasComponent-reachable+implementationRef라 오검출).
 - [materialize-roles-impl-scaffold](materialize-roles-impl-scaffold.md) — materialize 증분2:
   P4 `ho:Role`(subClassOf HarnessComponent + `ho:hasRole` subPropertyOf hasComponent→reachable·
   shape 자동, rolePersona/roleTool/roleGuardrail/roleMemoryPolicy; persona는 hasSystemPrompt로도

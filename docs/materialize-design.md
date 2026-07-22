@@ -7,6 +7,12 @@ graph, and until now there was no tool to render a validated recipe union into
 an actual runnable harness file tree. `retrieve.py` reads; `validate.py` checks;
 `materialize.py` **builds**.
 
+> **BIND + Lock increment.** The ODR BIND axis (implementation *candidates*, a
+> deterministic *selection policy*) and the ③ *Lock* snapshot (reproducible
+> builds, `--lock`) are specified in **[`docs/odr-bind-lock.md`](odr-bind-lock.md)**
+> — read it alongside this document for how `materialize.py` chooses among
+> implementations and reproduces a past build byte-identically.
+
 **Increment 1** was the spine (P1) plus template-file references (P2), scoped to
 emitting `CLAUDE.md` + `MANIFEST.json`. **Increment 2** (this document, current)
 adds the remaining feedback recommendations so a validated multi-agent recipe
@@ -200,13 +206,20 @@ URL or resolves to nothing, materialize writes a `tools/<basename>.ref` **stub**
 naming the ref (`status: stub`) — the build never silently drops a tool, and an
 offline environment degrades gracefully rather than failing.
 
-**Portability caveat.** A ref may be **absolute** (the lpranging demo points at
-`~/git/agrtls/device_harvest_lp/lpranging/tools/docgraph.py` and
-`…/reference/sim_grid_reservation.py`, which live outside the recipe repo). An
-absolute ref only resolves on a machine that has that checkout; for a portable
-recipe, ship the code inside the recipe repo and use a **repo-relative** ref
-(resolved against the catalog dir) instead. The `stub` fallback is exactly the
-signal that a ref did not travel.
+**Portability.** The lpranging recipe **vendors its tool sources inside the
+recipe repo** — `recipes/lpranging/impl/docgraph.py` and
+`recipes/lpranging/impl/sim_grid_reservation.py` are byte-copies of the real
+tools, and the two `ho:implementationRef` values are **repo-relative** paths
+(`recipes/lpranging/impl/<file>.py`). These resolve against the catalog dir
+(rule 2 above), so the recipe materializes to `status: resolved` on any machine
+that has the recipe repo — no external checkout required. This is the portable
+pattern: ship the code beside the `.ttl` and reference it relatively.
+
+An **absolute** or **URL** ref remains a documented option (e.g. a tool that
+lives outside the recipe, or is fetched on build). Such a ref only resolves
+where that path/URL is reachable; where it is not, it **fails safe** to a
+`tools/<basename>.ref` **stub** (`status: stub`) — the build never silently
+drops a tool, and the stub is exactly the signal that a ref did not travel.
 
 ## Standard / docs scaffold (P5)
 

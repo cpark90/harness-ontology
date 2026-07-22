@@ -49,12 +49,18 @@ central change.
 A recipe file (`recipes/<name>/<name>.ttl`) is one importable data unit:
 
 1. **An `owl:Ontology` header** with document IRI
-   `https://harness-ontology.dev/recipes/<name>` that `owl:imports` the central
-   `.../schema` **and** the central `.../data/core/<type>` units it references.
-   (Because the central seed harnesses in the `harnesses` unit cross-reference
-   every other core unit, a recipe that `derivedFrom` a core harness imports the
-   whole core — the composed union is then the full central 64 + the recipe's
-   local nodes.)
+   `https://harness-ontology.dev/recipes/<name>` that `owl:imports` the **single
+   central root ontology** `https://harness-ontology.dev/ontology`. The root
+   transitively `owl:imports` the central `.../schema` **and** every neutral
+   `.../data/core/<type>` unit, so importing it alone resolves the ENTIRE central
+   store — the composed union is the full central store + the recipe's local
+   nodes. This is deliberately not an enumeration of individual core units: any
+   new core unit central adds (e.g. new roles or channels) propagates into every
+   recipe's union automatically, so a new central unit can never silently break a
+   recipe's closure. The recipe's `catalog-v001.xml` must therefore map the root
+   IRI **and** the central files it transitively resolves to their `./central/…`
+   clone paths, kept in sync with central's own catalog, so the loader can
+   BFS-follow the root's import closure.
 2. **A composed `ho:Harness`** (`.../id/<name>/h-<name>`) that binds central
    neutral parts **by IRI** through the assembly predicates:
    `hasSystemPrompt` / `hasGuardrail` / `usesTool` / `usesModel` / `hasWorkflow` /

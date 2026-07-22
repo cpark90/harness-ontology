@@ -26,7 +26,13 @@
 - 못 찾으면(URL/부재) `tools/<basename>.ref` **stub** 작성(status stub) — tool 무음 드롭 금지·
   오프라인 graceful. MANIFEST implementations:[{tool,label,ref,status,dest}].
 - **portability caveat**: 절대 ref는 그 checkout 있는 머신만 resolve. 이식성 원하면 recipe repo
-  안에 코드 넣고 repo-relative ref(catalog dir 기준). 데모는 절대경로(~/git/agrtls/...) 사용.
+  안에 코드 넣고 repo-relative ref(catalog dir 기준).
+- **vendored 패턴(적용됨, lpranging)**: 실소스를 `recipes/<name>/impl/<file>.py`로 byte-copy
+  (cmp identical) + ttl `ho:implementationRef` = `recipes/<name>/impl/<file>.py`(repo-relative).
+  materialize를 recipe catalog에 대해 돌리면 catalog_dir=recipe repo root(`_template_bases()[1]`)
+  기준으로 resolve → status:resolved(2/2 copied). `impl/` 파일은 TTL 아니라 개체수 불변(81 union).
+  주의: 소스가 brief 경로와 다를 수 있음(sim은 tools/ 아니라 `reference/sim_grid_reservation.py`) —
+  ttl이 실제 가리키는 파일을 vendor. gate: 절대 ref grep=0·diff -r 두 런 identical·중앙 64 불변.
 
 ## P5 scaffold (standard docs / docs-tree)
 - **artifactTemplate 재사용 불가**: domain이 ho:HarnessComponent라 Harness/Domain에 붙이면

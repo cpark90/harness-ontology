@@ -1,0 +1,54 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Channel partition of the `core` domain. Imports the
+# central TBox only; cross-unit references (the h-multiagent harness binding
+# these channels via hasChannel, the role-* participants, the c-multiagent tag)
+# resolve in the root union (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/channels> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+########################################################################
+# Coordination channels — how the multi-agent roles (and the user) exchange
+# status, requests, judgments and results. Neutral, domain-independent: they
+# capture the conduit + participants + hand-off protocol, distinct from the
+# roles (ho:Role) and the policies on them (ho:Guardrail). Because sessions can
+# be separate, channels are durable files with status markers, not chat. Each
+# is wired into the neutral id:h-multiagent template via ho:hasChannel
+# (subPropertyOf hasComponent) so it is a connected, orphan-free component.
+########################################################################
+
+#===================== CHANNELS ========================================
+
+id:chan-agent-user a ho:Channel ;
+    skos:prefLabel "Agent-user channel" ; skos:altLabel "feedback channel" ;
+    skos:definition "The single agent<->user conduit (a durable feedback inbox with report-back files), used instead of volatile chat: the user files change/decision requests and agents leave reports and decision requests, keeping chat minimal (report-over-prompt). The user is the only endpoint who may flip an item's approval status (open->approved); that tagging is the sole authorization signal, so the channel enforces a human approval gate before any application." ;
+    ho:channelParticipant id:role-orchestrator, id:role-inspection ;
+    ho:tagged id:c-multiagent ;
+    ho:involvesUser true ;
+    ho:channelMedium "durable file channel (inbox/report)" ;
+    ho:maturity "reviewed" .
+
+id:chan-orchestrator-inspection a ho:Channel ;
+    skos:prefLabel "Orchestrator-inspection channel" ; skos:altLabel "coordination channel" ;
+    skos:definition "Coordination between the orchestrator and inspection, which run in SEPARATE sessions and therefore cannot use chat or spawn return values. All hand-off is via durable files plus status markers (write as wip, rename on completion; a frontmatter status field). Two lanes ride it: a verify lane (feedback inbox -> verified reports) and an inquiry lane (open -> answered -> closed). Each side scans the channel on its own cycle and consumes only completed items -- verify-then-proceed, never assuming the other session finished by elapsed time." ;
+    ho:channelParticipant id:role-orchestrator, id:role-inspection ;
+    ho:tagged id:c-multiagent ;
+    ho:involvesUser false ;
+    ho:channelMedium "persistent file channel + status markers (wip->rename, frontmatter status)" ;
+    ho:maturity "reviewed" .
+
+id:chan-dispatch a ho:Channel ;
+    skos:prefLabel "Dispatch channel" ; skos:altLabel "orchestrator-worker dispatch" ;
+    skos:definition "The orchestrator->worker conduit: the orchestrator plans a request into node-scoped briefs and dispatches each to a specialised worker agent (spawned as a subagent under least-privilege), then integrates the returned results. Workers act only when dispatched over this channel, not standalone. Distinct from the durable file channels because coordination here is the spawn/return of the subagent invocation itself." ;
+    ho:channelParticipant id:role-orchestrator, id:role-developer, id:role-research,
+        id:role-inspection-worker, id:role-vnv, id:role-design ;
+    ho:tagged id:c-multiagent ;
+    ho:involvesUser false ;
+    ho:channelMedium "dispatch (subagent spawn)" ;
+    ho:maturity "reviewed" .

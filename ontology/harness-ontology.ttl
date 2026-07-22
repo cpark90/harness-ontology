@@ -28,6 +28,8 @@
                 <https://harness-ontology.dev/data/core/system-prompts> ,
                 <https://harness-ontology.dev/data/core/domains-tasks> ,
                 <https://harness-ontology.dev/data/core/harnesses> ,
+                <https://harness-ontology.dev/data/core/roles> ,
+                <https://harness-ontology.dev/data/core/channels> ,
                 <https://harness-ontology.dev/data/authored> .
 # NOTE: the central `core` data unit is stored as MULTIPLE documents split by
 # component type (ontology/abox/core/*.ttl), not one seed.ttl — a neutral parts

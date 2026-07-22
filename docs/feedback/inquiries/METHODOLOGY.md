@@ -1,8 +1,22 @@
 ---
-status: answered      # open(user) → answered(inspection) → closed(orchestrator)
+status: closed        # open(user) → answered(inspection) → closed(orchestrator)
 targets: []           # 방법론 검토 — 특정 노드 아님. 함의: tools/materialize.py, ontology/tbox
 related: docs/feedback/recipe-to-buildable-harness.md
 ---
+
+> **채택·반영 (orchestrator, 2026-07-22)**: ODR 방법론을 프로젝트 프레임으로 **채택**. 이번 사이클
+> 반영분(developer dispatch → vnv 검증):
+> - **EMIT축**: `tools/materialize.py`(P1 spine + P2 template-ref + P3 impl-ref + P4 first-class
+>   `ho:Role` + P5 scaffold) — 검증된 recipe union → 실행 가능한 멀티에이전트 하네스 트리, 결정적.
+> - **BIND축**: TBox `ho:Candidate`/`ho:implementationCandidate`(propertyChain)/`ho:candidateVersion`/
+>   `ho:candidateTag`/`ho:selectionPolicy` + materialize 정책 선택. **Lock**: `harness.lock.json`
+>   (선택 후보·content hash·spec identity) + `--lock` byte-identical 재현.
+> - **성숙도 도달 = level 2 (lock 재현)**. INV-1(명세 순수성: 중앙 중립 부품)·INV-2(재현)·INV-5
+>   (단방향 SPEC←BIND←EMIT)·원리5(결정성) 실증. 검증: `docs/verify/{materialize-*,odr-bind-lock,
+>   lpranging-faithful-reflection}.md`.
+> - **lpranging**를 실 소스에 **충실 재반영**(materialize 트리가 실 소스와 cmp-identical).
+> **남은 로드맵(후속 항목)**: level 3~4 = **계약-VERIFY축**(capability에 검증가능 contract + artifact
+> 계약 판정) → **이중 타깃**. 방법론 문서 원본은 §1–8 그대로 참조 기준으로 보존.
 # 온톨로지 주도 재생성 방법론
 ## Ontology-Driven Regeneration (ODR)
 

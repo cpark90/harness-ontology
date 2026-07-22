@@ -44,7 +44,8 @@ INSTANCE_LINK_PREDICATES = {
     HO.hasComponent, HO.componentOf, HO.hasSystemPrompt, HO.usesTool,
     HO.hasGuardrail, HO.hasWorkflow, HO.usesModel, HO.hasExample,
     HO.hasInstruction, HO.hasRole, HO.rolePersona, HO.roleTool,
-    HO.roleGuardrail, HO.targetsDomain, HO.addressesTask, HO.addressedBy,
+    HO.roleGuardrail, HO.implementationCandidate,
+    HO.targetsDomain, HO.addressesTask, HO.addressedBy,
     HO.requiresCapability, HO.providesCapability, HO.appliesPattern,
     HO.constrainedBy, HO.dependsOn, HO.specializes, HO.derivedFrom,
     HO.tagged, SKOS.broader, SKOS.narrower, SKOS.related,
@@ -54,8 +55,8 @@ INSTANCE_LINK_PREDICATES = {
 INSTANCE_CLASSES = {
     HO.Harness, HO.HarnessComponent, HO.SystemPrompt, HO.Instruction,
     HO.Tool, HO.Guardrail, HO.Workflow, HO.ModelConfig, HO.Example,
-    HO.Role, HO.Capability, HO.Domain, HO.Task, HO.DesignPattern,
-    HO.Constraint, HO.Concept,
+    HO.Role, HO.Candidate, HO.Capability, HO.Domain, HO.Task,
+    HO.DesignPattern, HO.Constraint, HO.Concept,
 }
 
 

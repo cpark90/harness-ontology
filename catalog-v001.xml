@@ -21,6 +21,8 @@
     <uri id="core-system-prompts" name="https://harness-ontology.dev/data/core/system-prompts" uri="ontology/abox/core/system-prompts.ttl"/>
     <uri id="core-domains-tasks" name="https://harness-ontology.dev/data/core/domains-tasks"  uri="ontology/abox/core/domains-tasks.ttl"/>
     <uri id="core-harnesses"     name="https://harness-ontology.dev/data/core/harnesses"      uri="ontology/abox/core/harnesses.ttl"/>
+    <uri id="core-roles"         name="https://harness-ontology.dev/data/core/roles"          uri="ontology/abox/core/roles.ttl"/>
+    <uri id="core-channels"      name="https://harness-ontology.dev/data/core/channels"       uri="ontology/abox/core/channels.ttl"/>
     <uri id="data-auth"  name="https://harness-ontology.dev/data/authored"  uri="ontology/abox/authored.ttl"/>
     <!-- NOTE: no external domain data unit is currently part of the federation.
          The `lpranging` domain-specific modeling was RETIRED per the neutral-

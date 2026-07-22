@@ -33,8 +33,10 @@ central store does.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -366,11 +368,24 @@ def emit_roles(g: Graph, roles: list[URIRef], out_dir: str,
     return records
 
 
-# --- 6. implementation-ref emitter (P3) -------------------------------
+# --- 6. BIND axis: candidate selection, implementation emit, lock -----
+# The ODR BIND axis. A Tool's implementation is resolved deterministically:
+#   1. a supplied lock that pins the tool  -> use the locked candidate (INV-2),
+#   2. else the tool's ho:implementationCandidate list -> apply the selection
+#      policy (tool-level ho:selectionPolicy overrides harness-level; default
+#      "latest-stable"),
+#   3. else a direct ho:implementationRef on the tool (degenerate 1-candidate),
+#   4. else a stub.
+# Selection is TOTAL and DETERMINISTIC so (spec + policy) reproduces the same
+# choice and (spec + lock) reproduces byte-identical output.
+LOCK_FILENAME = "harness.lock.json"
+DEFAULT_POLICY = "latest-stable"
+
+
 def _resolve_implementation(ref: str) -> str | None:
-    """Resolve an ho:implementationRef to a readable local file path, or None
-    if it names a URL / unresolvable path. Tries, in order: repo root, recipe
-    dir (dirname of the catalog), then the ref as an absolute/relative path."""
+    """Resolve an implementation ref to a readable local file path, or None if
+    it names a URL / unresolvable path. Tries, in order: repo root, recipe dir
+    (dirname of the catalog), then the ref as an absolute path."""
     if ref.startswith(("http://", "https://")):
         return None
     for base in _template_bases():  # repo root, then recipe/catalog dir
@@ -382,37 +397,261 @@ def _resolve_implementation(ref: str) -> str | None:
     return None
 
 
-def emit_implementations(g: Graph, h: URIRef, out_dir: str) -> list[dict]:
-    """For each bound Tool with ho:implementationRef, copy the real file into
-    tools/<basename>; if unresolvable, write tools/<basename>.ref stub naming
-    the ref. Return manifest records (sorted by tool IRI)."""
+def _version_key(version: str) -> list:
+    """A total, deterministic ordering key for a candidateVersion string.
+    Numeric segments compare numerically and sort ABOVE non-numeric ones, so
+    '1.10.0' > '1.9.0' and a numbered version outranks a bare label. Missing
+    version sorts lowest."""
+    if not version:
+        return [(-1, 0, "")]
+    key = []
+    for seg in re.split(r"[.\-+_]", version):
+        if seg.isdigit():
+            key.append((1, int(seg), ""))
+        else:
+            key.append((0, 0, seg))
+    return key
+
+
+def _candidates(g: Graph, tool: URIRef) -> list[dict]:
+    """All ho:implementationCandidate options of a tool as dicts
+    {iri, ref, version, tag}, sorted by IRI for a stable base order."""
+    out = []
+    for c in _sorted(g.objects(tool, HO.implementationCandidate)):
+        out.append({
+            "iri": str(c),
+            "ref": str(g.value(c, HO.implementationRef) or ""),
+            "version": str(g.value(c, HO.candidateVersion) or ""),
+            "tag": str(g.value(c, HO.candidateTag) or ""),
+        })
+    return out
+
+
+def _policy_for(g: Graph, h: URIRef, tool: URIRef) -> str:
+    """Effective selection policy for a tool: a tool-level ho:selectionPolicy
+    overrides a harness-level default; absent both -> DEFAULT_POLICY."""
+    tool_pol = g.value(tool, HO.selectionPolicy)
+    if tool_pol is not None:
+        return str(tool_pol)
+    h_pol = g.value(h, HO.selectionPolicy)
+    if h_pol is not None:
+        return str(h_pol)
+    return DEFAULT_POLICY
+
+
+def select_candidate(policy: str, candidates: list[dict], tool_iri: str) -> dict:
+    """Pick exactly one candidate under `policy`, totally and deterministically.
+      * "pinned:<tag>": only candidates with that tag; else hard error.
+      * "latest-stable" (default): prefer tag=="stable"; highest version wins.
+      * "conservative": prefer tag=="stable"; LOWEST version wins.
+    Ties break by candidate IRI (ascending). `candidates` is non-empty."""
+    if policy.startswith("pinned:"):
+        want = policy[len("pinned:"):]
+        pool = [c for c in candidates if c["tag"] == want]
+        if not pool:
+            raise ValueError(
+                f"selection policy '{policy}' for {tool_iri} matches no "
+                f"candidate (tags present: "
+                f"{sorted({c['tag'] for c in candidates})})")
+        return sorted(pool, key=lambda c: (_version_key(c["version"]), c["iri"]))[-1]
+    stable = [c for c in candidates if c["tag"] == "stable"]
+    pool = stable or candidates
+    ordered = sorted(pool, key=lambda c: (_version_key(c["version"]), c["iri"]))
+    if policy == "conservative":
+        return ordered[0]
+    # latest-stable and any unrecognised policy fall back to newest-first
+    return ordered[-1]
+
+
+def _bound_impl_tools(g: Graph, h: URIRef) -> list[URIRef]:
+    """Bound ho:Tool components that carry an implementation binding (candidates
+    or a direct ref), sorted by IRI. Restricted to Tools: a Candidate is a
+    HarnessComponent that the propertyChainAxiom also makes hasComponent-reachable
+    and it carries an implementationRef, but it is resolved THROUGH its tool, not
+    emitted on its own."""
     tools = {comp for _p, comp in _iter_components(g, h)
-             if g.value(comp, HO.implementationRef) is not None}
-    if not tools:
+             if (comp, RDF.type, HO.Tool) in g
+             and (g.value(comp, HO.implementationRef) is not None
+                  or (comp, HO.implementationCandidate, None) in g)}
+    return _sorted(tools)
+
+
+def resolve_selections(g: Graph, h: URIRef, lock: dict | None) -> dict:
+    """Resolve every implementation-bearing tool to a single selection, honouring
+    a supplied lock (strict reproduction) or the selection policy. Returns an
+    ordered dict {tool_iri: selection}; selection carries selected candidate IRI
+    (or None for a direct ref), ref, version, tag, and the policy string applied
+    ('lock' / 'direct-ref' / the policy / 'stub'). Content hashes are filled in
+    later by the emitter."""
+    if lock is not None:
+        _verify_lock_spec(g, h, lock)
+    selections: dict[str, dict] = {}
+    for tool in _bound_impl_tools(g, h):
+        tool_iri = str(tool)
+        locked = (lock or {}).get("tools", {}).get(tool_iri)
+        cands = _candidates(g, tool)
+        if locked is not None:
+            sel = _selection_from_lock(g, tool, locked, cands)
+        elif cands:
+            policy = _policy_for(g, h, tool)
+            chosen = select_candidate(policy, cands, tool_iri)
+            sel = {"selected": chosen["iri"], "ref": chosen["ref"],
+                   "version": chosen["version"], "tag": chosen["tag"],
+                   "policyApplied": policy}
+        else:
+            ref = str(g.value(tool, HO.implementationRef) or "")
+            sel = {"selected": None, "ref": ref, "version": "", "tag": "",
+                   "policyApplied": "direct-ref"}
+        selections[tool_iri] = sel
+    return selections
+
+
+def _selection_from_lock(g: Graph, tool: URIRef, locked: dict,
+                         cands: list[dict]) -> dict:
+    """Reproduce a tool's selection strictly from a lock entry. The locked
+    candidate (if any) must still exist in the graph with the same ref, so the
+    lock names a real, current option (INV-2). The lock's ORIGINAL policyApplied
+    is carried forward unchanged so a reproduced tree (and its regenerated lock)
+    is byte-identical to the original — the 'reproduced from lock' fact lives in
+    the build report, not in mutated snapshot fields."""
+    policy = locked.get("policyApplied", "lock")
+    sel_iri = locked.get("selected")
+    if sel_iri is not None:
+        match = next((c for c in cands if c["iri"] == sel_iri), None)
+        if match is None:
+            raise ValueError(
+                f"lock pins candidate {sel_iri} for {tool} but the graph no "
+                f"longer offers it (candidates: {[c['iri'] for c in cands]})")
+        if match["ref"] != locked.get("ref"):
+            raise ValueError(
+                f"lock ref mismatch for {sel_iri}: lock={locked.get('ref')!r} "
+                f"graph={match['ref']!r}")
+        return {"selected": match["iri"], "ref": match["ref"],
+                "version": match["version"], "tag": match["tag"],
+                "policyApplied": policy}
+    # direct-ref tool locked
+    ref = str(g.value(tool, HO.implementationRef) or "")
+    if ref != locked.get("ref"):
+        raise ValueError(
+            f"lock ref mismatch for direct-ref tool {tool}: "
+            f"lock={locked.get('ref')!r} graph={ref!r}")
+    return {"selected": None, "ref": ref, "version": "", "tag": "",
+            "policyApplied": policy}
+
+
+def _tool_stem(tool_iri: str) -> str:
+    """Filename stem for a tool's emitted implementation: the IRI's last segment
+    with a leading 'tool-' stripped (tool-docgraph -> 'docgraph')."""
+    tail = tool_iri.rsplit("/", 1)[-1].rsplit("#", 1)[-1]
+    return tail[len("tool-"):] if tail.startswith("tool-") else tail
+
+
+def _dest_basename(tool_iri: str, ref: str, from_candidate: bool) -> str:
+    """The emitted filename for a tool's implementation. A candidate-backed tool
+    gets a STABLE name derived from the tool (stem + the selected file's
+    extension) so swapping the implementation candidate does not rename the file
+    or break callers (behavioural equivalence). A degenerate direct-ref tool
+    keeps its ref's basename (preserving increment-1/2 behaviour)."""
+    ref_base = os.path.basename(ref.rstrip("/")) or "implementation"
+    if from_candidate:
+        return _tool_stem(tool_iri) + os.path.splitext(ref_base)[1]
+    return ref_base
+
+
+def _sha256(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return "sha256:" + h.hexdigest()
+
+
+def emit_implementations(g: Graph, h: URIRef, out_dir: str,
+                         selections: dict, lock: dict | None) -> list[dict]:
+    """Copy each tool's selected implementation into tools/<basename> (or write
+    a tools/<basename>.ref stub if unresolvable), recording a content hash on the
+    selection. If a lock was supplied, the freshly-computed hash must equal the
+    locked hash or the build fails loudly (reproducibility, INV-2). Returns
+    manifest records sorted by tool IRI."""
+    if not selections:
         return []
-    tools_dir = os.path.join(out_dir, "tools")
-    os.makedirs(tools_dir, exist_ok=True)
+    os.makedirs(os.path.join(out_dir, "tools"), exist_ok=True)
     records = []
-    for tool in _sorted(tools):
-        ref = str(g.value(tool, HO.implementationRef))
-        basename = os.path.basename(ref.rstrip("/")) or "implementation"
-        resolved = _resolve_implementation(ref)
+    for tool_iri in sorted(selections):
+        sel = selections[tool_iri]
+        ref = sel["ref"]
+        basename = _dest_basename(tool_iri, ref, sel["selected"] is not None)
+        resolved = _resolve_implementation(ref) if ref else None
         if resolved:
             dest_rel = f"tools/{basename}"
             shutil.copyfile(resolved, os.path.join(out_dir, dest_rel))
+            content_hash = _sha256(resolved)
             status = "resolved"
         else:
             dest_rel = f"tools/{basename}.ref"
             with open(os.path.join(out_dir, dest_rel), "w",
                       encoding="utf-8") as fh:
-                fh.write(f"# implementation stub for {lib.label_of(g, tool)}\n"
-                         f"# ho:implementationRef could not be resolved to a "
+                fh.write(f"# implementation stub for {tool_iri}\n"
+                         f"# implementation ref could not be resolved to a "
                          f"local file (URL or missing path).\n"
                          f"# ref: {ref}\n")
+            content_hash = None
             status = "stub"
-        records.append({"tool": str(tool), "label": lib.label_of(g, tool),
-                        "ref": ref, "status": status, "dest": dest_rel})
+        sel["contentHash"] = content_hash
+        if lock is not None:
+            locked = lock.get("tools", {}).get(tool_iri, {})
+            if locked.get("contentHash") != content_hash:
+                raise ValueError(
+                    f"lock content-hash mismatch for {tool_iri}: "
+                    f"lock={locked.get('contentHash')} built={content_hash}. "
+                    f"The pinned implementation file changed — the lock no "
+                    f"longer reproduces (INV-2).")
+        records.append({"tool": tool_iri, "label": lib.label_of(g, URIRef(tool_iri)),
+                        "selected": sel["selected"], "ref": ref,
+                        "version": sel["version"], "tag": sel["tag"],
+                        "policyApplied": sel["policyApplied"],
+                        "status": status, "dest": dest_rel,
+                        "contentHash": content_hash})
     return records
+
+
+def _verify_lock_spec(g: Graph, h: URIRef, lock: dict) -> None:
+    """The lock's spec identity must match the current graph, else it does not
+    describe this build (INV-2)."""
+    spec = lock.get("spec", {})
+    if spec.get("harness") != str(h):
+        raise ValueError(
+            f"lock is for harness {spec.get('harness')} but building {h}")
+    count = len(lib.instance_nodes(g))
+    if spec.get("individualCount") != count:
+        raise ValueError(
+            f"lock spec individualCount={spec.get('individualCount')} but the "
+            f"current union has {count} individuals — the spec changed, the "
+            f"lock no longer reproduces it (INV-2).")
+
+
+def build_lock(g: Graph, h: URIRef, selections: dict) -> dict:
+    """The ODR ③ snapshot: what was actually selected this generation. Fully
+    deterministic (no timestamps) so (spec + lock) => byte-identical output."""
+    return {
+        "lockVersion": 1,
+        "spec": {
+            "harness": str(h),
+            "prefLabel": lib.label_of(g, h),
+            "individualCount": len(lib.instance_nodes(g)),
+        },
+        "tools": {
+            tool_iri: {
+                "selected": sel["selected"],
+                "ref": sel["ref"],
+                "version": sel["version"],
+                "tag": sel["tag"],
+                "policyApplied": sel["policyApplied"],
+                "contentHash": sel.get("contentHash"),
+            }
+            for tool_iri, sel in selections.items()
+        },
+    }
 
 
 # --- 7. scaffold emitter (P5) -----------------------------------------
@@ -456,25 +695,39 @@ def emit_scaffold(g: Graph, h: URIRef, out_dir: str,
 
 
 # --- 8. emit ----------------------------------------------------------
-def materialize(g: Graph, h: URIRef, out_dir: str) -> dict:
-    """Render the harness file tree into out_dir. Returns the manifest dict."""
+def materialize(g: Graph, h: URIRef, out_dir: str,
+                lock: dict | None = None) -> dict:
+    """Render the harness file tree into out_dir. Returns the manifest dict.
+    When `lock` is given, implementations are reproduced strictly from it
+    (byte-identically, or the build fails); otherwise the selection policy is
+    applied and a fresh harness.lock.json snapshot is written."""
     os.makedirs(out_dir, exist_ok=True)
     sources: list[str] = []
     roles = _sorted(g.objects(h, HO.hasRole))
 
+    selections = resolve_selections(g, h, lock)
     claude_md = build_claude_md(g, h, sources, roles)
     role_records = emit_roles(g, roles, out_dir, sources)
-    impl_records = emit_implementations(g, h, out_dir)
+    impl_records = emit_implementations(g, h, out_dir, selections, lock)
     scaffold_records = emit_scaffold(g, h, out_dir, sources)
     manifest = build_manifest(g, h, sources)
     manifest["roles"] = role_records
     manifest["implementations"] = impl_records
     manifest["scaffold"] = scaffold_records
 
+    # The ODR ③ lock: written on every build. On a fresh build it snapshots the
+    # policy-driven selection; when reproducing from a lock it is regenerated
+    # identically (all fields deterministic) so `diff -r` of the two trees is
+    # empty — the lock file itself included.
+    lock_obj = build_lock(g, h, selections)
+
     with open(os.path.join(out_dir, "CLAUDE.md"), "w", encoding="utf-8") as fh:
         fh.write(claude_md if claude_md.endswith("\n") else claude_md + "\n")
     with open(os.path.join(out_dir, "MANIFEST.json"), "w", encoding="utf-8") as fh:
         json.dump(manifest, fh, ensure_ascii=False, indent=2, sort_keys=True)
+        fh.write("\n")
+    with open(os.path.join(out_dir, LOCK_FILENAME), "w", encoding="utf-8") as fh:
+        json.dump(lock_obj, fh, ensure_ascii=False, indent=2, sort_keys=True)
         fh.write("\n")
     return manifest
 
@@ -485,6 +738,9 @@ def main(argv=None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("harness", help="harness IRI or short id (e.g. h-techdoc)")
     ap.add_argument("--out", required=True, help="output directory for the harness file tree")
+    ap.add_argument("--lock", default=None,
+                    help="reproduce a build from a harness.lock.json snapshot "
+                         "(strict: spec identity + content hashes must match)")
     ap.add_argument("--format", choices=["text", "json"], default="text",
                     help="stdout build report (files are always emitted)")
     args = ap.parse_args(argv)
@@ -508,7 +764,20 @@ def main(argv=None) -> int:
         print(f"✗ {exc}", file=sys.stderr)
         return 2
 
-    manifest = materialize(g, h, args.out)
+    lock = None
+    if args.lock:
+        try:
+            with open(args.lock, encoding="utf-8") as fh:
+                lock = json.load(fh)
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"✗ could not read lock {args.lock}: {exc}", file=sys.stderr)
+            return 2
+
+    try:
+        manifest = materialize(g, h, args.out, lock)
+    except ValueError as exc:
+        print(f"✗ REFUSING to materialize: {exc}", file=sys.stderr)
+        return 1
 
     if args.format == "json":
         print(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True))
@@ -524,8 +793,14 @@ def main(argv=None) -> int:
             n_res = sum(1 for r in manifest["implementations"] if r["status"] == "resolved")
             print(f"  tools/          ({n_res}/{len(manifest['implementations'])} "
                   f"implementation(s) copied)")
+            for r in manifest["implementations"]:
+                sel = r["selected"].rsplit("/", 1)[-1] if r["selected"] else "(direct ref)"
+                print(f"      {r['label']}: {sel} "
+                      f"[{r['policyApplied']}] -> {r['dest']}")
         if manifest["scaffold"]:
             print(f"  scaffold        ({len(manifest['scaffold'])} fragment(s))")
+        mode = "reproduced from lock" if args.lock else "fresh lock written"
+        print(f"  {LOCK_FILENAME}  ({mode})")
     return 0
 
 

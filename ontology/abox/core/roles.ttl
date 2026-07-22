@@ -1,0 +1,69 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Role partition of the `core` domain. Imports the
+# central TBox only; cross-unit references (the h-multiagent harness binding
+# these roles via hasRole, the c-multiagent/c-design tags) resolve in the
+# root union (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/roles> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+########################################################################
+# Sub-agent roles — the neutral multi-agent role taxonomy.
+#
+# Two classes distinguished by ho:userFacing:
+#   * user-facing (true)  — roles that communicate with the user.
+#   * work-performing (false) — roles that do work, invoked only via dispatch.
+# Classification-only nodes (no persona/tool-scope); they are wired into the
+# neutral id:h-multiagent template via ho:hasRole (⊑ hasComponent) so each is
+# a connected, orphan-free HarnessComponent.
+########################################################################
+
+#===================== ROLES ===========================================
+
+id:role-orchestrator a ho:Role ;
+    skos:prefLabel "Orchestrator agent" ;
+    skos:definition "The user-facing planner that decomposes a request into node-scoped briefs and dispatches them to workers, integrating results." ;
+    ho:tagged id:c-multiagent ;
+    ho:userFacing true ; ho:maturity "reviewed" .
+
+id:role-inspection a ho:Role ;
+    skos:prefLabel "Inspection agent" ;
+    skos:definition "The user-facing role that handles user feedback and its ripple effects and owns the git lifecycle in its own session." ;
+    ho:tagged id:c-multiagent ;
+    ho:userFacing true ; ho:maturity "reviewed" .
+
+id:role-developer a ho:Role ;
+    skos:prefLabel "Developer agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that authors the ontology nodes (abox individuals) assigned in a brief." ;
+    ho:tagged id:c-multiagent ;
+    ho:userFacing false ; ho:maturity "reviewed" .
+
+id:role-research a ho:Role ;
+    skos:prefLabel "Research agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that gathers and synthesises information needed by a brief." ;
+    ho:tagged id:c-multiagent ;
+    ho:userFacing false ; ho:maturity "reviewed" .
+
+id:role-inspection-worker a ho:Role ;
+    skos:prefLabel "Inspection worker agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that carries out inspection/investigation tasks; distinct from the user-facing inspection role." ;
+    ho:tagged id:c-multiagent ;
+    ho:userFacing false ; ho:maturity "reviewed" .
+
+id:role-vnv a ho:Role ;
+    skos:prefLabel "Verification and validation agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that verifies and evaluates composition results and returns a verdict." ;
+    ho:tagged id:c-multiagent ;
+    ho:userFacing false ; ho:maturity "reviewed" .
+
+id:role-design a ho:Role ;
+    skos:prefLabel "Design agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, dedicated to design work (system/architecture design tasks)." ;
+    ho:tagged id:c-multiagent, id:c-design ;
+    ho:userFacing false ; ho:maturity "reviewed" .
