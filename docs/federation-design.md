@@ -116,8 +116,7 @@ federation over a hardcoded glob.
     (`ONTOLOGYSTYLE.md §2`): `h-…`, `tool-…`, `gr-…`, `sp-…`, `c-…`, …
   - `<domain>` is a short kebab segment naming the repo/contributor scope.
     `core` is **reserved** for the central ontology. A contributor picks a
-    domain segment that is unlikely to collide (project or org name, e.g.
-    `robotics`, `acme-support`).
+    domain segment that is unlikely to collide (project or org name).
 - **Ontology (document) IRIs** are separate from entity IRIs:
   `https://harness-ontology.dev/data/<domain>`. (The document that *contains*
   the individuals, used by `owl:imports`/catalog, is not the same as the IRIs of
@@ -127,8 +126,7 @@ federation over a hardcoded glob.
   `@prefix id: <…/id/core/> .` and writes `id:h-coding`; a file that also
   references core nodes binds a second prefix `@prefix core: <…/id/core/> .`
   and writes `core:tool-editor`. Because two prefixes can point at the same
-  namespace, cross-domain references resolve to the same IRI in the union
-  (e.g. `robotics`'s `core:h-coding` == `core`'s `id:h-coding`).
+  namespace, cross-domain references resolve to the same IRI in the union.
 
 ### Validation gate (D4)
 
