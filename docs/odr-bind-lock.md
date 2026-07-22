@@ -194,13 +194,17 @@ direct-ref tool keeps its ref's basename (preserving increment-1/2 behaviour).
 
 ## ODR maturity reached
 
-Per METHODOLOGY.md §6 this increment advances the project to **level 2
+Per METHODOLOGY.md §6 this increment brought the project to **level 2
 (재현 가능 / reproducible via lock)**: level 1 (재생성 가능 / deterministic
 regeneration, principle 5) is shown by A == A2, and level 2 by A == B from the
-lock alone. **Levels 3–4 remain open**: `validate.py` proves the *graph* is
-well-formed, not that an emitted artifact satisfies the capability's *contract*,
-so contract-VERIFY (INV-3) and the full INV-4 proof at the artifact level
-(technology-independence *demonstrated* by a spec-derived contract passing across
-candidates) are the next axis. Level 5 (dual document + software targets) is
+lock alone. The follow-up **contract-VERIFY increment
+([`docs/odr-contract-verify.md`](odr-contract-verify.md))** then advanced the
+project to **levels 3–4 demonstrated**: `validate.py` proves the *graph* is
+well-formed, but capabilities now also carry verifiable **`ho:Contract`s** that
+`tools/verify_contract.py` runs against the emitted tree — level 3 (부합 검증) by
+the auto-judged lpranging contracts, and level 4 (기술 독립 실증 / INV-4) by the
+`contract-demo` recipe, where re-binding a tool to a different implementation
+candidate keeps the same spec contract passing (verification depends on the SPEC,
+not the chosen implementation). Level 5 (dual document + software targets) is
 partially realised (CLAUDE.md/agents/scaffold docs + `tools/*.py` code) and
 tracked in `docs/materialize-design.md`.

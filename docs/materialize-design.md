@@ -12,6 +12,14 @@ an actual runnable harness file tree. `retrieve.py` reads; `validate.py` checks;
 > builds, `--lock`) are specified in **[`docs/odr-bind-lock.md`](odr-bind-lock.md)**
 > — read it alongside this document for how `materialize.py` chooses among
 > implementations and reproduces a past build byte-identically.
+>
+> **VERIFY increment (maturity 3–4).** The ODR VERIFY axis — capability
+> **`ho:Contract`s** and `tools/verify_contract.py`, which judges the
+> materialized tree against the spec — is specified in
+> **[`docs/odr-contract-verify.md`](odr-contract-verify.md)**. With it the project
+> reaches **ODR levels 3–4 demonstrated** (contract-checked artifacts, and
+> implementation-independence proven via an INV-4 candidate swap); this document's
+> EMIT is what those contracts are run against.
 
 **Increment 1** was the spine (P1) plus template-file references (P2), scoped to
 emitting `CLAUDE.md` + `MANIFEST.json`. **Increment 2** (this document, current)

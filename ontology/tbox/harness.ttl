@@ -84,6 +84,11 @@ ho:Candidate a owl:Class ;
     rdfs:label "Candidate" ;
     skos:definition "One implementation option for a Tool (a function/tool bound to a concrete file/URL, version and tag). A Tool may carry several Candidates via ho:implementationCandidate; the build projection (tools/materialize.py) applies ho:selectionPolicy — or a supplied lock — to pick exactly one. This is the ODR BIND axis made first-class: the neutral SPEC names the Tool's capability, while WHICH implementation realises it (and its version) lives here, on the recipe side, so the spec stays technology-neutral (INV-1)." .
 
+ho:Contract a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Contract" ;
+    skos:definition "A verifiable spec contract attached to a Capability: a condition the materialized artifact must satisfy for a harness that binds a provider of that capability. This is the ODR VERIFY axis made first-class (METHODOLOGY.md principle 3 / INV-3): the contract states WHAT the emitted tree must exhibit, tech-neutrally, and tools/verify_contract.py judges the built tree against it — independently of WHICH implementation candidate produced it (INV-4). A Contract carries ho:contractKind ('executable' or 'structural') and ho:contractCheck (the command to run, or the structural assertion). It hangs off a Capability via ho:capabilityContract and is rolled up to the binding harness by the ho:hasComponent propertyChainAxiom, so it is a reachable, orphan-free component without a bespoke shape (mirroring ho:Candidate)." .
+
 # Non-component concepts
 
 ho:Capability a owl:Class ;
@@ -123,7 +128,8 @@ ho:hasComponent a owl:ObjectProperty ;
     rdfs:range ho:HarnessComponent ;
     owl:inverseOf ho:componentOf ;
     owl:propertyChainAxiom ( ho:hasComponent ho:implementationCandidate ) ;
-    skos:definition "General composition edge. Specialised sub-properties below carry the component type. The propertyChainAxiom rolls a Tool's implementation Candidates up to the harness that binds the Tool (harness hasComponent tool + tool implementationCandidate cand => harness hasComponent cand), so a Candidate is a reachable, orphan-free HarnessComponent WITHOUT making implementationCandidate a direct sub-property of hasComponent — a direct sub-property would (via rdfs:domain ho:Harness) mistype the Tool subject as a Harness and trip HarnessShape." .
+    owl:propertyChainAxiom ( ho:hasComponent ho:providesCapability ho:capabilityContract ) ;
+    skos:definition "General composition edge. Specialised sub-properties below carry the component type. The first propertyChainAxiom rolls a Tool's implementation Candidates up to the harness that binds the Tool (harness hasComponent tool + tool implementationCandidate cand => harness hasComponent cand), so a Candidate is a reachable, orphan-free HarnessComponent WITHOUT making implementationCandidate a direct sub-property of hasComponent — a direct sub-property would (via rdfs:domain ho:Harness) mistype the Tool subject as a Harness and trip HarnessShape. The second propertyChainAxiom rolls a Capability's verification Contracts up the same way (harness hasComponent component + component providesCapability cap + cap capabilityContract contract => harness hasComponent contract), so a Contract is a reachable, orphan-free HarnessComponent. The chain is prefixed with hasComponent (three links) rather than starting at providesCapability so the inferred subject is always the Harness, not the provider component — a two-link (providesCapability capabilityContract) chain would instead conclude 'component hasComponent contract' and (via rdfs:domain ho:Harness) mistype the provider as a Harness." .
 
 ho:componentOf a owl:ObjectProperty ;
     rdfs:label "component of" ;
@@ -239,6 +245,12 @@ ho:providesCapability a owl:ObjectProperty ;
     rdfs:label "provides capability" ;
     skos:definition "A component supplies this capability. Composer matches provides->requires." .
 
+ho:capabilityContract a owl:ObjectProperty ;
+    rdfs:domain ho:Capability ;
+    rdfs:range ho:Contract ;
+    rdfs:label "capability contract" ;
+    skos:definition "Attaches a verifiable ho:Contract to a Capability (the ODR VERIFY axis, principle 3). The contract judges the MATERIALIZED artifact of any harness that binds a provider of this capability, from the spec side only, so verification depends on the capability's spec — not on which implementation candidate was chosen (INV-3 verification independence, INV-4 replacement harmlessness). NOT a sub-property of hasComponent; instead the ho:hasComponent propertyChainAxiom (hasComponent o providesCapability o capabilityContract) rolls each Contract up to the harness that binds the capability's provider, so the Contract is a reachable, SHACL-valid component without a bespoke shape (mirroring ho:implementationCandidate for Candidates)." .
+
 # --- patterns & constraints ------------------------------------------
 ho:appliesPattern a owl:ObjectProperty ;
     rdfs:domain ho:Harness ;
@@ -314,6 +326,18 @@ ho:selectionPolicy a owl:DatatypeProperty ;
     rdfs:range xsd:string ;
     rdfs:label "selection policy" ;
     skos:definition "How the build projection picks among a Tool's implementation Candidates when no lock is supplied. Carried by a Tool (per-tool policy) or a Harness (default for all its tools); a Tool-level policy overrides the Harness default. Recognised values: \"latest-stable\" (prefer tag=stable, then highest candidateVersion), \"conservative\" (prefer tag=stable, then LOWEST candidateVersion), \"pinned:<tag>\" (require exactly that tag). Selection is total and deterministic (ties broken by candidateVersion then candidate IRI) so (spec + policy) reproduces the same choice. No rdfs:domain: it applies to Tool or Harness, and a single conjunctive domain would demand both." .
+
+ho:contractKind a owl:DatatypeProperty ;
+    rdfs:domain ho:Contract ;
+    rdfs:range xsd:string ;
+    rdfs:label "contract kind" ;
+    skos:definition "Which of the two verification mechanisms this Contract uses: \"executable\" (ho:contractCheck is a shell command run in the materialized tree root that must exit 0) or \"structural\" (ho:contractCheck is a declarative assertion evaluated against the tree). A Contract chooses exactly one; a capability may carry several Contracts mixing both. tools/verify_contract.py dispatches on this value." .
+
+ho:contractCheck a owl:DatatypeProperty ;
+    rdfs:domain ho:Contract ;
+    rdfs:range xsd:string ;
+    rdfs:label "contract check" ;
+    skos:definition "The check this Contract runs against the materialized tree, interpreted per ho:contractKind. For \"executable\": a shell command executed with CWD = the emitted tree root; exit 0 passes. For \"structural\": a declarative assertion in a small grammar — 'file-exists:<path>' (a path exists under the tree), 'file-contains:<path>::<substring>' (the file exists and contains the literal substring), or 'section:<path>::<heading>' (the file has a Markdown heading line whose text equals <heading>). Paths are tree-relative. Build-only, like ho:implementationRef; retrieve.py ignores it." .
 
 ho:roleMemoryPolicy a owl:DatatypeProperty ;
     rdfs:domain ho:Role ;

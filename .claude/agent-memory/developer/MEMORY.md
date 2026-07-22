@@ -10,6 +10,15 @@
 - 도구는 `rdflib` 등이 있는 인터프리터로(예: `/usr/bin/python3`). 셸 기본 python3엔 없을 수 있음.
 
 <!-- 학습 인덱스 (한 줄씩) -->
+- [odr-contract-verify](odr-contract-verify.md) — ODR VERIFY축(성숙도 3–4): capability에
+  검증가능 `ho:Contract`(⊑HarnessComponent)+`ho:capabilityContract`+`ho:contractKind`
+  (executable|structural)+`ho:contractCheck`. 도달성=**3-link chain** `hasComponent o
+  providesCapability o capabilityContract ⊑ hasComponent`(2-link면 provider가 Harness 오타입,
+  candidate trap 판박이; hasComponent에 propertyChainAxiom 2개 공존 OK). `tools/verify_contract.py`
+  =VERIFY dual(harness+--tree→contract 판정, executable=subprocess exit0, structural grammar
+  file-exists/file-contains/section[hash-strip], IRI-sort 결정성, fail→exit1). L3=faithful
+  lpranging에 **contract만 추가**(합성candidate 금지, parse-check가 안전한 executable). L4=INV-4=
+  별도 `recipes/contract-demo` 2-candidate swap(출력동일·소스상이→verify 동일 PASS). 중앙 96불변·neutral.
 - [materialize-atomic-emit-closed-policy](materialize-atomic-emit-closed-policy.md) — materialize
   하드닝(vnv N1/N2, 순수 tooling·validate 96 불변). N1 atomic emit: `--lock` 해시체크가 mid-emit라
   직접 write는 실패 시 half-written→**sibling temp staging(mkdtemp in out's PARENT, 같은 fs여야
