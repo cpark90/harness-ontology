@@ -2,11 +2,19 @@
 
 brief `docs/plans/inspection-brief-physical-split-*.md`를 실행할 때의 재사용 지식.
 
-> **갱신(2026-07-22)**: lpranging 물리 분할은 **되돌려짐**. 온톨로지 원칙이 "도메인 독립 중립
-> 부품 라이브러리"로 정정되어 중앙에 중립 부품만 유지, **외부 data repo 없음**(연합 D1/D3 infra만
-> 유지). data repo `cpark90/harness-data-lpranging`는 **archived**. 즉 아래 절차는 미래에 실제
-> 도메인 data unit이 생길 때만 유효 — 현재는 중앙 단일 repo 상태. 폐기: `gh repo archive <repo> --yes`
-> (토큰에 delete_repo 스코프 없어 완전삭제 불가; archive가 안전 기본).
+> **갱신(2026-07-22)**: lpranging 물리 분할(도메인 data repo)은 **되돌려짐**. 온톨로지 원칙이
+> "도메인 독립 중립 부품 라이브러리"로 정정 → 중앙(`cpark90/harness-ontology`)엔 중립 부품만.
+> 중앙 abox는 `seed.ttl` → **`ontology/abox/core/` 11 타입별 유닛**으로 분리(catalog+root
+> owl:imports 재배선).
+>
+> **외부 repo = `cpark90/harness-recipes`** (구 `harness-data-lpranging`를 unarchive→rename→
+> 콘텐츠 전면 교체). 도메인 하네스 저장소가 아니라 **레시피/blueprint repo**: 각 recipe가 중앙
+> 중립 부품을 owl:imports해 완결 하네스로 조립(도메인 바인딩은 레시피에 로컬). 예: `recipes/lpranging`.
+> federate 검증: 레시피 repo에서 중앙 clone 후 `HARNESS_ROOT_ONTOLOGY=…/recipes/<name>` compose
+> validate → PASS(중앙 64 + 레시피분). staging은 `staging/harness-recipes/`(gitignored).
+>
+> gh 폐기/전환: `gh repo archive|unarchive <repo> --yes`, `gh repo rename <new> --repo <owner/old> --yes`
+> (토큰 scope=repo — archive/rename OK, delete_repo 없어 완전삭제 불가).
 
 ## GitHub repo 규약 (owner cpark90)
 - 중앙 schema+tooling repo = **`cpark90/harness-ontology`(하이픈)**. (이전 세션의 언더스코어
