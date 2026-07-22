@@ -35,3 +35,32 @@ MANIFEST.json). 전부 `/usr/bin/python3`. 판정: `docs/verify/materialize-and-
   로컬 워크어라운드는 least-privilege 상 이번 increment엔 적정 → pass-with-notes, 중앙 fix는
   orchestrator/developer 라우팅. 로컬 방식은 HarnessComponent만 벗겨 중간계층 3-level엔 부족.
 - 판정: pass-with-notes. 6항목 전부 통과, note=위 central 잠복버그 1건뿐.
+
+## increment 2 — P4 roles / P3 implementationRef / P5 scaffold (verdict: pass)
+- **New TBox**: `ho:Role` (subClassOf HarnessComponent) + 7 props (hasRole,
+  rolePersona/roleTool/roleGuardrail/roleMemoryPolicy, implementationRef, scaffold).
+  Drift check that matters: (a) `ho:hasRole rdfs:subPropertyOf ho:hasComponent` →
+  roles reachable+SHACL-valid with **NO new shape** (prove: `git diff <init> HEAD --
+  ontology/shapes/harness-shapes.ttl` empty AND union validates with roles). (b)
+  `ho:scaffold` has **no rdfs:domain** (else OWL RL mistypes the Harness/Domain it
+  hangs on as a component → orphan-shape trip); `grep rdfs:domain` in the scaffold
+  block hits only the *definition string* text, not a real predicate — check with
+  `grep -E "^\s+rdfs:domain"`.
+- **Neutrality**: roles live in the recipe, central abox stays 64; grep core/ for
+  hasRole|implementationRef|role-|scaffold = 0. retrieve.py ignores build-only props.
+- **Full-tree materialize** (lpranging union, symlink dance): tree = CLAUDE.md
+  (+`## Roles`) / MANIFEST / `.claude/agents/{developer,vnv,inspection}.md` /
+  `tools/<copied>.py` / scaffold files. Verify copied code **byte-identical**:
+  `cmp` + `sha256sum` vs source `~/git/agrtls/device_harvest_lp/lpranging/tools/
+  docgraph.py` (32560B) & `reference/sim_grid_reservation.py` (11309B). Role scopes
+  in agent files must be **strict subsets** of harness usesTool/hasGuardrail
+  (least-privilege) — cross-check each roleTool/roleGuardrail against the harness.
+  MANIFEST gains roles/implementations(status resolved|stub)/scaffold.
+- **implementationRef portability**: lpranging uses **absolute** source paths
+  (resolve only on this box). Judged **pass, non-blocking**: documented trade-off,
+  fails *safe* (unresolvable → `tools/<base>.ref` stub, no crash), build-only so no
+  neutrality/validation impact; portable fix = ship code in recipe + repo-relative
+  ref (recipe-authoring follow-up, not a defect).
+- **Regression**: role-less central `h-multiagent` still emits only CLAUDE.md+MANIFEST
+  (manifest gains empty roles/impl/scaffold keys — additive/benign); techdoc still builds.
+  Gate still refuses bogus id (exit2) / non-validating union (exit1), out dir never made.

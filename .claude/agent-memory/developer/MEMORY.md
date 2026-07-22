@@ -10,6 +10,13 @@
 - 도구는 `rdflib` 등이 있는 인터프리터로(예: `/usr/bin/python3`). 셸 기본 python3엔 없을 수 있음.
 
 <!-- 학습 인덱스 (한 줄씩) -->
+- [materialize-roles-impl-scaffold](materialize-roles-impl-scaffold.md) — materialize 증분2:
+  P4 `ho:Role`(subClassOf HarnessComponent + `ho:hasRole` subPropertyOf hasComponent→reachable·
+  shape 자동, rolePersona/roleTool/roleGuardrail/roleMemoryPolicy; persona는 hasSystemPrompt로도
+  바인딩해야 연결·top Persona서 제외→`.claude/agents/<slug>.md`), P3 `ho:implementationRef`
+  (실파일 tools/<basename> byte-copy·resolve repo→catalog→abs·못찾으면 .ref stub·절대경로 이식성caveat),
+  P5 `ho:scaffold`(domain 없음 필수-artifactTemplate은 HarnessComponent domain이라 Harness 붙이면
+  orphan trip; scaffold/ marker 이후로 dest mirror). registry에 HO.Role 등록·중앙 64 불변·81 union.
 - [materialize-build-projection](materialize-build-projection.md) — `tools/materialize.py`
   = retrieve의 DUAL(BUILD 투영: validated harness IRI→`CLAUDE.md`+`MANIFEST.json` 파일트리).
   validate.run_structured() 게이트 후 build("only validated materializes"), 결정성(IRI sort+
