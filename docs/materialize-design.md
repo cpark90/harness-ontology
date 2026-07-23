@@ -29,9 +29,12 @@ materializes as a full harness tree with no manual cloning:
 - **P4 — first-class roles**: a new `ho:Role` class; each `ho:hasRole` is emitted
   as `.claude/agents/<role>.md` and summarised in `CLAUDE.md`.
 - **P3 — tool implementation refs**: `ho:implementationRef` on a `ho:Tool`;
-  materialize resolves and **copies the real file** into `tools/<basename>`.
-- **P5 — standard/docs scaffold**: `ho:scaffold` fragments (and reusable
-  `ho:artifactTemplate`) rendered into the tree (`docs/…`, standard `.md`).
+  materialize resolves and **fetches (byte-copies) the real file** into
+  `tools/<basename>`.
+- **P5 — standard/docs scaffold**: `ho:scaffold` **references** to concrete
+  standard/doc fragments, **fetched** into the tree (`docs/…`, standard `.md`);
+  skill bodies are fetched the same way (skill `ho:artifactTemplate`). A recipe
+  stores references, not the artifacts (see "References, not stored artifacts").
 
 ## retrieve ↔ materialize symmetry
 
@@ -88,8 +91,9 @@ The full tree a multi-agent recipe now materializes to:
 ├── CLAUDE.md                       # the operating doc (overview + roles + channels summary)
 ├── MANIFEST.json                   # provenance / build record
 ├── .claude/agents/<role>.md        # one per ho:hasRole (P4)
-├── tools/<basename>                # real code copied per ho:implementationRef (P3)
-└── docs/… , <STANDARD>.md          # ho:scaffold / ho:artifactTemplate fragments (P5)
+├── tools/<basename>                # real code FETCHED per ho:implementationRef (P3)
+├── .claude/skills/<name>/SKILL.md  # skill body FETCHED per ho:artifactTemplate
+└── docs/… , <STANDARD>.md          # concrete standard/doc FETCHED per ho:scaffold (P5)
 ```
 
 ### `CLAUDE.md` — the operating doc
@@ -125,9 +129,13 @@ A deterministic (`sort_keys`) JSON object with:
 - `channels` — one record per `ho:hasChannel`: `{iri, label, definition,
   participants[], involvesUser, medium}` — coordination channels as first-class
   manifest entries (not just buried in `components`), mirroring the `roles` style.
-- `implementations` — one record per tool with `ho:implementationRef`:
-  `{tool, label, ref, status: resolved|stub, dest}`.
-- `scaffold` — one record per rendered fragment: `{source, dest}`.
+- `implementations` — one record per tool with an implementation binding:
+  `{tool, label, ref, status: resolved|stub, dest, …}`.
+- `scaffold` — one record per fetched fragment: `{source, dest, status:
+  resolved|stub}`.
+- `skills` — one record per `ho:hasInstruction`: `{instruction, label, name,
+  definition, skillFile, vendoredFrom, status: resolved|stub|graph}` (the fetched
+  skill body, or a stub / graph-rendered fallback).
 
 ## `ho:artifactTemplate` mechanism (P2)
 
@@ -250,34 +258,63 @@ URL or resolves to nothing, materialize writes a `tools/<basename>.ref` **stub**
 naming the ref (`status: stub`) — the build never silently drops a tool, and an
 offline environment degrades gracefully rather than failing.
 
-**Portability.** The lpranging recipe **vendors its tool sources inside the
-recipe repo** — `recipes/lpranging/impl/docgraph.py` and
-`recipes/lpranging/impl/sim_grid_reservation.py` are byte-copies of the real
-tools, and the two `ho:implementationRef` values are **repo-relative** paths
-(`recipes/lpranging/impl/<file>.py`). These resolve against the catalog dir
-(rule 2 above), so the recipe materializes to `status: resolved` on any machine
-that has the recipe repo — no external checkout required. This is the portable
-pattern: ship the code beside the `.ttl` and reference it relatively.
+This resolution — repo root, recipe dir, then absolute path, else a fail-safe
+stub — is factored into a single helper (`_resolve_ref_path`) that **every**
+reference materialize follows: `ho:implementationRef`, `ho:scaffold` and skill
+`ho:artifactTemplate` alike. A recipe stores a *reference* to a concrete
+artifact; materialize *fetches* it at build (see "References, not stored
+artifacts" below).
 
-An **absolute** or **URL** ref remains a documented option (e.g. a tool that
-lives outside the recipe, or is fetched on build). Such a ref only resolves
-where that path/URL is reachable; where it is not, it **fails safe** to a
-`tools/<basename>.ref` **stub** (`status: stub`) — the build never silently
-drops a tool, and the stub is exactly the signal that a ref did not travel.
+**Reference reach (portability vs a pure spec).** A **repo-relative** ref (code
+shipped beside the `.ttl`) resolves against the catalog dir (rule 2), so it
+materializes to `status: resolved` on any machine that has the recipe repo — but
+it is itself a stored copy, appropriate only for genuinely recipe-owned assets.
+An **absolute** or **URL** ref keeps the recipe a pure spec-plus-references but
+resolves only where that path/URL is reachable; where it is not it **fails safe**
+to a `.ref` **stub** (`status: stub`). The lpranging recipe deliberately uses
+**external absolute** refs into the real source harness (it stores no copy of any
+tool/doc/skill); it materializes to `status: resolved` where that source is
+present and to stubs where it is not.
 
 ## Standard / docs scaffold (P5)
 
-Attachable blueprint fragments (a standard document, a `docs/` tree) are rendered
-into the harness tree via `ho:scaffold` — a repo-relative path to a fragment,
-with the same `{{prefLabel}}`/`{{definition}}`/`{{promptText}}` substitution
-(placeholders filled from the **harness** node). Fragments may be attached to the
-harness or to any `ho:targetsDomain` domain.
+Attachable blueprint fragments (a standard document, a `docs/` tree) are **fetched**
+into the harness tree via `ho:scaffold` — a **reference** (repo-relative or an
+absolute/external path) to the concrete standard/doc, resolved by the shared
+`_resolve_ref_path` fetch-resolution and **byte-copied** into the tree so the
+emitted fragment is byte-identical to its source. The recipe stores the
+*reference*, not the document. Fragments may be attached to the harness or to any
+`ho:targetsDomain` domain. If a reference does not resolve, a `<dest>.ref`
+**stub** is emitted instead of failing (the same fail-safe as
+`ho:implementationRef`), and each `scaffold` manifest record carries a `status`
+(`resolved` | `stub`).
 
-The output path **mirrors the source tree after a `scaffold/` marker segment**:
-`recipes/lpranging/scaffold/docs/README.md` → `docs/README.md`,
-`recipes/lpranging/scaffold/DESIGN_HARNESS_STANDARD.md` →
-`DESIGN_HARNESS_STANDARD.md` (root). This lets a recipe keep its scaffold under
-one directory yet emit a clean docs-tree + root standard docs.
+The output path **mirrors the source tree after a `scaffold/` marker segment**
+(`recipes/<n>/scaffold/docs/x.md` → `docs/x.md`); a reference with no such marker
+— e.g. an external absolute path — emits at the **basename** in the tree root
+(`.../lpranging/docs/ONTOLOGY.md` → `ONTOLOGY.md`). Placeholder substitution was
+dropped from scaffold with the move to the fetch model: a scaffold is now a
+faithful byte-copy of a concrete artifact, not a rendered template. (Component
+*section* templating via `ho:artifactTemplate` — P2 — still substitutes
+`{{prefLabel}}`/`{{definition}}`/`{{promptText}}`; that path is unchanged.)
+
+## References, not stored artifacts (the recipe/materialize contract)
+
+A recipe stores **spec + explanation + references** to concrete build artifacts,
+**never the concrete documents themselves** (`docs/recipes-design.md`). The three
+reference predicates and their emitters are symmetric: `ho:implementationRef`
+(tool code → `tools/<name>`), `ho:scaffold` (standard/doc → mirrored path) and
+skill `ho:artifactTemplate` (skill body → `.claude/skills/<name>/SKILL.md`) all
+resolve through the single `_resolve_ref_path` helper and **fetch (byte-copy)**
+the referenced source at build. Any reference that does not resolve — a URL, or an
+external source absent from this machine — degrades to a fail-safe `.ref`
+**stub** (a deterministic placeholder naming the ref via `_ref_stub`), so a build
+is always produced and the stub is exactly the signal that a reference did not
+travel. This is the ODR line at the emit layer: implementation is *referenced and
+regenerated at build*, never stored in the spec (ODR INV-1). Every emitter records
+a per-reference `status` (`resolved` | `stub`; skills also `graph` for a
+template-less instruction rendered from graph data) in `MANIFEST.json`, and the
+whole tree stays deterministic (no timestamps) so two builds are byte-identical.
 
 **Why a new property rather than reusing `ho:artifactTemplate` for this.**
 `ho:artifactTemplate` has `rdfs:domain ho:HarnessComponent` and renders a

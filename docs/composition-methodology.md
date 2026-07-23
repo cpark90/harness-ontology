@@ -12,6 +12,63 @@ The process is documented operationally in `CLAUDE.md` §"Composing a new harnes
 first-class ontology nodes so the methodology is itself discoverable, reusable
 and connected (not just prose).
 
+## Why compose: the harness makes each role perform its role clearly
+
+A harness is not merely a bag of parts — it is the **means by which each role is
+made to perform its role clearly**. Composition binds, per role, the concrete
+things that give its agent an unambiguous mandate: the persona/scope that frames
+it, the least-privilege **tools** it may use (`ho:roleTool`), the **guardrails**
+it operates under (`ho:roleGuardrail`), its **memory discipline**
+(`ho:roleMemoryPolicy`), and — only where it applies — its **user-facing**
+stance (`ho:userFacing`, an optional characteristic present only on roles that
+talk to the user). The neutral template `h-multiagent` demonstrates this: each
+of its seven roles carries its own clearly-organized characteristics, so
+materialization emits a self-contained `.claude/agents/<role>.md` per agent.
+That is the purpose the harness exists to serve — turning a role classification
+into an agent that can act within known bounds.
+
+Inter-agent relationships are part of that composition, and they are
+**harness-scoped and redefinable**, not fixed globally. The central
+`ho:Channel` individuals (`chan-agent-user`, `chan-orchestrator-inspection`,
+`chan-dispatch`) are reusable **defaults**; a specific harness declares which it
+uses via `ho:hasChannel`, and MAY **redefine** them — authoring its own Channel
+individuals with their own `ho:channelParticipant` sets and `ho:channelMedium`
+(adding, dropping or overriding participants) — to match how its own agents
+relate. The model already supports this without any schema change: a harness
+*picks or declares* its channels, so nothing forces a single global topology; no
+change was needed to enable a harness to define its own channel individuals.
+
+## Coordination topology is a pluggable, extensible dimension
+
+*How* a harness's agents coordinate is not fixed to one methodology — it is a
+**selectable dimension of composition**, declared explicitly by pairing a
+`ho:DesignPattern` (the topology) with the matching `ho:Channel`(s) (its
+conduit). Two topologies ship centrally today, and new ones are added the same
+way without disturbing the existing ones:
+
+| Topology | Pattern | Channel | Shape |
+|---|---|---|---|
+| **Orchestrator-workers** (default doctrine) | `pat-orchestrator-workers` | `chan-dispatch` | a central orchestrator decomposes work, dispatches node-scoped briefs to workers, integrates results |
+| **Peer-mesh** (alternative) | `pat-peer-mesh` | `chan-peer` | peer worker roles coordinate DIRECTLY over a message mesh; no central-only dispatcher |
+
+A harness **selects its methodology** by declaring `ho:appliesPattern <pattern>`
+together with the matching channel via `ho:hasChannel`. The neutral template
+`h-multiagent` stays **orchestrator-workers** as the default doctrine
+(`pat-orchestrator-workers` + `chan-dispatch`); the neutral template
+`h-peer-mesh` demonstrates the **peer-mesh** alternative
+(`pat-peer-mesh` + `chan-peer`) for recipes that need direct peer coordination.
+Neither displaces the other — they coexist, and a recipe picks the topology its
+source harness actually uses.
+
+**Extending** the dimension is additive and disturbance-free: a *new* topology
+(say a hierarchical or broadcast coordination) is introduced as a **new
+`ho:DesignPattern` + a new `ho:Channel`** (plus, for anti-orphan, a host harness
+that wires them, exactly as `h-peer-mesh` hosts peer-mesh). No existing pattern,
+channel or harness changes, and no TBox change is required — `ho:appliesPattern`,
+`ho:hasChannel`, `ho:channelParticipant` and `ho:channelMedium` already express
+any topology. This is the same anti-drift discipline as the rest of the library:
+reuse the vocabulary, add a node, connect it in the same change.
+
 ## The nodes (central, neutral, `.../id/core/`)
 
 | Node | Type | Role in the methodology |
@@ -77,3 +134,10 @@ authors and validates the spec; ODR binds an implementation, emits the
 artifacts deterministically, and locks the selection so the build reproduces.
 Dependency is one-way — composition never depends on a particular
 implementation, preserving spec purity (ODR INV-1).
+
+The same INV-1 line governs what a **recipe stores**: the composition spec (part
+IRIs) + an explanation of the composition + **references** to the concrete
+artifacts — never the concrete build documents themselves (implementation is
+referenced and regenerated at build, not stored). `materialize.py` fetches those
+references at emit time; see `docs/recipes-design.md` ("What a recipe stores") and
+`docs/materialize-design.md` ("References, not stored artifacts").

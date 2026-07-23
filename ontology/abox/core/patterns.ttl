@@ -21,6 +21,45 @@ id:pat-reflection a ho:DesignPattern ; skos:prefLabel "Reflection" ;
     skos:definition "Critique and revise an initial answer before returning it." .
 id:pat-orchestrator-workers a ho:DesignPattern ; skos:prefLabel "Orchestrator-workers" ;
     skos:definition "A central orchestrator decomposes work into node-scoped tasks, dispatches them to specialised worker agents, and integrates the results; roles carry least-privilege file boundaries." .
+id:pat-peer-mesh a ho:DesignPattern ; skos:prefLabel "Peer-mesh" ; skos:altLabel "peer message mesh" ;
+    skos:definition "Peer agents coordinate DIRECTLY with one another over a message mesh — each sends work, requests, judgments and results to any peer — rather than routing every hand-off through a single central orchestrator; there is no central-only dispatch bottleneck. The alternative coordination topology to orchestrator-workers. Coordination topology is a PLUGGABLE, EXTENSIBLE dimension: a harness declares its methodology explicitly via ho:appliesPattern plus the matching ho:Channel(s) — orchestrator-workers (central dispatch, id:chan-dispatch) or peer-mesh (direct peer coordination, id:chan-peer) — and a NEW topology is added as a new ho:DesignPattern + ho:Channel without disturbing the existing ones, so different methodologies coexist and recipes select the one they need." ;
+    ho:tagged id:c-multiagent ; ho:maturity "reviewed" .
 id:pat-ontology-composition a ho:DesignPattern ; skos:prefLabel "Ontology-driven composition" ;
     skos:definition "Assemble a harness by composing reusable, typed ontology parts -- a bill of materials -- rather than authoring from scratch: reuse existing parts, bind every required capability to a provider that supplies it, satisfy the harness shape's minimums, and keep every node connected and discoverable so nothing is orphaned. Choose when a validated library of neutral parts exists and a new harness should be built by selection and wiring." ;
     ho:maturity "reviewed" .
+
+#===================== Execution-mode patterns (runtime topology) ======
+# The runtime coordination topology a harness spawns and coordinates agents in,
+# orthogonal to the architectural data-flow pattern below. Tagged c-execution-mode
+# so materialize can render an execution-mode section from appliesPattern picks.
+id:pat-agent-teams a ho:DesignPattern ; skos:prefLabel "Agent-teams" ; skos:altLabel "peer agent teams" ;
+    skos:definition "A team of peer agents runs together and coordinates as a group -- creating the team, messaging one another by name and sharing a task list -- rather than each being spawned and reclaimed individually by a lead. A runtime execution mode; the coordination topology (which peers talk, over which channel) is chosen separately from the architectural work-flow pattern." ;
+    ho:tagged id:c-execution-mode ; ho:maturity "draft" .
+id:pat-sub-agents a ho:DesignPattern ; skos:prefLabel "Sub-agents" ; skos:altLabel "lightweight subagent spawn" ;
+    skos:definition "A lead agent spawns lightweight, short-lived sub-agents for scoped subtasks and reclaims their results, rather than standing up a persistent peer team. A runtime execution mode: agents exist only for the span of their delegated task." ;
+    ho:tagged id:c-execution-mode ; ho:maturity "draft" .
+id:pat-hybrid a ho:DesignPattern ; skos:prefLabel "Hybrid execution" ; skos:altLabel "phase-varying topology" ;
+    skos:definition "The runtime coordination topology varies by phase of the run -- for example a peer agent-team during exploration and lightweight sub-agents during execution -- so a single harness switches execution mode as it moves between phases rather than fixing one for the whole run." ;
+    ho:tagged id:c-execution-mode ; ho:maturity "draft" .
+
+#===================== Architectural coordination patterns =============
+# How work flows and is structured across agents (the data-flow architecture),
+# orthogonal to the runtime execution mode above. Tagged c-pattern-taxonomy.
+id:pat-pipeline a ho:DesignPattern ; skos:prefLabel "Pipeline" ; skos:altLabel "sequential stages" ;
+    skos:definition "Work moves through a fixed sequence of stages where each stage consumes the previous stage's output and produces input for the next, like an assembly line. Choose when the task decomposes into ordered, dependent steps with a single forward flow." ;
+    ho:tagged id:c-pattern-taxonomy ; ho:maturity "draft" .
+id:pat-fanout-fanin a ho:DesignPattern ; skos:prefLabel "Fan-out/fan-in" ; skos:altLabel "parallel then integrate" ;
+    skos:definition "One coordinator fans work out to several agents that run in parallel on independent sub-parts, then fans their results back in to a single integration step. Choose when sub-parts are independent and parallelisable and the results must be merged." ;
+    ho:tagged id:c-pattern-taxonomy ; ho:maturity "draft" .
+id:pat-expert-pool a ho:DesignPattern ; skos:prefLabel "Expert pool" ; skos:altLabel "router to specialist" ;
+    skos:definition "A router inspects each incoming request and dispatches it to the best-matching specialist drawn from a pool of experts, rather than sending every request through the same generalist. Choose when requests are heterogeneous and different specialists handle them better than one generalist." ;
+    ho:tagged id:c-pattern-taxonomy ; ho:maturity "draft" .
+id:pat-producer-reviewer a ho:DesignPattern ; skos:prefLabel "Producer-reviewer" ; skos:altLabel "generate-and-check loop" ;
+    skos:definition "A producer agent generates a candidate and a reviewer agent checks it, iterating in a BOUNDED loop until the reviewer accepts or a retry cap is reached (see id:gr-bounded-iteration). Choose when output quality benefits from an explicit separate critique step rather than self-review." ;
+    ho:tagged id:c-pattern-taxonomy ; ho:maturity "draft" .
+id:pat-supervisor a ho:DesignPattern ; skos:prefLabel "Supervisor" ; skos:altLabel "dynamic runtime allocation" ;
+    skos:definition "A supervisor allocates work to worker agents DYNAMICALLY at run time -- deciding what to assign to whom as tasks are claimed and as state evolves -- rather than deciding the whole assignment up front. Contrast id:pat-orchestrator-workers, where the orchestrator STATICALLY pre-allocates node-scoped briefs before dispatch; the supervisor's assignment is reactive and adaptive." ;
+    ho:tagged id:c-pattern-taxonomy ; ho:maturity "draft" .
+id:pat-hierarchical-delegation a ho:DesignPattern ; skos:prefLabel "Hierarchical delegation" ; skos:altLabel "two-level recursive delegation" ;
+    skos:definition "A top coordinator delegates to sub-coordinators, each of which further delegates to its own workers -- delegation recurses one extra level rather than staying flat. Kept shallow by id:gr-depth-limit (at most two levels). Choose only when the task genuinely needs a layer of sub-coordination." ;
+    ho:tagged id:c-pattern-taxonomy ; ho:maturity "draft" .

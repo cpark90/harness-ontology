@@ -81,6 +81,44 @@ A recipe file (`recipes/<name>/<name>.ttl`) is one importable data unit:
 The central library never learns a domain term: all domain nodes live in the
 recipe, and central `ontology/abox/core/**` stays grep-clean of any domain noun.
 
+## What a recipe stores — spec + explanation + references, NOT concrete artifacts
+
+A recipe holds the **composition spec** (part IRIs assembled into a harness), an
+**explanation** of that composition (which parts + methodology were used, how, and
+what result), and **references** to the concrete build artifacts — it must **not
+store the concrete build documents themselves** (real tool code, standard/doc
+files, skill bodies). Storing copies of those artifacts is *vendoring*, and it
+re-introduces exactly what the neutral-parts / anti-drift discipline removes: the
+recipe would drift from the real source, duplicate its content, and blur the
+spec/implementation boundary.
+
+This is the ODR line made concrete at the recipe level: **implementation is
+referenced (and regenerated at build), never stored in the spec** (ODR INV-1,
+`docs/composition-methodology.md`). A recipe therefore carries:
+
+1. the **spec** — the composed `ho:Harness` and its part IRIs (§ above);
+2. the **explanation** — the recipe `README.md` (and `skos:definition` /
+   comments) describing *which* neutral parts + local bindings were used, *which*
+   methodology assembled them, *how*, and *what* harness results; and
+3. **references** to concrete artifacts — `ho:implementationRef` (tool code),
+   `ho:scaffold` (standard/doc fragments) and skill `ho:artifactTemplate`
+   (skill bodies), each a path/URL to the real source, **not a stored copy**.
+
+At build, `materialize.py` **fetches** every reference into the tree
+(`docs/materialize-design.md`); a reference that does not resolve becomes a
+fail-safe `.ref` **stub**, never a build failure. The worked example
+(`recipes/lpranging/`) applies this literally: its tool/scaffold/skill references
+point at the real source harness on disk and are fetched at build, so the recipe
+stores no `.py` and no `SKILL.md` body — only TTL + README + reference strings.
+
+**Reference reach is a modeling choice.** A repo-relative reference (code shipped
+beside the `.ttl`) is portable but is itself a stored copy — acceptable only for
+genuinely recipe-owned assets. A reference to an **external** source (absolute
+path or fetchable URL) keeps the recipe a pure spec-plus-references but resolves
+only where that source is reachable (else a stub). The lpranging example
+deliberately takes the external-reference form (non-portable, but stores nothing);
+its README states that tradeoff explicitly.
+
 ## How a recipe validates (clone central → compose union → central validate.py)
 
 Validation always runs over the **union** (central parts + the recipe), never a

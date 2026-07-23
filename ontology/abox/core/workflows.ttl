@@ -21,9 +21,64 @@ id:wf-singleshot a ho:Workflow ; skos:prefLabel "Single-shot" ;
     ho:tokenEstimate 20 ; ho:maturity "stable" .
 id:wf-multiagent a ho:Workflow ; skos:prefLabel "Multi-agent orchestration loop" ;
     skos:definition "Orchestrator plans and dispatches node-scoped briefs to worker agents that author, verify and inspect, then integrates and gates the results; separates authoring, judgment and application. Choose for work that must stay traceable across specialised roles." ;
+    ho:hasStep id:wfs-plan-dispatch, id:wfs-author-verify, id:wfs-integrate-gate ;
     ho:providesCapability id:cap-orchestration ;
     ho:derivedFrom id:wf-planexec ;
     ho:tagged id:c-multiagent, id:c-design ; ho:tokenEstimate 74 ; ho:maturity "reviewed" .
 id:wf-compose-harness a ho:Workflow ; skos:prefLabel "Harness composition" ;
     skos:definition "Assemble a new harness out of the ontology's reusable, typed parts: (1) retrieve a budget-capped context pack for the request; (2) take the top base-harness candidate as a template, or a DesignPattern when none fits; (3) bind every requiresCapability in scope to a component that providesCapability it, filling each capability gap by reusing an existing part or authoring a new one; (4) assemble the HarnessShape minimums -- one SystemPrompt, at least one Workflow, tools, guardrails and one ModelConfig; (5) write it back as new individuals carrying prefLabel, maturity draft, derivedFrom the template, tokenEstimate on every node with text, and existing Concept tags; (6) run validate.py for connectivity, typing and capability satisfaction; (7) pass the coverage-audit gate that maps every source element to a representation; then materialize -- the ODR EMIT axis renders the validated spec into artifacts. Choose when building a harness by selecting and wiring existing parts rather than authoring one from scratch." ;
     ho:tagged id:c-composition ; ho:tokenEstimate 205 ; ho:maturity "reviewed" .
+
+#===================== Workflow steps ==================================
+# Ordered decomposition of id:wf-multiagent's control flow into part-to-part
+# assembly (Stage a of finer-harness-decomposition-assembly): each step names
+# the role that performs it, the tool it uses and/or the guardrail that bounds
+# it, reusing EXISTING core parts by IRI. The steps refine the workflow's prose
+# definition (they do not replace it) and are rolled up to any binding harness
+# via the ho:hasComponent (hasComponent o hasStep) propertyChainAxiom.
+id:wfs-plan-dispatch a ho:WorkflowStep ;
+    skos:prefLabel "Plan and dispatch" ;
+    skos:definition "The orchestrator decomposes the request into node-scoped briefs and dispatches each to the worker best scoped for it, doing no authoring itself. Choose as the entry step of a multi-agent run: it fixes WHAT is delegated to WHOM before any work begins." ;
+    ho:stepByRole id:role-orchestrator ;
+    ho:stepGuardedBy id:gr-delegated-orchestration ;
+    ho:stepProduces id:dlv-dispatch-brief ;
+    ho:stepOrder 1 ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+
+id:wfs-author-verify a ho:WorkflowStep ;
+    skos:prefLabel "Author and verify" ;
+    skos:definition "Dispatched workers author their assigned nodes and a verifier judges the result, each within its least-privilege scope; authoring and judgment stay separated. Choose as the productive middle step where the briefed work is actually produced and checked." ;
+    ho:stepByRole id:role-developer ;
+    ho:stepUsesTool id:tool-editor ;
+    ho:stepConsumes id:dlv-dispatch-brief ;
+    ho:stepProduces id:dlv-verified-result ;
+    ho:stepDependsOn id:wfs-plan-dispatch ;
+    ho:stepOrder 2 ; ho:tokenEstimate 42 ; ho:maturity "reviewed" .
+
+id:wfs-integrate-gate a ho:WorkflowStep ;
+    skos:prefLabel "Integrate and gate" ;
+    skos:definition "The orchestrator integrates the returned work and runs the validation gate, proceeding only on a verified pass rather than assuming completion. Choose as the closing step that admits work into the shared artifact once, and only once, it checks out." ;
+    ho:stepByRole id:role-orchestrator ;
+    ho:stepGuardedBy id:gr-verify-proceed ;
+    ho:stepConsumes id:dlv-verified-result ;
+    ho:stepDependsOn id:wfs-author-verify ;
+    ho:stepOrder 3 ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+
+#===================== Deliverables (task-DAG data flow) ===============
+# The named artifacts that flow between id:wf-multiagent's steps — the OUTPUT
+# side of one step joined to the INPUT side of the next (GAP-1 of the harness-100
+# augmentation). They exercise the task-DAG vocabulary (ho:stepProduces /
+# ho:stepConsumes / ho:stepDependsOn) minimally and neutrally: each Deliverable
+# is produced by one step and consumed by the next, so the data-flow DAG is
+# recoverable by joining producers to consumers. Each is rolled up to any binding
+# harness via the ho:hasComponent (hasComponent o hasStep o stepProduces)
+# propertyChainAxiom, so it is a connected, orphan-free component. Neutral: these
+# name generic coordination artifacts, no domain content.
+id:dlv-dispatch-brief a ho:Deliverable ;
+    skos:prefLabel "Dispatch brief" ;
+    skos:definition "The node-scoped brief the orchestrator produces when planning a request and hands to the worker it dispatches: WHAT is delegated to WHOM, self-contained enough that a cold-start worker can act on it alone. Produced by the plan-and-dispatch step and consumed by the author-and-verify step." ;
+    ho:tagged id:c-multiagent ; ho:tokenEstimate 44 ; ho:maturity "reviewed" .
+
+id:dlv-verified-result a ho:Deliverable ;
+    skos:prefLabel "Verified result" ;
+    skos:definition "The authored work together with the verifier's pass judgment, emitted once authoring and verification are complete: the artifact that is admitted into the shared output only after it checks out. Produced by the author-and-verify step and consumed by the integrate-and-gate step." ;
+    ho:tagged id:c-multiagent ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .

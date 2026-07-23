@@ -26,6 +26,13 @@ ID_LPR = Namespace("https://harness-ontology.dev/id/lpranging/")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ONT_DIR = os.path.join(ROOT, "ontology")
 
+# The neutral base template that carries the central DEFAULT CLAUDE.md assembly
+# order (ho:hasAssemblySection). A harness that declares no assembly order of its
+# own inherits this one; both tools/materialize.py (which READS the order to
+# emit) and tools/validate.py (which checks it is a total, well-defined order)
+# resolve the default here, so the well-known location lives in one place.
+DEFAULT_ASSEMBLY_HOLDER = ID_CORE["h-multiagent"]
+
 # Federation entry points (D1): the union is the owl:imports closure of the root
 # ontology, resolved to local files through the Protégé catalog. If either is
 # absent the loader falls back to the legacy directory glob.
@@ -45,6 +52,12 @@ INSTANCE_LINK_PREDICATES = {
     HO.hasGuardrail, HO.hasWorkflow, HO.usesModel, HO.hasExample,
     HO.hasInstruction, HO.hasRole, HO.rolePersona, HO.roleTool,
     HO.roleGuardrail, HO.implementationCandidate, HO.capabilityContract,
+    HO.hasStep, HO.stepUsesTool, HO.stepByRole, HO.stepGuardedBy,
+    HO.stepProduces, HO.stepConsumes, HO.stepDependsOn,
+    HO.hasSection, HO.hasAssemblySection,
+    HO.agentObservation, HO.hasAreaOfInterest, HO.hasAreaOfObservation,
+    HO.coversInterest,
+    HO.scopedFrom, HO.describesDomain, HO.hasGlobalState, HO.projectsFrom,
     HO.targetsDomain, HO.addressesTask, HO.addressedBy,
     HO.requiresCapability, HO.providesCapability, HO.appliesPattern,
     HO.constrainedBy, HO.dependsOn, HO.specializes, HO.derivedFrom,
@@ -54,8 +67,10 @@ INSTANCE_LINK_PREDICATES = {
 # The classes we treat as first-class ontology individuals.
 INSTANCE_CLASSES = {
     HO.Harness, HO.HarnessComponent, HO.SystemPrompt, HO.Instruction,
-    HO.Tool, HO.Guardrail, HO.Workflow, HO.ModelConfig, HO.Example,
+    HO.Tool, HO.Guardrail, HO.Workflow, HO.WorkflowStep, HO.PromptSection,
+    HO.AssemblySection, HO.Deliverable, HO.ModelConfig, HO.Example,
     HO.Role, HO.Channel, HO.Candidate, HO.Contract, HO.Capability, HO.Domain, HO.Task,
+    HO.EnvironmentSpace, HO.GlobalState,
     HO.DesignPattern, HO.Constraint, HO.Concept,
 }
 

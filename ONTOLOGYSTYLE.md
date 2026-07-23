@@ -136,6 +136,11 @@ kebab 세그먼트로, 독립 repo 간 slug 충돌·orphan을 막는다.
 | Instruction | `ins-` | `id:ins-verify-then-proceed` |
 | Example | `ex-` | `id:ex-…` |
 | Harness | `h-` | `id:h-coding` |
+| Agent | `agent-` | `id:agent-orchestrator` |
+| ObservationSpace | `os-` | `id:os-orchestrator` |
+| AreaOfInterest | `aoi-` | `id:aoi-orchestrator-external` |
+| AreaOfObservation | `oa-` | `id:oa-orchestrator-external` |
+| EnvironmentSpace / GlobalState | (singleton, no prefix) | `id:env-space` · `id:global-state` |
 
 - **[지킴]** slug은 **의미가 드러나는 full word**. 자체 약어를 만들지 않는다(코드 식별자
   규칙과 동일). 관용 축약(`mc`=model config 등 접두사)만 표에 등록된 대로 쓴다.

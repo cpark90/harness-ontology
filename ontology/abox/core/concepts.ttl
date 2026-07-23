@@ -50,6 +50,10 @@ id:c-multiagent a ho:Concept ;
     skos:prefLabel "Multi-agent orchestration" ;
     skos:definition "Coordinating multiple specialised agents toward one goal; tag harnesses and principles about role division, dispatch and delegation." ;
     skos:topConceptOf id:scheme ; skos:related id:c-autonomy .
+id:c-memory a ho:Concept ;
+    skos:prefLabel "Agent memory" ;
+    skos:definition "The memory architecture an agent maintains -- the firmware/cache/long-term tiers distinguished by read-timing and persistence." ;
+    skos:topConceptOf id:scheme ; skos:related id:c-autonomy .
 id:c-traceability a ho:Concept ;
     skos:prefLabel "Traceability" ;
     skos:definition "Keeping every decision and artifact linked to its source and history; tag components that enforce provenance, non-deletion and grounded records." ;
@@ -91,6 +95,11 @@ id:c-bounded-context a ho:Concept ;
     skos:altLabel "anti-context-rot" ;
     skos:definition "The principle of never ingesting the whole knowledge store but retrieving only a request-scoped, budget-capped projection, keeping the working context bounded to defend against context rot." ;
     skos:broader id:c-agent-methodology .
+id:c-graceful-fallback a ho:Concept ;
+    skos:prefLabel "Graceful fallback" ;
+    skos:altLabel "error fallback" ;
+    skos:definition "The principle of anticipating failure per operation and degrading gracefully -- defining a fallback (retry, reduced-scope result or a flagged partial) for each foreseeable failure mode instead of aborting the whole run, and making any degradation explicit." ;
+    skos:broader id:c-agent-methodology .
 id:c-composition a ho:Concept ;
     skos:prefLabel "Harness composition" ;
     skos:altLabel "assembly from parts" ;
@@ -100,6 +109,11 @@ id:c-reuse-first a ho:Concept ;
     skos:prefLabel "Reuse-first authoring" ;
     skos:altLabel "anti-orphan authoring discipline" ;
     skos:definition "The discipline of reusing an existing typed part before authoring a new one, and connecting any new part in the same change (a broader parent, a tag or a provider) so the graph never gains an orphan; tag components that enforce reuse-first, anti-drift, anti-orphan authoring." ;
+    skos:broader id:c-agent-methodology .
+id:c-skill-authoring a ho:Concept ;
+    skos:prefLabel "Skill authoring" ;
+    skos:altLabel "well-formed skill packaging" ;
+    skos:definition "The principle of authoring and packaging an agent skill in well-formed shape -- a present description, the required section headings and no forbidden files -- so it is discoverable, invocable and contract-checkable; tag the capability and guardrail that govern how a skill is written." ;
     skos:broader id:c-agent-methodology .
 
 id:c-root-cause a ho:Concept ;
@@ -121,6 +135,11 @@ id:c-controlled-vocabulary a ho:Concept ;
     skos:altLabel "anti-drift" ;
     skos:definition "The principle of reusing registered terms and established domain vocabulary rather than coining near-synonyms or private abbreviations, adding new terms to a single terminology source." ;
     skos:broader id:c-communication .
+id:c-structured-output a ho:Concept ;
+    skos:prefLabel "Structured output" ;
+    skos:altLabel "deliverable template" ;
+    skos:definition "The principle of emitting each deliverable in a consistent, agreed structured template so downstream roles and convergence gates can consume it mechanically rather than re-parsing free-form prose." ;
+    skos:broader id:c-communication .
 
 id:c-grounding a ho:Concept ;
     skos:prefLabel "Grounding" ;
@@ -141,6 +160,31 @@ id:c-delegation a ho:Concept ;
     skos:prefLabel "Delegated orchestration" ;
     skos:altLabel "orchestrator does not work directly" ;
     skos:definition "The principle that the user-facing orchestrator does no substantive work directly but only plans and dispatches, with all execution flowing through the worker agents." ;
+    skos:broader id:c-multiagent .
+id:c-synthesis a ho:Concept ;
+    skos:prefLabel "Synthesis" ;
+    skos:altLabel "convergence gate" ;
+    skos:definition "The principle of converging the separate deliverables of multiple worker roles into one coherent, cross-checked final result -- the terminal convergence step of a multi-agent workflow, distinct from mere verification in that it also compiles the integrated output." ;
+    skos:broader id:c-multiagent .
+id:c-scale-modes a ho:Concept ;
+    skos:prefLabel "Scale execution modes" ;
+    skos:altLabel "full/reduced/single modes" ;
+    skos:definition "The principle of matching effort to request scope by scaling the active agent roles and workflow -- a full team for a broad request, a reduced subset for a narrow one, a single pass for a trivial one -- rather than always running the whole team." ;
+    skos:broader id:c-multiagent .
+id:c-execution-mode a ho:Concept ;
+    skos:prefLabel "Execution mode" ;
+    skos:altLabel "runtime coordination topology" ;
+    skos:definition "The runtime topology a multi-agent harness coordinates in -- peer agent-teams, lightweight sub-agents, or a phase-varying hybrid -- an axis orthogonal to the architectural data-flow pattern; tag the DesignPatterns that select how agents are spawned and coordinated at run time." ;
+    skos:broader id:c-multiagent .
+id:c-pattern-taxonomy a ho:Concept ;
+    skos:prefLabel "Coordination pattern taxonomy" ;
+    skos:altLabel "architectural multi-agent patterns" ;
+    skos:definition "The catalogue of architectural multi-agent coordination patterns -- how work flows and is structured across agents (pipeline, fan-out/fan-in, expert pool, producer-reviewer, supervisor, hierarchical delegation) -- independent of the runtime execution mode; tag the DesignPatterns describing agent work-flow architecture." ;
+    skos:broader id:c-multiagent .
+id:c-complexity-governance a ho:Concept ;
+    skos:prefLabel "Complexity governance" ;
+    skos:altLabel "orchestration complexity limits" ;
+    skos:definition "The principle of bounding multi-agent orchestration complexity -- limiting delegation depth, forbidding nested teams, keeping a single active team, avoiding coordination bottlenecks and flattening hierarchy -- so a harness stays tractable and debuggable rather than sprawling; tag guardrails that cap structural complexity." ;
     skos:broader id:c-multiagent .
 
 #===================== Concept scheme ==================================

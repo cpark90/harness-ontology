@@ -71,3 +71,55 @@ id:gr-delegated-orchestration a ho:Guardrail ; skos:prefLabel "Delegated-only or
 id:gr-reuse-first a ho:Guardrail ; skos:prefLabel "Reuse-first composition" ; skos:altLabel "anti-orphan authoring" ;
     ho:promptText "Compose by REUSING existing typed parts first; author a new part only when none fits, and in the same change connect it (a broader parent / a tag / a provider) so it is never an orphan -- this is the anti-drift, anti-orphan discipline of composition." ;
     ho:tagged id:c-reuse-first ; ho:tokenEstimate 62 ; ho:maturity "reviewed" .
+id:gr-structured-output a ho:Guardrail ; skos:prefLabel "Structured output" ; skos:altLabel "deliverable template" ;
+    ho:promptText "Emit every deliverable in the agreed structured template for its type -- consistent sections, headings and fields -- so downstream roles and any convergence gate can consume it mechanically rather than re-parsing free-form prose." ;
+    ho:tagged id:c-structured-output ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+id:gr-scale-modes a ho:Guardrail ; skos:prefLabel "Scale execution modes" ; skos:altLabel "full/reduced/single modes" ;
+    ho:promptText "Match effort to the request's scope: run the full agent team for a broad request, a reduced subset of roles for a narrow one, and a single pass for a trivial one -- scale the active roles and workflow to the scope rather than always running everything." ;
+    ho:tagged id:c-scale-modes ; ho:tokenEstimate 46 ; ho:maturity "reviewed" .
+id:gr-graceful-fallback a ho:Guardrail ; skos:prefLabel "Graceful fallback" ; skos:altLabel "error fallback" ;
+    ho:promptText "Anticipate failure per operation and degrade gracefully: for each foreseeable failure mode define a fallback (retry, reduced-scope result, or a clearly flagged partial deliverable) rather than aborting the whole run, and make any degradation explicit in the output." ;
+    ho:tagged id:c-graceful-fallback ; ho:tokenEstimate 48 ; ho:maturity "reviewed" .
+
+#===================== Complexity governance (orchestration limits) ====
+id:gr-depth-limit a ho:Guardrail ; skos:prefLabel "Delegation depth limit" ; skos:altLabel "at most two levels" ;
+    ho:promptText "Limit delegation to at most two levels deep: a coordinator may delegate to workers, but those workers do not spawn further sub-teams, keeping the call graph shallow and debuggable." ;
+    ho:tagged id:c-complexity-governance ; ho:tokenEstimate 42 ; ho:maturity "draft" .
+id:gr-no-nested-teams a ho:Guardrail ; skos:prefLabel "No nested teams" ;
+    ho:promptText "Do not nest agent teams inside agent teams: a team's workers are leaf agents, not themselves leaders of further teams." ;
+    ho:tagged id:c-complexity-governance ; ho:tokenEstimate 30 ; ho:maturity "draft" .
+id:gr-single-active-team a ho:Guardrail ; skos:prefLabel "Single active team" ;
+    ho:promptText "Keep exactly one agent team active at a time rather than running multiple concurrent teams, so coordination state stays observable and contention is avoided." ;
+    ho:tagged id:c-complexity-governance ; ho:tokenEstimate 38 ; ho:maturity "draft" .
+id:gr-bottleneck-avoidance a ho:Guardrail ; skos:prefLabel "Avoid coordination bottlenecks" ;
+    ho:promptText "Do not funnel every hand-off through a single coordinator when the work is parallelisable; distribute coordination so that one agent does not become a throughput bottleneck." ;
+    ho:tagged id:c-complexity-governance ; ho:tokenEstimate 40 ; ho:maturity "draft" .
+id:gr-flatten-hierarchy a ho:Guardrail ; skos:prefLabel "Flatten the hierarchy" ;
+    ho:promptText "Prefer the flattest agent hierarchy that solves the task; add a coordination layer only when depth is genuinely required, not by default." ;
+    ho:tagged id:c-complexity-governance ; ho:tokenEstimate 34 ; ho:maturity "draft" .
+id:gr-bounded-iteration a ho:Guardrail ; skos:prefLabel "Bounded iteration" ; skos:altLabel "retry cap" ;
+    ho:promptText "Cap corrective iteration: a producer-reviewer or retry loop runs at most two to three rounds, then escalates or returns a clearly flagged partial rather than looping unbounded." ;
+    ho:tagged id:c-complexity-governance ; ho:tokenEstimate 40 ; ho:maturity "draft" .
+
+#===================== Verification, authoring and model governance ====
+id:gr-integration-coherence a ho:Guardrail ; skos:prefLabel "Integration coherence" ; skos:altLabel "boundary cross-check" ;
+    ho:promptText "Read the producer and the consumer of an interface together and cross-check that the two sides agree at their shared boundary; prefer connection checks over mere existence checks. Distinct from grounding (id:gr-grounding), which links an artifact to its rationale -- this verifies that two components actually fit where they meet." ;
+    ho:tagged id:c-grounding ; ho:tokenEstimate 72 ; ho:maturity "draft" .
+id:gr-discriminating-eval a ho:Guardrail ; skos:prefLabel "Discriminating evaluation" ; skos:altLabel "baseline differential" ;
+    ho:promptText "Evaluate against a baseline so the test discriminates: compare behaviour with and without the component under test, and discard any assertion that passes in both arms because it proves nothing about the component." ;
+    ho:tagged id:c-agent-methodology ; ho:tokenEstimate 48 ; ho:maturity "draft" .
+id:gr-single-responsibility a ho:Guardrail ; skos:prefLabel "Single responsibility per role" ;
+    ho:promptText "Give each role exactly one clear responsibility; if a role accretes a second distinct duty, split it into two roles rather than overloading one." ;
+    ho:tagged id:c-least-privilege ; ho:tokenEstimate 34 ; ho:maturity "draft" .
+id:gr-generalize-not-overfit a ho:Guardrail ; skos:prefLabel "Generalize, do not overfit" ;
+    ho:promptText "When acting on feedback, fix the underlying principle rather than the single reported instance: generalize the correction into a reusable rule instead of patching one case and leaving the class of problem open." ;
+    ho:tagged id:c-design ; ho:tokenEstimate 50 ; ho:maturity "draft" .
+id:gr-absolute-paths a ho:Guardrail ; skos:prefLabel "Absolute workspace paths" ;
+    ho:promptText "Reference shared-workspace files by absolute path rooted at the workspace directory rather than by relative path, so every agent and session resolves the same file regardless of its working directory." ;
+    ho:tagged id:c-multiagent ; ho:tokenEstimate 46 ; ho:maturity "draft" .
+id:gr-well-formed-skill a ho:Guardrail ; skos:prefLabel "Well-formed skill" ;
+    ho:promptText "Author every skill in well-formed shape: a present description, the required section headings and no forbidden files, so the skill is discoverable, invocable and passes its structural contract." ;
+    ho:tagged id:c-skill-authoring ; ho:tokenEstimate 46 ; ho:maturity "draft" .
+id:gr-opus-required a ho:Guardrail ; skos:prefLabel "Opus model required" ; skos:altLabel "dispatch model floor" ;
+    ho:promptText "Spawn quality-critical dispatch roles (authoring and judgment) on the top-tier model, since their output determines final correctness; make the model requirement explicit rather than leaving it to template default." ;
+    ho:tagged id:c-multiagent ; ho:tokenEstimate 50 ; ho:maturity "draft" .

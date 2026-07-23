@@ -111,3 +111,258 @@ ho:SystemPromptShape a sh:NodeShape ;
         sh:minCount 1 ;
         sh:datatype xsd:string ;
         sh:message "SystemPrompt must have ho:promptText." ] .
+
+#--- AssemblySection: well-defined position + recognised kind --------
+# Per-node half of the total-order guarantee (Stage c): each AssemblySection
+# must carry exactly one integer ho:assemblyOrder and exactly one ho:sectionKind
+# drawn from the closed set the build emitter recognises. The SET-level
+# constraint (no two sections in one harness's assembly sharing an order — i.e.
+# the order is TOTAL) is enforced by tools/validate.check_assembly_order, which
+# also cross-checks the kinds against the emitter. Together they make an
+# ill-defined assembly order a build failure, not a silent code fallback.
+ho:AssemblySectionShape a sh:NodeShape ;
+    sh:targetClass ho:AssemblySection ;
+    sh:property [
+        sh:path ho:assemblyOrder ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:message "AssemblySection must have exactly one integer ho:assemblyOrder (a well-defined position)." ] ;
+    sh:property [
+        sh:path ho:sectionKind ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "overview" "persona" "operating-rules" "process" "model" "roles" "channels" "skills" "execution-mode" "data-flow" "error-handling" "test-scenarios" ) ;
+        sh:message "AssemblySection must have exactly one ho:sectionKind from the emitter's closed set (overview/persona/operating-rules/process/model/roles/channels/skills/execution-mode/data-flow/error-handling/test-scenarios)." ] .
+
+#--- Memory: the 3-tier discrimination is enforced, not decorative ---
+# Every ho:Memory must be labelled and defined and must declare BOTH its
+# read-timing (when it is read relative to execution) and its persistence
+# (whether it survives a spawn) from their closed value sets, plus a maturity.
+# readScope and activationCondition stay optional (only long-term needs a
+# trigger). This makes the firmware/cache/long-term distinction a required,
+# well-typed property of any memory tier rather than free-text prose.
+ho:MemoryShape a sh:NodeShape ;
+    sh:targetClass ho:Memory ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "Memory must have a skos:prefLabel." ] ;
+    sh:property [
+        sh:path skos:definition ;
+        sh:minCount 1 ;
+        sh:message "Memory must have a skos:definition." ] ;
+    sh:property [
+        sh:path ho:memoryReadTiming ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "every-execution" "task-continuous" "conditional" ) ;
+        sh:message "Memory must have exactly one ho:memoryReadTiming from the closed set (every-execution/task-continuous/conditional)." ] ;
+    sh:property [
+        sh:path ho:memoryPersistence ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "durable" "ephemeral" ) ;
+        sh:message "Memory must have exactly one ho:memoryPersistence from the closed set (durable/ephemeral)." ] ;
+    sh:property [
+        sh:path ho:maturity ;
+        sh:minCount 1 ;
+        sh:message "Memory must have ho:maturity." ] .
+
+#--- TestScenario: a usable behaviour-acceptance fixture ------------
+# A TestScenario must be labelled and mature, declare its kind from the
+# closed value set, and carry at least one prompt (the request it runs).
+# scenarioExpected and scenarioReferences stay optional (a trigger-negative
+# fixture may assert only that nothing activates). This keeps the
+# normal/error/trigger distinction a required, well-typed property.
+ho:TestScenarioShape a sh:NodeShape ;
+    sh:targetClass ho:TestScenario ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "TestScenario must have a skos:prefLabel." ] ;
+    sh:property [
+        sh:path ho:scenarioKind ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "normal" "existing-input" "error" "trigger-positive" "trigger-negative" ) ;
+        sh:message "TestScenario must have exactly one ho:scenarioKind from the closed set (normal/existing-input/error/trigger-positive/trigger-negative)." ] ;
+    sh:property [
+        sh:path ho:scenarioPrompt ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "TestScenario must have >=1 ho:scenarioPrompt (the request it runs)." ] ;
+    sh:property [
+        sh:path ho:maturity ;
+        sh:minCount 1 ;
+        sh:message "TestScenario must have ho:maturity." ] .
+
+#--- FailurePolicy: a complete condition->strategy row --------------
+# A FailurePolicy row must be labelled and mature and carry BOTH its
+# failure condition and its recovery strategy, so an error-handling
+# table row is never half-specified.
+ho:FailurePolicyShape a sh:NodeShape ;
+    sh:targetClass ho:FailurePolicy ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "FailurePolicy must have a skos:prefLabel." ] ;
+    sh:property [
+        sh:path ho:failureCondition ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "FailurePolicy must have >=1 ho:failureCondition." ] ;
+    sh:property [
+        sh:path ho:recoveryStrategy ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "FailurePolicy must have >=1 ho:recoveryStrategy." ] ;
+    sh:property [
+        sh:path ho:maturity ;
+        sh:minCount 1 ;
+        sh:message "FailurePolicy must have ho:maturity." ] .
+
+#--- Agent: a well-formed partially-observed distributed node --------
+# Every ho:Agent must be labelled and mature, name the Role it compiles
+# (>=1 agentRole), hold its ObservationSpace (>=1 agentObservation — its
+# cognitive envelope Omega_i is never empty), and declare its cognitive
+# capacity (>=1 cognitiveCapacity — the loss-free context bound within
+# which its observation must fit). agentFunction stays optional here (an
+# agent's action space may be recorded via roleTool). The capacity FIT
+# (summed area tokenEstimate <= cognitiveCapacity) is not SHACL-enforceable
+# (no aggregation) and is checked by tool/review; this shape enforces the
+# structural minimums.
+ho:AgentShape a sh:NodeShape ;
+    sh:targetClass ho:Agent ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "Agent must have a skos:prefLabel." ] ;
+    sh:property [
+        sh:path ho:agentRole ;
+        sh:minCount 1 ;
+        sh:class ho:Role ;
+        sh:message "Agent must name >=1 Role via ho:agentRole (its mandate/policy)." ] ;
+    sh:property [
+        sh:path ho:agentObservation ;
+        sh:minCount 1 ;
+        sh:class ho:ObservationSpace ;
+        sh:message "Agent must hold >=1 ObservationSpace via ho:agentObservation (its cognitive envelope is never empty)." ] ;
+    sh:property [
+        sh:path ho:cognitiveCapacity ;
+        sh:minCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:message "Agent must declare >=1 ho:cognitiveCapacity (the loss-free context bound)." ] ;
+    sh:property [
+        sh:path ho:maturity ;
+        sh:minCount 1 ;
+        sh:message "Agent must have ho:maturity." ] .
+
+#--- ObservationSpace: a well-formed observable envelope (Omega_i) --
+# Every ho:ObservationSpace must be labelled and mature, project from a
+# GlobalState (>=1 projectsFrom — it is a partial projection of the system
+# state) and hold at least one AreaOfObservation (>=1 hasAreaOfObservation
+# — something is actually observed). hasAreaOfInterest is enforced by
+# ho:AreaOfInterestShape's min-count-free presence via the space (the
+# AreaOfInterestShape below requires each interest be well-formed; at least
+# one interest is expected but the realized-observation minimum is the hard
+# structural floor here). The capacity FIT (summed AreaOfObservation
+# tokenEstimate <= the agent's cognitiveCapacity) is not SHACL-enforceable.
+ho:ObservationSpaceShape a sh:NodeShape ;
+    sh:targetClass ho:ObservationSpace ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "ObservationSpace must have a skos:prefLabel." ] ;
+    sh:property [
+        sh:path ho:projectsFrom ;
+        sh:minCount 1 ;
+        sh:class ho:GlobalState ;
+        sh:message "ObservationSpace must project from >=1 GlobalState via ho:projectsFrom (it is a partial projection of the system state)." ] ;
+    sh:property [
+        sh:path ho:hasAreaOfObservation ;
+        sh:minCount 1 ;
+        sh:class ho:AreaOfObservation ;
+        sh:message "ObservationSpace must hold >=1 AreaOfObservation via ho:hasAreaOfObservation (something is actually observed)." ] ;
+    sh:property [
+        sh:path ho:maturity ;
+        sh:minCount 1 ;
+        sh:message "ObservationSpace must have ho:maturity." ] .
+
+#--- AreaOfInterest: a well-formed information requirement (intent) --
+# Every ho:AreaOfInterest must be labelled and mature and declare its kind
+# (internal vs external, from the closed set). No ho:tokenEstimate is
+# required — an interest is intent, not consumed input (contrast
+# AreaOfObservation, whose realized size is budgeted).
+ho:AreaOfInterestShape a sh:NodeShape ;
+    sh:targetClass ho:AreaOfInterest ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "AreaOfInterest must have a skos:prefLabel." ] ;
+    sh:property [
+        sh:path ho:observationKind ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "internal" "external" ) ;
+        sh:message "AreaOfInterest must have exactly one ho:observationKind from the closed set (internal/external)." ] ;
+    sh:property [
+        sh:path ho:maturity ;
+        sh:minCount 1 ;
+        sh:message "AreaOfInterest must have ho:maturity." ] .
+
+#--- AreaOfObservation: a well-formed realized observation ----------
+# Every ho:AreaOfObservation must be labelled and mature, declare its kind
+# (internal vs external) and carry a ho:tokenEstimate (the realized size it
+# contributes to one inference, summed against the agent's capacity). The
+# observes* edges stay SOFT (an area may declare only a file scope or an
+# unobserved boundary), so they are not required here.
+ho:AreaOfObservationShape a sh:NodeShape ;
+    sh:targetClass ho:AreaOfObservation ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "AreaOfObservation must have a skos:prefLabel." ] ;
+    sh:property [
+        sh:path ho:observationKind ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "internal" "external" ) ;
+        sh:message "AreaOfObservation must have exactly one ho:observationKind from the closed set (internal/external)." ] ;
+    sh:property [
+        sh:path ho:tokenEstimate ;
+        sh:minCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:message "AreaOfObservation must have >=1 ho:tokenEstimate (realized size contributed to one inference, for capacity fit)." ] ;
+    sh:property [
+        sh:path ho:maturity ;
+        sh:minCount 1 ;
+        sh:message "AreaOfObservation must have ho:maturity." ] .
+
+#--- GlobalState: the system-description of a Domain ----------------
+# The global state space (the S of a decentralized POMDP) must name the
+# Domain it describes (ho:describesDomain, the projection chain's middle
+# link) and be labelled and mature. EnvironmentSpace stays shape-free (a
+# bare anchor at the top of the chain, like a Domain), so no shape targets
+# it.
+ho:GlobalStateShape a sh:NodeShape ;
+    sh:targetClass ho:GlobalState ;
+    sh:property [
+        sh:path ho:describesDomain ;
+        sh:minCount 1 ;
+        sh:class ho:Domain ;
+        sh:message "GlobalState must name >=1 Domain via ho:describesDomain (the system it describes is scoped to a Domain)." ] ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:message "GlobalState must have a skos:prefLabel." ] ;
+    sh:property [
+        sh:path ho:maturity ;
+        sh:minCount 1 ;
+        sh:message "GlobalState must have ho:maturity." ] .

@@ -57,6 +57,27 @@ def _sorted(nodes):
     return sorted(nodes, key=str)
 
 
+def _workflow_steps(g: Graph, wf: URIRef) -> list:
+    """A workflow's ho:hasStep steps in a total, deterministic order: ascending
+    ho:stepOrder, ties broken by IRI (a step missing stepOrder sorts first).
+    Empty when the workflow is not decomposed into steps."""
+    def key(step):
+        order = g.value(step, HO.stepOrder)
+        return (0 if order is None else int(order), str(step))
+    return sorted(g.objects(wf, HO.hasStep), key=key)
+
+
+def _prompt_sections(g: Graph, sp: URIRef) -> list:
+    """A SystemPrompt's ho:hasSection sections in a total, deterministic order:
+    ascending ho:sectionOrder, ties broken by IRI (a section missing sectionOrder
+    sorts first). Empty when the prompt is not decomposed into sections (then the
+    Persona renders from the prompt's blob ho:promptText as before)."""
+    def key(sec):
+        order = g.value(sec, HO.sectionOrder)
+        return (0 if order is None else int(order), str(sec))
+    return sorted(g.objects(sp, HO.hasSection), key=key)
+
+
 def role_slug(role: URIRef) -> str:
     """Filename stem for a role's agent file: the IRI's last segment with a
     leading 'role-' stripped (id:role-developer -> 'developer'), mirroring the
@@ -162,23 +183,19 @@ def channel_record(g: Graph, chan: URIRef) -> dict:
     }
 
 
-def build_claude_md(g: Graph, h: URIRef, sources: list[str],
-                    roles: list[URIRef], channels: list[URIRef],
-                    instructions: list[URIRef]) -> str:
-    """Assemble CLAUDE.md deterministically from the harness's components.
-    `sources` is appended to with every template path actually used. `roles`
-    (the harness's ho:hasRole objects, sorted) are summarised in a Roles section
-    and their personas are omitted from the top-level Persona section — each
-    role persona is rendered into its own .claude/agents/<role>.md instead.
-    `channels` (the harness's ho:hasChannel objects, sorted) are summarised in a
-    Coordination channels section (participants, user involvement, medium).
-    `instructions` (the harness's ho:hasInstruction objects, sorted) are
-    summarised in a Skills section (name, what it does, its skill file); a
-    skill-less harness omits the section entirely."""
-    out: list[str] = []
-    role_personas = {p for r in roles for p in g.objects(r, HO.rolePersona)}
+# --- 3a. CLAUDE.md section renderers (one per ho:sectionKind) ----------
+# Each renderer appends its section's lines to `out` (a shared line buffer that
+# build_claude_md joins with "\n"). The renderers are keyed by ho:sectionKind and
+# invoked in the ORDER the graph declares (see resolve_assembly_order); moving a
+# section is now graph data, not a code change here. Behaviour is byte-for-byte
+# what the former fixed-order emitter produced, so a harness whose assembly order
+# equals the historical order materializes identically. `ctx` carries the
+# harness-wide values the renderers share (sources sink, roles/channels/
+# instructions lists, and the set of per-role personas excluded from the top
+# Persona section).
 
-    # -- overview (harness prefLabel + definition) --
+def _render_overview(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Opening overview: the harness prefLabel heading and its definition."""
     out.append(f"# {lib.label_of(g, h)}")
     out.append("")
     definition = g.value(h, SKOS.definition)
@@ -186,46 +203,76 @@ def build_claude_md(g: Graph, h: URIRef, sources: list[str],
         out.append(str(definition))
         out.append("")
 
-    # -- persona (hasSystemPrompt, excluding per-role personas) --
+
+def _render_persona(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Persona: hasSystemPrompt prompts, excluding per-role personas."""
     out.append("## Persona")
     out.append("")
     for sp in _sorted(g.objects(h, HO.hasSystemPrompt)):
-        if sp in role_personas:
+        if sp in ctx["role_personas"]:
             continue
-        fallback = str(g.value(sp, HO.promptText) or lib.label_of(g, sp))
+        # A decomposed SystemPrompt (ho:hasSection) composes its Persona from the
+        # ordered section fragments; a section-less prompt renders its blob text.
+        sections = _prompt_sections(g, sp)
+        if sections:
+            fallback = "\n\n".join(
+                str(g.value(sec, HO.promptText) or lib.label_of(g, sec))
+                for sec in sections)
+        else:
+            fallback = str(g.value(sp, HO.promptText) or lib.label_of(g, sp))
         body, src = render_component(g, sp, fallback)
         if src:
-            sources.append(src)
+            ctx["sources"].append(src)
         out.append(body)
         out.append("")
 
-    # -- operating rules (hasGuardrail) --
+
+def _render_operating_rules(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Operating rules: hasGuardrail policies (+ language conditions)."""
     out.append("## Operating rules")
     out.append("")
     for gr in _sorted(g.objects(h, HO.hasGuardrail)):
         fallback = str(g.value(gr, HO.promptText) or "")
         body, src = render_component(g, gr, fallback)
         if src:
-            sources.append(src)
+            ctx["sources"].append(src)
         out.append(f"- **{lib.label_of(g, gr)}** — {body}")
         for cond in sorted(str(c) for c in g.objects(gr, HO.languageCondition)):
             out.append(f"    - {cond}")
     out.append("")
 
-    # -- process (hasWorkflow + appliesPattern) --
+
+def _render_process(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Process: hasWorkflow (with ordered steps) + appliesPattern."""
     out.append("## Process")
     out.append("")
     for wf in _sorted(g.objects(h, HO.hasWorkflow)):
         desc = g.value(wf, SKOS.definition)
         tail = f" — {desc}" if desc else ""
         out.append(f"- **Workflow: {lib.label_of(g, wf)}**{tail}")
+        # A decomposed workflow (ho:hasStep) renders its ordered steps beneath
+        # the one-line workflow entry; a step-less workflow renders as before.
+        for step in _workflow_steps(g, wf):
+            order = g.value(step, HO.stepOrder)
+            num = f"{int(order)}. " if order is not None else ""
+            sdesc = g.value(step, SKOS.definition)
+            stail = f" — {sdesc}" if sdesc else ""
+            out.append(f"    - **{num}{lib.label_of(g, step)}**{stail}")
+            for role in _sorted(g.objects(step, HO.stepByRole)):
+                out.append(f"        - by role: {lib.label_of(g, role)}")
+            for tool in _sorted(g.objects(step, HO.stepUsesTool)):
+                out.append(f"        - uses tool: {lib.label_of(g, tool)}")
+            for grd in _sorted(g.objects(step, HO.stepGuardedBy)):
+                out.append(f"        - guarded by: {lib.label_of(g, grd)}")
     for pat in _sorted(g.objects(h, HO.appliesPattern)):
         desc = g.value(pat, SKOS.definition)
         tail = f" — {desc}" if desc else ""
         out.append(f"- **Pattern: {lib.label_of(g, pat)}**{tail}")
     out.append("")
 
-    # -- model / config (usesModel) --
+
+def _render_model(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Model / config: usesModel."""
     out.append("## Model")
     out.append("")
     for mc in _sorted(g.objects(h, HO.usesModel)):
@@ -234,55 +281,162 @@ def build_claude_md(g: Graph, h: URIRef, sources: list[str],
         out.append(f"- {lib.label_of(g, mc)}{tail}")
     out.append("")
 
-    # -- roles (hasRole) — a multi-agent harness dispatches sub-agents --
-    if roles:
-        out.append("## Roles")
-        out.append("")
-        out.append("This harness dispatches the following sub-agents; each has "
-                   "its own agent file under `.claude/agents/`.")
-        out.append("")
-        for r in roles:
-            desc = g.value(r, SKOS.definition)
-            tail = f" — {desc}" if desc else ""
-            out.append(f"- **{lib.label_of(g, r)}** (`.claude/agents/"
-                       f"{role_slug(r)}.md`){tail}")
-        out.append("")
 
-    # -- coordination channels (hasChannel) — how roles/user exchange work --
-    if channels:
-        out.append("## Coordination channels")
-        out.append("")
-        out.append("The roles (and the user) coordinate over the following "
-                   "channels; each names its participants, whether the user is "
-                   "an endpoint, and the medium it rides on.")
-        out.append("")
-        for chan in channels:
-            rec = channel_record(g, chan)
-            out.append(f"- **{rec['label']}**"
-                       + (f" — {rec['definition']}" if rec["definition"] else ""))
-            if rec["participants"]:
-                names = ", ".join(p["label"] for p in rec["participants"])
-                out.append(f"    - participants: {names}")
-            out.append(f"    - involves user: {'yes' if rec['involvesUser'] else 'no'}")
-            if rec["medium"]:
-                out.append(f"    - medium: {rec['medium']}")
-        out.append("")
+def _render_roles(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Roles: hasRole sub-agents. Conditional — a role-less harness emits
+    nothing (exactly as the former fixed-order emitter's `if roles:` guard)."""
+    roles = ctx["roles"]
+    if not roles:
+        return
+    out.append("## Roles")
+    out.append("")
+    out.append("This harness dispatches the following sub-agents; each has "
+               "its own agent file under `.claude/agents/`.")
+    out.append("")
+    for r in roles:
+        desc = g.value(r, SKOS.definition)
+        tail = f" — {desc}" if desc else ""
+        out.append(f"- **{lib.label_of(g, r)}** (`.claude/agents/"
+                   f"{role_slug(r)}.md`){tail}")
+    out.append("")
 
-    # -- skills (hasInstruction) — named on-demand procedures the agent runs --
-    if instructions:
-        out.append("## Skills")
-        out.append("")
-        out.append("This harness ships the following skills (named on-demand "
-                   "procedures); each has its own file under `.claude/skills/`.")
-        out.append("")
-        for ins in instructions:
-            name = instruction_name(g, ins)
-            desc = g.value(ins, SKOS.definition)
-            tail = f" — {desc}" if desc else ""
-            out.append(f"- **{lib.label_of(g, ins)}** (`.claude/skills/"
-                       f"{name}/SKILL.md`){tail}")
-        out.append("")
 
+def _render_channels(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Coordination channels: hasChannel. Conditional — a channel-less harness
+    emits nothing."""
+    channels = ctx["channels"]
+    if not channels:
+        return
+    out.append("## Coordination channels")
+    out.append("")
+    out.append("The roles (and the user) coordinate over the following "
+               "channels; each names its participants, whether the user is "
+               "an endpoint, and the medium it rides on.")
+    out.append("")
+    for chan in channels:
+        rec = channel_record(g, chan)
+        out.append(f"- **{rec['label']}**"
+                   + (f" — {rec['definition']}" if rec["definition"] else ""))
+        if rec["participants"]:
+            names = ", ".join(p["label"] for p in rec["participants"])
+            out.append(f"    - participants: {names}")
+        out.append(f"    - involves user: {'yes' if rec['involvesUser'] else 'no'}")
+        if rec["medium"]:
+            out.append(f"    - medium: {rec['medium']}")
+    out.append("")
+
+
+def _render_skills(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Skills: hasInstruction procedures. Conditional — a skill-less harness
+    emits nothing."""
+    instructions = ctx["instructions"]
+    if not instructions:
+        return
+    out.append("## Skills")
+    out.append("")
+    out.append("This harness ships the following skills (named on-demand "
+               "procedures); each has its own file under `.claude/skills/`.")
+    out.append("")
+    for ins in instructions:
+        name = instruction_name(g, ins)
+        desc = g.value(ins, SKOS.definition)
+        tail = f" — {desc}" if desc else ""
+        out.append(f"- **{lib.label_of(g, ins)}** (`.claude/skills/"
+                   f"{name}/SKILL.md`){tail}")
+    out.append("")
+
+
+# Maps each ho:sectionKind to the renderer that emits that section. The KEYS are
+# the CLOSED set of kinds an assembly order may name — an order that references a
+# kind absent here is a hard error (resolve_assembly_order). This is the single
+# in-code registry of buildable document sections; the SHACL sh:in enum on
+# ho:sectionKind mirrors it.
+SECTION_RENDERERS = {
+    "overview": _render_overview,
+    "persona": _render_persona,
+    "operating-rules": _render_operating_rules,
+    "process": _render_process,
+    "model": _render_model,
+    "roles": _render_roles,
+    "channels": _render_channels,
+    "skills": _render_skills,
+}
+
+
+def resolve_assembly_order(g: Graph, h: URIRef) -> list[str]:
+    """The ordered list of section KINDS to emit for harness `h`, READ from the
+    graph — the assembly order is SPEC, not hardcoded here. Resolution:
+      1. the harness's own ho:hasAssemblySection set (ascending ho:assemblyOrder),
+      2. else the central DEFAULT set on lib.DEFAULT_ASSEMBLY_HOLDER,
+      3. else a hard error.
+    The order must be TOTAL and well-defined — every section carries an integer
+    ho:assemblyOrder, no two share one, and every ho:sectionKind is one the
+    emitter recognises — or the build FAILS loudly (approved decision 2: an
+    undefined order is an error, never a silent code fallback). This keeps the
+    emitted document deterministic and byte-identical (INV-2)."""
+    sections = list(g.objects(h, HO.hasAssemblySection))
+    source = f"<{h}>"
+    if not sections:
+        sections = list(g.objects(lib.DEFAULT_ASSEMBLY_HOLDER, HO.hasAssemblySection))
+        source = f"default set on <{lib.DEFAULT_ASSEMBLY_HOLDER}>"
+    if not sections:
+        raise ValueError(
+            f"no assembly order resolvable for <{h}>: it declares no "
+            f"ho:hasAssemblySection and the central default holder "
+            f"<{lib.DEFAULT_ASSEMBLY_HOLDER}> carries none. The graph must define "
+            f"a total assembly order (approved decision 2: no silent fallback).")
+    by_order: dict[int, tuple[str, str]] = {}
+    for sec in sections:
+        raw = g.value(sec, HO.assemblyOrder)
+        if raw is None:
+            raise ValueError(
+                f"assembly section <{sec}> ({source}) has no ho:assemblyOrder — "
+                f"the assembly order is not total/well-defined.")
+        order = int(raw)
+        kind = g.value(sec, HO.sectionKind)
+        if kind is None:
+            raise ValueError(
+                f"assembly section <{sec}> ({source}) has no ho:sectionKind.")
+        kind = str(kind)
+        if kind not in SECTION_RENDERERS:
+            raise ValueError(
+                f"assembly section <{sec}> names unknown ho:sectionKind "
+                f"'{kind}' — the emitter has no renderer for it (recognised: "
+                f"{sorted(SECTION_RENDERERS)}).")
+        if order in by_order:
+            raise ValueError(
+                f"duplicate ho:assemblyOrder {order} in {source}: both "
+                f"'{by_order[order][1]}' and '{kind}' claim position {order} — "
+                f"the assembly order is not total.")
+        by_order[order] = (str(sec), kind)
+    return [kind for _order, (_iri, kind) in sorted(by_order.items())]
+
+
+def build_claude_md(g: Graph, h: URIRef, sources: list[str],
+                    roles: list[URIRef], channels: list[URIRef],
+                    instructions: list[URIRef]) -> str:
+    """Assemble CLAUDE.md deterministically from the harness's components, in the
+    section ORDER the graph declares (resolve_assembly_order) — HOW the parts are
+    assembled is SPEC (ho:AssemblySection), this only READS it. `sources` is
+    appended to with every template path actually used. `roles` (the harness's
+    ho:hasRole objects, sorted) are summarised in a Roles section and their
+    personas are omitted from the top-level Persona section — each role persona
+    is rendered into its own .claude/agents/<role>.md instead. `channels` (the
+    harness's ho:hasChannel objects, sorted) are summarised in a Coordination
+    channels section (participants, user involvement, medium). `instructions`
+    (the harness's ho:hasInstruction objects, sorted) are summarised in a Skills
+    section (name, what it does, its skill file); the conditional sections
+    (roles/channels/skills) emit nothing when the harness has no such parts."""
+    out: list[str] = []
+    ctx = {
+        "sources": sources,
+        "roles": roles,
+        "channels": channels,
+        "instructions": instructions,
+        "role_personas": {p for r in roles for p in g.objects(r, HO.rolePersona)},
+    }
+    for kind in resolve_assembly_order(g, h):
+        SECTION_RENDERERS[kind](g, h, out, ctx)
     return "\n".join(out)
 
 
@@ -361,6 +515,16 @@ def build_role_md(g: Graph, role: URIRef, sources: list[str]) -> str:
     out.append(f"# {lib.label_of(g, role)}")
     out.append("")
 
+    # -- user-facing stance (ho:userFacing is OPTIONAL: emit only when present) --
+    user_facing = g.value(role, HO.userFacing)
+    if user_facing is not None:
+        if bool(user_facing):
+            out.append("**User-facing role** — communicates directly with the user.")
+        else:
+            out.append("**Not user-facing** — dispatch-invoked only; does not "
+                       "communicate with the user.")
+        out.append("")
+
     # -- persona (rolePersona -> SystemPrompt) --
     persona = g.value(role, HO.rolePersona)
     if persona is not None:
@@ -418,13 +582,18 @@ def emit_roles(g: Graph, roles: list[URIRef], out_dir: str,
         with open(os.path.join(agents_dir, f"{slug}.md"), "w",
                   encoding="utf-8") as fh:
             fh.write(body if body.endswith("\n") else body + "\n")
-        records.append({
+        rec = {
             "role": str(r),
             "label": lib.label_of(g, r),
             "agentFile": f".claude/agents/{slug}.md",
             "tools": _sorted(str(t) for t in g.objects(r, HO.roleTool)),
             "guardrails": _sorted(str(x) for x in g.objects(r, HO.roleGuardrail)),
-        })
+        }
+        # ho:userFacing is OPTIONAL: record it only when the role asserts it.
+        uf = g.value(r, HO.userFacing)
+        if uf is not None:
+            rec["userFacing"] = bool(uf)
+        records.append(rec)
     return records
 
 
@@ -442,11 +611,18 @@ LOCK_FILENAME = "harness.lock.json"
 DEFAULT_POLICY = "latest-stable"
 
 
-def _resolve_implementation(ref: str) -> str | None:
-    """Resolve an implementation ref to a readable local file path, or None if
-    it names a URL / unresolvable path. Tries, in order: repo root, recipe dir
-    (dirname of the catalog), then the ref as an absolute path."""
-    if ref.startswith(("http://", "https://")):
+def _resolve_ref_path(ref: str) -> str | None:
+    """Resolve a reference string to a readable local file path, or None if it
+    names a URL / unresolvable path. This is the SINGLE fetch-resolution shared
+    by every reference materialize follows — ho:implementationRef, ho:scaffold
+    and skill ho:artifactTemplate refs alike: a recipe stores a REFERENCE to a
+    concrete artifact, and materialize FETCHES it at build time (it never stores
+    a copy of the artifact in the recipe). Tries, in order: the ontology repo
+    root, the recipe dir (dirname of the catalog), then the ref as an absolute
+    path (a possibly-EXTERNAL source, e.g. a real source harness on this
+    machine). A URL or a path that resolves to nothing returns None so the
+    caller can emit a fail-safe stub instead of crashing."""
+    if not ref or ref.startswith(("http://", "https://")):
         return None
     for base in _template_bases():  # repo root, then recipe/catalog dir
         cand = os.path.normpath(os.path.join(base, ref))
@@ -455,6 +631,20 @@ def _resolve_implementation(ref: str) -> str | None:
     if os.path.isabs(ref) and os.path.isfile(ref):
         return ref
     return None
+
+
+def _ref_stub(kind: str, ref: str, owner: str = "") -> str:
+    """Body of a reference STUB, emitted when a referenced source cannot be
+    fetched at build time (a URL, or a path that resolves neither under the repo
+    root / recipe dir nor as an absolute path). The build never fails and never
+    silently drops the artifact — it writes this placeholder, which is exactly
+    the signal that a reference did not travel to this environment. Deterministic
+    (no timestamps) so repeated builds stay byte-identical."""
+    who = f" for {owner}" if owner else ""
+    return (f"# {kind} reference stub{who}\n"
+            f"# the referenced source could not be fetched at build time "
+            f"(URL, or path does not resolve).\n"
+            f"# ref: {ref}\n")
 
 
 def _version_key(version: str) -> list:
@@ -650,7 +840,7 @@ def emit_implementations(g: Graph, h: URIRef, out_dir: str,
         sel = selections[tool_iri]
         ref = sel["ref"]
         basename = _dest_basename(tool_iri, ref, sel["selected"] is not None)
-        resolved = _resolve_implementation(ref) if ref else None
+        resolved = _resolve_ref_path(ref) if ref else None
         if resolved:
             dest_rel = f"tools/{basename}"
             shutil.copyfile(resolved, os.path.join(out_dir, dest_rel))
@@ -660,10 +850,7 @@ def emit_implementations(g: Graph, h: URIRef, out_dir: str,
             dest_rel = f"tools/{basename}.ref"
             with open(os.path.join(out_dir, dest_rel), "w",
                       encoding="utf-8") as fh:
-                fh.write(f"# implementation stub for {tool_iri}\n"
-                         f"# implementation ref could not be resolved to a "
-                         f"local file (URL or missing path).\n"
-                         f"# ref: {ref}\n")
+                fh.write(_ref_stub("implementation", ref, tool_iri))
             content_hash = None
             status = "stub"
         sel["contentHash"] = content_hash
@@ -741,9 +928,16 @@ def _scaffold_dest(rel_path: str) -> str:
 
 def emit_scaffold(g: Graph, h: URIRef, out_dir: str,
                   sources: list[str]) -> list[dict]:
-    """Render ho:scaffold fragments attached to the harness (and its domains)
-    into the output tree. Placeholders are substituted from the harness node.
-    Return manifest records (sorted by source path)."""
+    """FETCH each ho:scaffold fragment referenced by the harness (and its
+    domains) into the output tree. A scaffold value is a REFERENCE (repo-relative
+    or an absolute/external path) to a concrete standard/doc the harness ships;
+    the recipe stores the reference, NOT the document. On build the referenced
+    file is byte-copied (fetched) into the tree — the same fetch-resolution
+    ho:implementationRef uses, so the emitted fragment is byte-identical to its
+    source. If a reference does not resolve (offline, or an external source
+    absent) a `<dest>.ref` STUB is emitted instead of failing. The output path
+    mirrors the source after a `scaffold/` marker segment, else the basename.
+    Records are sorted by source path."""
     refs = set(g.objects(h, HO.scaffold))
     for dom in g.objects(h, HO.targetsDomain):
         refs.update(g.objects(dom, HO.scaffold))
@@ -752,14 +946,22 @@ def emit_scaffold(g: Graph, h: URIRef, out_dir: str,
     records = []
     for ref in _sorted(refs):
         rel = str(ref)
-        body = render_from_template(g, h, rel)
-        sources.append(rel)
         dest_rel = _scaffold_dest(rel)
-        dest = os.path.join(out_dir, dest_rel)
-        os.makedirs(os.path.dirname(dest) or out_dir, exist_ok=True)
-        with open(dest, "w", encoding="utf-8") as fh:
-            fh.write(body if body.endswith("\n") else body + "\n")
-        records.append({"source": rel, "dest": dest_rel})
+        resolved = _resolve_ref_path(rel)
+        if resolved:
+            dest = os.path.join(out_dir, dest_rel)
+            os.makedirs(os.path.dirname(dest) or out_dir, exist_ok=True)
+            shutil.copyfile(resolved, dest)
+            sources.append(rel)
+            status = "resolved"
+        else:
+            dest_rel = dest_rel + ".ref"
+            dest = os.path.join(out_dir, dest_rel)
+            os.makedirs(os.path.dirname(dest) or out_dir, exist_ok=True)
+            with open(dest, "w", encoding="utf-8") as fh:
+                fh.write(_ref_stub("scaffold fragment", rel))
+            status = "stub"
+        records.append({"source": rel, "dest": dest_rel, "status": status})
     return records
 
 
@@ -798,9 +1000,14 @@ def emit_instructions(g: Graph, instructions: list[URIRef], out_dir: str,
                       sources: list[str]) -> list[dict]:
     """Write .claude/skills/<name>/SKILL.md for each ho:Instruction bound to the
     harness, mirroring the source skill layout. When the instruction carries an
-    ho:artifactTemplate the vendored body is copied BYTE-IDENTICALLY (faithful);
-    otherwise the file is rendered from graph data. Return manifest records
-    sorted by IRI. A skill-less harness yields no files and an empty list."""
+    ho:artifactTemplate the referenced skill body is FETCHED (byte-copied) from
+    its source — repo-relative or an absolute/external path — the same
+    fetch-resolution ho:implementationRef uses, so the recipe stores the
+    reference, not the skill document. If the reference does not resolve a
+    `<SKILL.md>.ref` STUB is emitted instead of failing; if the instruction
+    carries no template at all the file is rendered from graph data. Return
+    manifest records sorted by IRI (each with a `status`: resolved | stub |
+    graph). A skill-less harness yields no files and an empty list."""
     if not instructions:
         return []
     skills_root = os.path.join(out_dir, ".claude", "skills")
@@ -812,14 +1019,25 @@ def emit_instructions(g: Graph, instructions: list[URIRef], out_dir: str,
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         tmpl = g.value(ins, HO.artifactTemplate)
         if tmpl is not None:
-            shutil.copyfile(resolve_template(str(tmpl)), dest)
-            sources.append(str(tmpl))
-            vendored = str(tmpl)
+            resolved = _resolve_ref_path(str(tmpl))
+            if resolved:
+                shutil.copyfile(resolved, dest)
+                sources.append(str(tmpl))
+                vendored = str(tmpl)
+                status = "resolved"
+            else:
+                dest_rel = dest_rel + ".ref"
+                dest = os.path.join(out_dir, dest_rel)
+                with open(dest, "w", encoding="utf-8") as fh:
+                    fh.write(_ref_stub("skill", str(tmpl), str(ins)))
+                vendored = None
+                status = "stub"
         else:
             body = _render_instruction_fallback(g, ins, name)
             with open(dest, "w", encoding="utf-8") as fh:
                 fh.write(body if body.endswith("\n") else body + "\n")
             vendored = None
+            status = "graph"
         records.append({
             "instruction": str(ins),
             "label": lib.label_of(g, ins),
@@ -827,6 +1045,7 @@ def emit_instructions(g: Graph, instructions: list[URIRef], out_dir: str,
             "definition": str(g.value(ins, SKOS.definition) or ""),
             "skillFile": dest_rel,
             "vendoredFrom": vendored,
+            "status": status,
         })
     return records
 

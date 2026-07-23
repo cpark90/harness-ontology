@@ -22,3 +22,5 @@ id:cap-orchestration a ho:Capability ; skos:prefLabel "Multi-agent orchestration
     skos:definition "Decompose work into node-scoped briefs, dispatch them to specialised worker agents under least-privilege, and integrate the results." .
 id:cap-traceability a ho:Capability ; skos:prefLabel "Traceability" ;
     skos:definition "Preserve a single source of truth: never delete a decision, only deprecate it with a reason and replacement, and increment identifiers without reuse." .
+id:cap-synthesis a ho:Capability ; skos:prefLabel "Synthesis" ;
+    skos:definition "Converge the separate deliverables produced by multiple worker roles into one coherent, cross-checked final result -- the terminal convergence step of a multi-agent workflow, provided by a component that both reviews every contribution and compiles the integrated output." .

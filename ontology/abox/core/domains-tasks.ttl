@@ -16,7 +16,28 @@
 id:dom-coding a ho:Domain ; skos:prefLabel "Software coding" ; skos:altLabel "programming" ; ho:salience 0.9 .
 id:dom-research a ho:Domain ; skos:prefLabel "Research" ; skos:altLabel "literature research" ; ho:salience 0.8 .
 id:dom-support a ho:Domain ; skos:prefLabel "Customer support" ; skos:altLabel "helpdesk" ; ho:salience 0.7 .
-id:dom-design a ho:Domain ; skos:prefLabel "Design engineering" ; skos:altLabel "structured design work" ; ho:salience 0.6 .
+id:dom-design a ho:Domain ; skos:prefLabel "Design engineering" ; skos:altLabel "structured design work" ; ho:scopedFrom id:env-space ; ho:salience 0.6 .
+
+#===================== Information-space projection chain ===============
+# The upper two tiers of the observation projection chain
+# (EnvironmentSpace -> Domain -> GlobalState -> ObservationSpace, plan
+# mas-observation-refinement.md §3e). Both are non-component concepts
+# (like ho:Domain): no ho:hasComponent wiring, not covered by
+# ho:ComponentConnectivityShape. The chain is closed above by
+# id:dom-design ho:scopedFrom id:env-space (problem-definition cut) and
+# below by each ObservationSpace ho:projectsFrom id:global-state
+# (partial, capacity-bounded projection).
+
+id:env-space a ho:EnvironmentSpace ;
+    skos:prefLabel "Environment space" ;
+    skos:definition "The environment space: all reality and system space plus its unbounded information — the infinite source outside the system from which a Domain is carved by problem definition. The top of the observation projection chain; a Domain narrows it via ho:scopedFrom." ;
+    ho:maturity "draft" .
+
+id:global-state a ho:GlobalState ;
+    skos:prefLabel "Global state space" ;
+    skos:definition "The global state describing the system within its Domain (the S of a decentralized POMDP). It is the source each agent's ObservationSpace partially projects from (ho:projectsFrom), bounded by the agent's cognitive limit — this is why a local observation is only a slice of the whole state." ;
+    ho:describesDomain id:dom-design ;
+    ho:maturity "draft" .
 
 #===================== Tasks ===========================================
 id:task-bugfix a ho:Task ; skos:prefLabel "Bug fixing" ; skos:altLabel "debugging" ;

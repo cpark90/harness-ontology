@@ -84,11 +84,11 @@ id:h-support a ho:Harness ;
 
 id:h-multiagent a ho:Harness ;
     skos:prefLabel "Multi-agent orchestration harness" ; skos:altLabel "orchestrator-workers harness" ;
-    skos:definition "A neutral, domain-independent harness that assembles the reusable governance parts decomposed from harness governance docs: an orchestrator plans and dispatches node-scoped briefs to specialised workers (author / verify / inspect) under least-privilege, with traceability, verify-then-proceed and escalation guardrails. Use as a template for any structured, multi-agent design or authoring workflow." ;
+    skos:definition "A neutral, domain-independent harness that assembles the reusable governance parts decomposed from harness governance docs: an orchestrator plans and dispatches node-scoped briefs to specialised workers (author / verify / inspect) under least-privilege, with traceability, verify-then-proceed and escalation guardrails. Its PURPOSE is to make each role's agent perform its role clearly: it composes, per role, the role's scope of tools and guardrails (ho:roleTool / ho:roleGuardrail), its memory discipline and (where present) its user-facing stance, plus the coordination channels the roles exchange work over — so every dispatched agent has an unambiguous mandate. Use as a template for any structured, multi-agent design or authoring workflow." ;
     ho:targetsDomain id:dom-design ;
     ho:addressesTask id:task-architecture, id:task-designdecision ;
     ho:hasSystemPrompt id:sp-methodical ;
-    ho:usesTool id:tool-shell, id:tool-editor ;
+    ho:usesTool id:tool-shell, id:tool-editor, id:tool-websearch, id:tool-retriever ;
     ho:hasWorkflow id:wf-multiagent, id:wf-compose-harness ;
     ho:hasGuardrail id:gr-lang, id:gr-verify-proceed, id:gr-design-for-loss, id:gr-traceability,
         id:gr-grounding, id:gr-no-arbitrary-decision, id:gr-least-privilege, id:gr-report-over-prompt,
@@ -98,7 +98,165 @@ id:h-multiagent a ho:Harness ;
     ho:hasRole id:role-orchestrator, id:role-inspection, id:role-developer, id:role-research,
         id:role-inspection-worker, id:role-vnv, id:role-design ;
     ho:hasChannel id:chan-agent-user, id:chan-orchestrator-inspection, id:chan-dispatch ;
+    ho:hasMemory id:mem-firmware, id:mem-cache, id:mem-longterm ;
+    ho:hasAgent id:agent-orchestrator, id:agent-developer, id:agent-vnv, id:agent-inspection,
+        id:agent-synthesizer ;
+    ho:hasGlobalState id:global-state ;
+    ho:hasAssemblySection id:as-overview, id:as-persona, id:as-operating-rules, id:as-process,
+        id:as-model, id:as-roles, id:as-channels, id:as-skills ;
     ho:appliesPattern id:pat-orchestrator-workers, id:pat-ontology-composition ;
     ho:requiresCapability id:cap-orchestration, id:cap-traceability, id:cap-codeexec, id:cap-fileedit ;
     ho:tagged id:c-design, id:c-multiagent, id:c-traceability ;
     ho:maturity "draft" .
+
+# The peer-mesh counterpart of id:h-multiagent: a neutral, domain-independent
+# template that exists to WIRE the peer-mesh coordination parts (anti-orphan) and
+# to make coordination topology an explicit, selectable dimension. Where
+# id:h-multiagent stays the orchestrator-workers DEFAULT doctrine (central
+# dispatch), this one demonstrates the alternative — peers coordinate directly
+# over id:chan-peer with no central-only dispatcher — by declaring
+# ho:appliesPattern id:pat-peer-mesh plus the matching channel. A recipe that
+# needs peer-mesh derives from this; new topologies are added the same way (new
+# DesignPattern + Channel + a host harness) without disturbing either existing
+# one. It reuses central parts by IRI and names no specific domain/tool/tech.
+id:h-peer-mesh a ho:Harness ;
+    skos:prefLabel "Peer-mesh coordination harness" ; skos:altLabel "peer-mesh harness" ;
+    skos:definition "A neutral, domain-independent template harness demonstrating the peer-mesh coordination methodology as the selectable alternative to orchestrator-workers: peer worker roles coordinate DIRECTLY over a message mesh (id:chan-peer) rather than through a central-only dispatcher. It exists to wire the peer-mesh parts (anti-orphan) and to make coordination topology a pluggable dimension — a harness picks its methodology via ho:appliesPattern plus the matching ho:Channel, and new topologies are added as new DesignPattern + Channel without disturbing the orchestrator-workers default (id:h-multiagent). Names no specific problem domain, tool or technology." ;
+    ho:targetsDomain id:dom-design ;
+    ho:addressesTask id:task-designdecision ;
+    ho:hasSystemPrompt id:sp-methodical ;
+    ho:usesTool id:tool-editor ;
+    ho:hasWorkflow id:wf-multiagent ;
+    ho:hasGuardrail id:gr-lang, id:gr-report-over-prompt, id:gr-least-privilege ;
+    ho:usesModel id:mc-opus ;
+    ho:hasRole id:role-developer, id:role-vnv, id:role-research, id:role-design ;
+    ho:hasChannel id:chan-peer ;
+    ho:appliesPattern id:pat-peer-mesh ;
+    ho:tagged id:c-multiagent, id:c-design ;
+    ho:derivedFrom id:h-multiagent ;
+    ho:maturity "draft" .
+
+# The central-library host of the recurring neutral parts promoted for reuse
+# across the corpus of multi-agent harnesses: the terminal convergence gate
+# (id:role-synthesizer, providing id:cap-synthesis), the shared file workspace
+# roles hand off deliverables over (id:chan-workspace), and the recurring
+# guardrails (structured output, scale modes, graceful fallback). Like
+# id:h-peer-mesh, this neutral template exists purely to WIRE those parts
+# (anti-orphan) -- it is a library carrier, not a domain pilot, and names no
+# specific problem domain, tool or technology. The new parts live here rather
+# than on id:h-multiagent so binding them does NOT change id:h-multiagent's
+# materialized CLAUDE.md (byte-identical stability). It requires id:cap-synthesis
+# and its bound id:role-synthesizer provides it, so capability satisfaction holds
+# internally. Reuses central parts by IRI (sp-methodical / wf-multiagent /
+# tool-editor / mc-opus / dom-design / task-designdecision).
+id:h-workspace-synthesis a ho:Harness ;
+    skos:prefLabel "Workspace-synthesis harness" ; skos:altLabel "convergence-gate library host" ;
+    skos:definition "A neutral, domain-independent template that wires the recurring central-library parts a multi-agent worker team reuses: worker roles hand off deliverables over a shared file workspace (id:chan-workspace), each deliverable follows a structured-output template and the run scales to the request and degrades gracefully on failure (the recurring guardrails), and a terminal synthesizer gate (id:role-synthesizer) cross-checks every contribution and compiles the integrated final result (providing id:cap-synthesis, which this harness requires). It exists to make those parts connected, reusable components (anti-orphan) and stands as a neutral template -- it names no specific problem domain, tool or technology. Derives from id:h-multiagent and reuses central parts by IRI." ;
+    ho:targetsDomain id:dom-design ;
+    ho:addressesTask id:task-designdecision ;
+    ho:hasSystemPrompt id:sp-methodical ;
+    ho:usesTool id:tool-editor ;
+    ho:hasWorkflow id:wf-multiagent ;
+    ho:hasGuardrail id:gr-lang, id:gr-structured-output, id:gr-scale-modes, id:gr-graceful-fallback ;
+    ho:usesModel id:mc-opus ;
+    ho:hasRole id:role-developer, id:role-research, id:role-inspection-worker,
+        id:role-vnv, id:role-design, id:role-synthesizer ;
+    ho:hasChannel id:chan-workspace ;
+    ho:requiresCapability id:cap-synthesis ;
+    ho:tagged id:c-multiagent, id:c-design, id:c-synthesis ;
+    ho:derivedFrom id:h-multiagent ;
+    ho:maturity "draft" .
+
+# The central-library host of the harness-authoring METHODOLOGY parts decomposed
+# from the revfactory/harness methodology (a meta-harness for building harnesses):
+# the coordination-complexity guardrails (delegation depth, no nested teams,
+# single active team, bottleneck avoidance, flatten hierarchy, bounded iteration),
+# the authoring/verification/model-governance guardrails (integration coherence,
+# discriminating evaluation, single responsibility, generalize-not-overfit,
+# absolute workspace paths, well-formed skill, opus required) and the task-board
+# coordination channel (id:chan-task-board). Like id:h-workspace-synthesis and
+# id:h-peer-mesh, this neutral template exists purely to WIRE those parts
+# (anti-orphan): they live here rather than on id:h-multiagent so binding them
+# does NOT change id:h-multiagent's materialized CLAUDE.md (byte-identical
+# stability). It is a library carrier, not a domain pilot, and names no specific
+# problem domain, tool or technology. Reuses central parts by IRI (sp-methodical /
+# wf-multiagent / tool-editor / tool-shell / mc-opus / dom-design /
+# task-designdecision). Wave B2 will add the harness-lifecycle workflows and the
+# cap-skill requirement; Wave C will add the execution-mode / data-flow /
+# error-handling / test-scenarios assembly sections and demo test scenarios /
+# failure policies.
+id:h-harness-factory a ho:Harness ;
+    skos:prefLabel "Harness-factory harness" ; skos:altLabel "harness-authoring methodology host" ;
+    skos:definition "A neutral, domain-independent template that wires the harness-authoring methodology parts: the guardrails that bound multi-agent orchestration complexity and govern faithful authoring, verification and model selection, plus the shared task-board channel (id:chan-task-board) over which workers claim and report tasks. It is a meta-harness -- its subject is the methodology of composing, verifying and evolving harnesses themselves. Like id:h-workspace-synthesis it exists to make those parts connected, reusable components (anti-orphan) and stands as a neutral template -- the parts live here rather than on id:h-multiagent so binding them leaves that harness's materialized document byte-identical. It names no specific problem domain, tool or technology, derives from id:h-multiagent and reuses central parts by IRI." ;
+    ho:targetsDomain id:dom-design ;
+    ho:addressesTask id:task-designdecision ;
+    ho:hasSystemPrompt id:sp-methodical ;
+    ho:usesTool id:tool-editor, id:tool-shell ;
+    ho:hasWorkflow id:wf-multiagent ;
+    ho:hasGuardrail id:gr-lang, id:gr-depth-limit, id:gr-no-nested-teams, id:gr-single-active-team,
+        id:gr-bottleneck-avoidance, id:gr-flatten-hierarchy, id:gr-bounded-iteration,
+        id:gr-integration-coherence, id:gr-discriminating-eval, id:gr-single-responsibility,
+        id:gr-generalize-not-overfit, id:gr-absolute-paths, id:gr-well-formed-skill, id:gr-opus-required ;
+    ho:usesModel id:mc-opus ;
+    ho:hasChannel id:chan-task-board ;
+    ho:appliesPattern id:pat-orchestrator-workers ;
+    ho:requiresCapability id:cap-orchestration, id:cap-fileedit, id:cap-codeexec ;
+    ho:tagged id:c-multiagent, id:c-composition, id:c-agent-methodology ;
+    ho:derivedFrom id:h-multiagent ;
+    ho:maturity "draft" .
+
+#===================== ASSEMBLY SECTIONS (central default order) =======
+# The central DEFAULT assembly order of the materialized CLAUDE.md document,
+# as graph SPEC (Stage c of finer-harness-decomposition-assembly). HOW a
+# harness's parts are assembled into the final document -- which sections, in
+# what sequence -- was previously hardcoded in tools/materialize.py; it now
+# lives here so it is inspectable and per-harness redefinable, and materialize
+# only READS this order to sequence the sections it emits. This set is attached
+# to the neutral base template id:h-multiagent (making the sections reachable
+# and giving the template its order) and serves as the DEFAULT for every harness
+# that declares no ho:hasAssemblySection of its own -- so existing harnesses'
+# emitted documents are byte-identical to the former fixed order. The order MUST
+# be total and well-defined (each ho:assemblyOrder unique, each ho:sectionKind
+# recognised by the emitter) or the build fails loudly (determinism, INV-2). A
+# harness MAY declare its own set to override the order (part-to-part assembly
+# made explicit). The conditional kinds (roles/channels/skills) stay in the
+# order but emit nothing when the harness has no such parts, exactly as before.
+id:as-overview a ho:AssemblySection ;
+    skos:prefLabel "Assembly: overview section" ;
+    skos:definition "Positions the document's opening overview (the harness prefLabel heading and its definition) first. Choose to keep the assembled CLAUDE.md led by WHAT the harness is before any component detail." ;
+    ho:sectionKind "overview" ; ho:assemblyOrder 1 ; ho:tokenEstimate 18 ; ho:maturity "draft" .
+
+id:as-persona a ho:AssemblySection ;
+    skos:prefLabel "Assembly: persona section" ;
+    skos:definition "Positions the Persona section (rendered from the harness's hasSystemPrompt, per-role personas excluded) second, right after the overview." ;
+    ho:sectionKind "persona" ; ho:assemblyOrder 2 ; ho:tokenEstimate 18 ; ho:maturity "draft" .
+
+id:as-operating-rules a ho:AssemblySection ;
+    skos:prefLabel "Assembly: operating-rules section" ;
+    skos:definition "Positions the Operating rules section (rendered from the harness's hasGuardrail policies) third, framing behaviour before the process is described." ;
+    ho:sectionKind "operating-rules" ; ho:assemblyOrder 3 ; ho:tokenEstimate 18 ; ho:maturity "draft" .
+
+id:as-process a ho:AssemblySection ;
+    skos:prefLabel "Assembly: process section" ;
+    skos:definition "Positions the Process section (rendered from hasWorkflow steps and appliesPattern) fourth, describing HOW the agent works." ;
+    ho:sectionKind "process" ; ho:assemblyOrder 4 ; ho:tokenEstimate 18 ; ho:maturity "draft" .
+
+id:as-model a ho:AssemblySection ;
+    skos:prefLabel "Assembly: model section" ;
+    skos:definition "Positions the Model section (rendered from usesModel) fifth, after the behavioural spec." ;
+    ho:sectionKind "model" ; ho:assemblyOrder 5 ; ho:tokenEstimate 16 ; ho:maturity "draft" .
+
+id:as-roles a ho:AssemblySection ;
+    skos:prefLabel "Assembly: roles section" ;
+    skos:definition "Positions the Roles section (rendered from hasRole) sixth. A conditional section: emits nothing when the harness dispatches no sub-agent roles." ;
+    ho:sectionKind "roles" ; ho:assemblyOrder 6 ; ho:tokenEstimate 18 ; ho:maturity "draft" .
+
+id:as-channels a ho:AssemblySection ;
+    skos:prefLabel "Assembly: channels section" ;
+    skos:definition "Positions the Coordination channels section (rendered from hasChannel) seventh. A conditional section: emits nothing when the harness declares no channels." ;
+    ho:sectionKind "channels" ; ho:assemblyOrder 7 ; ho:tokenEstimate 18 ; ho:maturity "draft" .
+
+id:as-skills a ho:AssemblySection ;
+    skos:prefLabel "Assembly: skills section" ;
+    skos:definition "Positions the Skills section (rendered from hasInstruction) last. A conditional section: emits nothing when the harness ships no skills." ;
+    ho:sectionKind "skills" ; ho:assemblyOrder 8 ; ho:tokenEstimate 18 ; ho:maturity "draft" .

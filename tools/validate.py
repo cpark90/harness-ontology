@@ -121,6 +121,70 @@ def _components(g: Graph, harness):
             yield p, o
 
 
+def check_assembly_order(g: Graph):
+    """Every harness must resolve to a TOTAL, well-defined CLAUDE.md assembly
+    order (Stage c). The order lives in the graph as ho:AssemblySection nodes
+    (ho:sectionKind + ho:assemblyOrder); the build projection READS it instead of
+    hardcoding the section sequence, so it must be total or materialization is
+    non-deterministic. Set-level check (per holder): the ho:assemblyOrder values
+    within one holder's ho:hasAssemblySection set are all present and UNIQUE (a
+    duplicate index makes the sequence ambiguous). Per-node presence + the
+    ho:sectionKind enum are enforced by SHACL AssemblySectionShape. Also verifies
+    the central default holder carries a set, so a harness that declares none can
+    still resolve one (approved decision 2: an undefined order is an error, never
+    a silent code fallback). Returns (ok, problems)."""
+    _print_header("Assembly order (total, well-defined)")
+    ok = True
+    problems = []
+
+    def _check_set(holder, sections):
+        nonlocal ok
+        by_order = {}
+        for sec in sections:
+            raw = g.value(sec, HO.assemblyOrder)
+            if raw is None:
+                ok = False
+                msg = (f"{lib.label_of(g, holder)}: section "
+                       f"{lib.label_of(g, sec)} has no ho:assemblyOrder")
+                print(f"✗ {msg}")
+                problems.append(msg)
+                continue
+            order = int(raw)
+            if order in by_order:
+                ok = False
+                msg = (f"{lib.label_of(g, holder)}: duplicate assemblyOrder "
+                       f"{order} ({lib.label_of(g, by_order[order])} and "
+                       f"{lib.label_of(g, sec)}) — order is not total")
+                print(f"✗ {msg}")
+                problems.append(msg)
+            else:
+                by_order[order] = sec
+
+    holders_with_own = set()
+    for h in sorted(g.subjects(RDF.type, HO.Harness),
+                    key=lambda n: lib.label_of(g, n)):
+        sections = list(g.objects(h, HO.hasAssemblySection))
+        if sections:
+            holders_with_own.add(h)
+            _check_set(h, sections)
+
+    default_sections = list(
+        g.objects(lib.DEFAULT_ASSEMBLY_HOLDER, HO.hasAssemblySection))
+    if not default_sections:
+        ok = False
+        msg = (f"central default holder <{lib.DEFAULT_ASSEMBLY_HOLDER}> carries "
+               f"no ho:hasAssemblySection — harnesses without their own order "
+               f"cannot resolve one")
+        print(f"✗ {msg}")
+        problems.append(msg)
+
+    if ok:
+        n = len(holders_with_own)
+        print(f"✓ {n} harness(es) declare a total assembly order; "
+              f"default holder resolves ({len(default_sections)} sections)")
+    return ok, problems
+
+
 def check_duplicates(g: Graph):
     """Same class + same (case-folded) prefLabel == likely drift/dup.
     Advisory (does not fail the build). Returns a list of dup groups."""
@@ -156,14 +220,16 @@ def run_structured() -> dict:
         shacl_ok, shacl_report = check_shacl(g)
         reach_ok, orphans = check_reachability(g)
         cap_ok, gaps = check_capability_satisfaction(g)
+        assembly_ok, assembly_problems = check_assembly_order(g)
         dups = check_duplicates(g)
-    hard_ok = shacl_ok and reach_ok and cap_ok
+    hard_ok = shacl_ok and reach_ok and cap_ok and assembly_ok
     return {
         "pass": hard_ok,
         "triples": len(g),
         "shacl": {"ok": shacl_ok, "report": shacl_report},
         "reachability": {"ok": reach_ok, "orphans": orphans},
         "capabilities": {"ok": cap_ok, "gaps": gaps},
+        "assemblyOrder": {"ok": assembly_ok, "problems": assembly_problems},
         "duplicates": dups,
     }
 
@@ -195,6 +261,7 @@ def main(argv=None) -> int:
         "SHACL": check_shacl(g)[0],
         "reachability": check_reachability(g)[0],
         "capabilities": check_capability_satisfaction(g)[0],
+        "assemblyOrder": check_assembly_order(g)[0],
     }
     check_duplicates(g)  # advisory
 
