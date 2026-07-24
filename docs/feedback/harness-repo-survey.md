@@ -1,5 +1,5 @@
 ---
-status: open            # 사용자만 approved로 바꾼다
+status: approved            # 사용자만 approved로 바꾼다
 targets: [core:h-multiagent, core:role-developer, core:pat-orchestrator-workers, core:mode-sub-agents]
 kind: proposal
 related: [docs/feedback/harness-100-augmentation.md, docs/feedback/revfactory-harness-reflection.md, docs/feedback/retrieve-nondeterministic-pack.md]
@@ -49,3 +49,9 @@ related: [docs/feedback/harness-100-augmentation.md, docs/feedback/revfactory-ha
 후보 repo들을 **README·디렉토리 구조 수준**까지만 판독했다. 파일 단위 전수 정독은 하지 않았으므로
 "수확 추정" 수치(예상 pattern 5~15, role 원형 10~20)는 **추정**이다. 채택된 wave의 첫 단계에서
 실제 파일을 열어 확정해야 한다.
+
+## 사용자 피드백
+1. (c)
+2. 신설
+3. 온톨로지에만 반영
+4. 온톨로지에는 모두 반영하고, 예제는 10~20개로 압축해서 반영.

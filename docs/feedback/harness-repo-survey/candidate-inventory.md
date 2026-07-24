@@ -16,6 +16,20 @@
 | (기 반영) `revfactory/harness` | Apache-2.0 | 8.5k | 9.3MB | 2026-07-20 | 방법론 repo | 이미 Wave A+B1 반영, P3/P4 잔여(`revfactory-harness-reflection.md`) |
 | (기 반영) `revfactory/harness-100` | Apache-2.0 | 1.2k | 3.4MB | 2026-03-22 | 100 하네스 코퍼스 | pilot 5 recipe 반영, inc4 importer 잔여(`harness-100-augmentation.md`) |
 
+## 파일 수 실측 정정 (2026-07-25, git tree API)
+위 표의 개수는 README 주장치였다. `gh api repos/<r>/git/trees/main?recursive=1`로 실측한 결과:
+
+| 소스 | README 주장 | 실측 경로 수 | **이름 기준 고유** |
+|---|---|---|---|
+| VoltAgent subagents | 154+ | `categories/**.md` **164** | **155** (카테고리 README 포함분 제외) |
+| wshobson agents | 203 | `**/agents/**.md` **204** | **139** — 경로가 많은 것은 5개 플랫폼 디렉토리에 **같은 에이전트가 중복 배치**되기 때문 |
+| wshobson skills | 175 | `**/skills/**.md` **397** | (미측정 — 같은 중복 구조로 추정) |
+
+**두 코퍼스 합집합(이름 기준) = 253**, **교집합 = 41**(`code-reviewer`·`data-engineer`·`cloud-architect`·
+`python-pro`류가 양쪽에 동명으로 존재). 즉 "350여 개"가 아니라 **고유 원형 후보는 253**이고, 그중
+41은 두 소스가 같은 이름으로 각자 정의한 **병합 대상**이다. 이름에 언어·프레임워크가 박힌 것만 세도
+최소 30(보수적 패턴 매칭이라 실제 도메인 특화 비율은 더 높다).
+
 ## 검색 경로 (재현용)
 `"agent harness" 큐레이션` · `awesome claude code subagents/skills` · `multi-agent orchestration framework
 roles channels guardrails` · `AGENTS.md / agent rules 컬렉션` 4개 축으로 검색 → 상위 결과에서 **부품이
