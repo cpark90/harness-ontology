@@ -18,6 +18,7 @@
   (6) 비-HC 신규 leaf·신규 클래스는 `lib.INSTANCE_CLASSES` 등록 필수(미등록=개체 증발).
 
 <!-- 학습 인덱스 (한 줄씩) -->
+- [central-vocab-gap-altlabel-absorption](central-vocab-gap-altlabel-absorption.md) — 코퍼스 GAP을 중앙에 반영: ★`skos:altLabel`은 `retrieve.py`만 읽고 materialize는 **안 읽음**→기존 bound 노드에 붙여도 산출물 불변(분류② 무료), byte-id 불변식은 `harness.lock.json`의 union `individualCount` **제외**해 서술, tokenEstimate는 텍스트 보유 클래스만(Role/Concept/Channel 0건)+peer 비율 보정, salience 미기재 기본 0.4, 중앙 성장 후 staging recipe 8종 재검증.
 - [tool-side-registries-and-path-globs](tool-side-registries-and-path-globs.md) — 도구쪽 화이트리스트 3종(`INSTANCE_CLASSES`·`INSTANCE_LINK_PREDICATES`·webui `ORDER`)과 경로 glob의 **조용한 실패** 감사법. 게이트=추론 유무 **개체수 파리티**(owlrl이 누락 leaf를 상위타입으로 가림), 파급은 MANIFEST `type`뿐, before/after는 monkeypatch로(git無), DA-4 이후 glob은 `**`+`recursive=True`.
 - [retrieve-pack-quality-budget-lifecycle](retrieve-pack-quality-budget-lifecycle.md) — 팩 **품질** 결함 2건: `tokenEstimate` 의미 과부하→예산초과 노드가 팩을 조기절단(⇒`ho:observedTokenVolume` 분리+shape `sh:path` repoint, 불변식=초과노드 0), traverse `break`→`continue`, `ho:maturity` 미독→폐기가 후계 위(⇒`lifecycle_factor` 0.35를 seed·hop **양쪽**에, 배수는 스윕 실측으로).
 - [corpus-attribute-inventory-method](corpus-attribute-inventory-method.md) — 외부 코퍼스 전수 **분석** 방법: 중간산출 json으로 컨텍스트 절약, 판정은 label 아닌 definition/promptText로, GAP 3분류(신규/altLabel흡수/도메인특수), coverage %는 우주 3개로 분리(구조중립 축은 매우 빨리 포화).

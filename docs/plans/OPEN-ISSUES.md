@@ -29,29 +29,31 @@
   누락이 에러가 아니라 **조용한 부분 closure**로 나타나는 실패 양식을 이미 겪었다.
 - **B2. retrieve tie-break 정책**: 지금은 IRI 사전순(재현성용). 동점 17개에 슬롯 5개인 질의가 실재하므로
   **검색 품질** 관점의 정책(maturity/salience 가중)은 미결. → Q2와 함께 다루면 좋다.
-- **B3. `INSTANCE_CLASSES`에 leaf 7클래스 미등록 (32개체)** — `load_graph(reason=False)` **173** vs
-  `load_graph()` **205**로 갈린다. **추론이 결함을 가려왔다.** → **수정 dispatch 진행 중**
-  (`dispatch-consistency-cleanup.md` C1).
+- **★B16. "레지스트리 표류" 계열 — 개별 수정이 아니라 불변식으로 막아야 한다** (inspection 진단).
+  **B3·B8·B13·B14가 전부 같은 결함**이다: **TBox/디스크가 진실인데 파이썬 리터럴이 그 사본**이고, 사본이
+  조용히 뒤처진다(`INSTANCE_CLASSES` · abox glob · `ttl_writer.ORDER` · `INSTANCE_LINK_PREDICATES`).
+  전부 **에러 없이 조용히** 실패한다 — 이 세션에서 catalog 누락까지 합쳐 **5번째 같은 양식**이다.
+  → 개별 패치 대신 **"사본 == 원본" 불변식 4종을 CI에 거는 것**이 근본 대책. **미착수(권고).**
 - **B4. execution-mode 범위 한정이 로컬 주석에만 존재** — `mode-sub-agents`를 읽는 다른 소비자에겐 안 보인다.
   같은 충돌이 다른 하네스에서 재발하면 (B)정의정정/(C)신규모드 재검토 신호.
-- **B8. webui가 DA-4 재조직 이후 abox를 하나도 못 읽는다** — `tools/webui/ttl_writer.py:97 abox_files()`의
-  평면 glob이 **0개**를 잡는다(실제 18개). catalog 누락과 같은 **조용한 실패**. → **수정 dispatch 진행 중** (C2).
 - **B9. 후계 관계가 그래프에 없다** — 폐기·후계가 `DEPRECATED: superseded by id:x` **산문**으로만 존재.
   `ho:supersededBy` edge가 있으면 폐기 노드 검색 시 후계를 함께 끌어오고, 랭킹도 배수(0.35) 휴리스틱 대신
   **"후계보다 아래"를 구조적으로 보장**할 수 있다. B6의 후속 개선. **미착수.**
-- **B10. `ONTOLOGYSTYLE §3`에 `ho:observedTokenVolume` 자리 없음** → **수정 dispatch 진행 중** (C3).
 - **B11. capacity-fit 검사기 부재** (inspection 신규). `Σ AoO observedTokenVolume ≤ Agent.cognitiveCapacity`는
   SHACL이 못 세는데 이를 재는 도구가 **없다**(현재 48000 vs 150000이라 여유). **술어를 분리한 지금이 린터를 붙일 자리**.
 - **B12. 템플릿 본문의 `ho:` 언급 정책** (inspection 신규). techdoc 산출 CLAUDE.md 1곳에 `ho:artifactTemplate`이
   남는다 — `artifactTemplate` **본문 파일**에서 오며 **설계상 의도적 미해소**(이 온톨로지가 주제인 하네스는
   지시문에 `ho:` 용어를 일부러 쓴다). 산출물 자기완결 계약을 템플릿 본문까지 확장할지는 **저작 규약 결정**.
 - **★B13. webui 저장이 온톨로지 내용을 조용히 삭제한다 (데이터 손실 — 최고 심각도).**
-  `tools/webui/ttl_writer.py`의 `ORDER` 화이트리스트에 **그래프 실재 술어 56종이 누락**(영향 개체 **82/205**).
-  `render_block`은 ORDER만 그리고 `_replace_block`이 블록을 **통째 치환**하므로 **저장 = 목록 밖 술어 삭제**다.
-  실측(read-only `plan_upsert`): `id:chan-dispatch` **9줄 → 2줄**, `definition`·`channelParticipant`×6·`tagged`·
-  `involvesUser`·`channelMedium`·`maturity` 소실. 서버가 validate FAIL 시 restore하므로 **shape이 요구하는 술어만
-  우연히 방어**되고 **선택 술어는 초록인 채 유실**된다. 상위: `roleGuardrail 33`·`channelParticipant 25`·
-  `hasRole 17`·`observationKind`/`observesMemory`/`unobserved` 각 15·`observedTokenVolume 10`. **미착수.**
+  inbox: **`docs/feedback/webui-save-drops-triples.md`** (`status: open` — 사용자 결정 대기).
+  `ttl_writer.ORDER` **28종** vs TBox `ho:` 술어 **97종**. `_replace_block`이 블록을 **통째 치환**하므로
+  **저장 = 목록 밖 술어 삭제**. 손실 규모 **82/205 개체 · 375 트리플 · 56 술어**.
+  **★핵심 논거(inspection 실측)**: validate 게이트가 **절반만 막는다** —
+  **조용히 성공하며 데이터가 사라지는 개체 27(131 트리플)** vs **FAIL→restore로 편집이 거부되는 개체 55(244 트리플)**.
+  > **수치 정정**: 앞서 보고한 "`chan-dispatch` 9줄→2줄, definition·tagged·maturity 소실"은 **틀렸다**.
+  > 실제는 **9줄 → 6줄**, 소실은 `channelParticipant`(6)·`involvesUser`·`channelMedium` **3술어 8트리플**이며
+  > `definition`·`tagged`·`maturity`는 ORDER에 있어 **보존된다**. 이 개체는 **손실 후에도 validate PASS**라
+  > 심각도 판단(조용한 손실)은 그대로다.
 - **B14. `INSTANCE_LINK_PREDICATES`에 asserted instance→instance 술어 9종 누락** (B3의 자매 결함, 총 **78 edge**):
   `channelParticipant 25`·`observesMemory 15`·`observesChannel 8`·`agentFunction 6`·`hasChannel 6`·`agentRole 5`·
   `hasAgent 5`·`observesComponent 5`·`hasMemory 3`. `hasAgent/hasChannel/hasMemory`는 추론 시 `hasComponent`로
@@ -69,6 +71,13 @@
 - **B7** 산출 문서로 내부 IRI 유출 — **land `f71a033`**. `materialize.py`가 **투영 그래프**에서 `id:`→prefLabel,
   `ho:`→label 해소(per-callsite가 아니라 한 지점 → 미래 렌더러 자동 커버). 7 하네스 산출 트리 IRI **0건**,
   무유출 3종 byte-identical, recipe **8/8 federate PASS**.
+- **B3** `INSTANCE_CLASSES` leaf 7클래스 미등록 — **land `f735154`**. 파리티 **205/205**(집합까지 동일, 전 205 vs 173),
+  MANIFEST types 32건이 상위클래스→구체 leaf로 정정(다른 키 변화 0), CLAUDE.md 7/7 byte-identical.
+  recipe 8/8에서 unreasoned 경로가 정확히 +32 → **연합까지 parity 획득**.
+- **B8** webui가 abox를 0개 읽음 — **land `f735154`**. 재귀 glob+정렬로 **0 → 18개**,
+  `find_subject_file` core 개체 **205/205 해소**(unresolved 0).
+- **B10** `ONTOLOGYSTYLE §3`에 `observedTokenVolume` 자리 없음 — **land `7baca84`**. §3 등재 +
+  두 술어를 섞지 말라는 [지킴] 계약 + 진단 불변식("`tokenEstimate`가 기본 예산을 넘는 노드 0개").
 
 ## C. 품질 축 작업 항목 (목표 (2) — `validate.py`가 못 보는 축)
 
