@@ -46,7 +46,8 @@ PREDICATE_WEIGHT = {
     HO.usesModel: 0.85, HO.hasExample: 0.8, HO.hasInstruction: 0.85,
     HO.providesCapability: 0.85, HO.requiresCapability: 0.85,
     HO.targetsDomain: 0.8, HO.addressesTask: 0.8, HO.addressedBy: 0.8,
-    HO.appliesPattern: 0.7, HO.dependsOn: 0.7, HO.tagged: 0.7,
+    HO.appliesPattern: 0.7, HO.hasExecutionMode: 0.7,
+    HO.dependsOn: 0.7, HO.tagged: 0.7,
     HO.specializes: 0.6, HO.derivedFrom: 0.6, HO.constrainedBy: 0.6,
     SKOS.broader: 0.5, SKOS.narrower: 0.5, SKOS.related: 0.4,
 }
