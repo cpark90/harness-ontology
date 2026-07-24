@@ -173,10 +173,18 @@ kebab 세그먼트로, 독립 repo 간 slug 충돌·orphan을 막는다.
 5. `ho:appliesPattern` → `ho:requiresCapability` / `ho:providesCapability` →
    `ho:constrainedBy` → `ho:dependsOn` → `ho:specializes` / `ho:derivedFrom`
 6. `ho:tagged`
-7. 데이터: `ho:promptText` → `ho:tokenEstimate` → `ho:salience` → `ho:maturity`
+7. 데이터: `ho:promptText` → `ho:observedTokenVolume` → `ho:tokenEstimate` →
+   `ho:salience` → `ho:maturity`
 
 - **[권장]** 같은 프레디킷의 여러 값은 콤마로 한 줄에(`ho:usesTool id:a, id:b`), 길면
   콤마 뒤 줄바꿈해 정렬.
+- **[지킴]** **`ho:tokenEstimate`와 `ho:observedTokenVolume`을 섞지 않는다.**
+  `ho:tokenEstimate`는 **그 노드 자신의 텍스트를 pack에 실을 비용**(projection 예산의 단위,
+  `retrieve.py`·MANIFEST 소비)이고, `ho:observedTokenVolume`은 **`ho:AreaOfObservation`이
+  서술하는 런타임 관측량**(에이전트가 실제로 소비하는 입력량, `ho:cognitiveCapacity` 적합성
+  리뷰용)이다. 관측량을 `tokenEstimate`에 적으면 그 노드가 단독으로 기본 예산을 넘겨
+  **팩이 조용히 잘린다**(실제 발생한 결함). 진단 불변식: `ho:tokenEstimate`가
+  `retrieve.py`의 기본 예산을 넘는 노드는 **0개**여야 한다.
 
 ---
 
