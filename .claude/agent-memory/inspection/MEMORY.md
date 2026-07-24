@@ -13,4 +13,5 @@
 - [연합 lockstep](federation-lockstep.md) — 중앙 core 추가·**파일 이동** 모두 recipe catalog 동반 필요; push 전 로컬 8-recipe federate 게이트(staging central symlink); recipe 추가 시 catalog+CI 매트릭스 둘 다 갱신(1:1 점검 명령 포함)
 - [materialize 회귀 독립검증](materialize-regression-check.md) — worktree(직전 커밋) vs working tree 산출물 diff로 append-only/byte-identity 자체 재현; harness 인자는 bare slug
 - [품질 축 감사 레시피(Q1/Q2/Q3)](quality-axis-audit-recipes.md) — validate가 못 보는 축 측정법: `reason=True` 필수(173 vs 205)·`INSTANCE_CLASSES` 미등록 7클래스/32개체·tokenEstimate fallback 15가 예산을 갉는 계산·라벨 Jaccard는 작명 패밀리 노이즈; 도구를 돌려야만 보이는 3결함(예산 조기 break·deprecated 무자각 랭킹·산출물 IRI 유출)·negative control 트리 구성법
+- [web UI 쓰기 경로 감사](webui-write-path-audit.md) — 저장=삭제(82/205·375트리플) 를 **read-only**로 재현하는 3층(plan_upsert·그래프집계·개체별 SHACL); 게이트 분류 27 조용/55 거부; 브리프 수치 불신(chan-dispatch 9→**6**줄); **레지스트리 표류**가 반복 패턴이라는 진단과 불변식 1줄 처방; 개체계수 수정의 파급=worktree materialize diff + recipe별 전용 catalog로 8건 federate
 - [외부 소스 repo 조사·라이선스 게이트](external-source-survey.md) — NOASSERTION은 LICENSE 본문을 직접 읽어야(CC0/NC-ND/MIT 혼재); NC-ND는 채택 불가; 수확 우선순위는 우리 얇은 축
