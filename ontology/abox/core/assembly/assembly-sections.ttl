@@ -89,7 +89,7 @@ id:as-skills a ho:AssemblySection ;
 # rendered; suppressing it would defeat the section's purpose.
 id:as-execution-mode a ho:AssemblySection ;
     skos:prefLabel "Assembly: execution-mode section" ;
-    skos:definition "Positions the Execution mode section (the runtime coordination topology, rendered from the harness's appliesPattern picks that are tagged as execution modes) ninth, right after the compositional sections: it qualifies HOW the workflow, roles and channels already described are spawned and coordinated at run time rather than introducing new parts. A conditional section: emits nothing when the harness applies no execution-mode pattern." ;
+    skos:definition "Positions the Execution mode section (the runtime coordination topology, rendered from the harness's hasExecutionMode declaration) ninth, right after the compositional sections: it qualifies HOW the workflow, roles and channels already described are spawned and coordinated at run time rather than introducing new parts. A conditional section: emits nothing when the harness declares no execution mode." ;
     ho:sectionKind "execution-mode" ; ho:assemblyOrder 9 ; ho:tokenEstimate 24 ; ho:maturity "draft" .
 
 id:as-data-flow a ho:AssemblySection ;

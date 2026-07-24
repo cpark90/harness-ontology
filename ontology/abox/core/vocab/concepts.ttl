@@ -174,7 +174,7 @@ id:c-scale-modes a ho:Concept ;
 id:c-execution-mode a ho:Concept ;
     skos:prefLabel "Execution mode" ;
     skos:altLabel "runtime coordination topology" ;
-    skos:definition "The runtime topology a multi-agent harness coordinates in -- peer agent-teams, lightweight sub-agents, or a phase-varying hybrid -- an axis orthogonal to the architectural data-flow pattern; tag the DesignPatterns that select how agents are spawned and coordinated at run time." ;
+    skos:definition "The runtime topology a multi-agent harness coordinates in -- peer agent-teams, lightweight sub-agents, or a phase-varying hybrid -- an axis orthogonal to the architectural data-flow pattern; tags the ho:ExecutionMode individuals a harness selects from via ho:hasExecutionMode (and the DesignPatterns they superseded)." ;
     skos:broader id:c-multiagent .
 id:c-pattern-taxonomy a ho:Concept ;
     skos:prefLabel "Coordination pattern taxonomy" ;

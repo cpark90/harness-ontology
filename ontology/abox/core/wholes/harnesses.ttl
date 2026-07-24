@@ -106,6 +106,7 @@ id:h-multiagent a ho:Harness ;
         id:as-model, id:as-roles, id:as-channels, id:as-skills, id:as-execution-mode,
         id:as-data-flow, id:as-error-handling, id:as-test-scenarios ;
     ho:appliesPattern id:pat-orchestrator-workers, id:pat-ontology-composition ;
+    ho:hasExecutionMode id:mode-sub-agents ;
     ho:requiresCapability id:cap-orchestration, id:cap-traceability, id:cap-codeexec, id:cap-fileedit ;
     ho:tagged id:c-design, id:c-multiagent, id:c-traceability ;
     ho:maturity "draft" .
@@ -133,6 +134,7 @@ id:h-peer-mesh a ho:Harness ;
     ho:hasRole id:role-developer, id:role-vnv, id:role-research, id:role-design ;
     ho:hasChannel id:chan-peer ;
     ho:appliesPattern id:pat-peer-mesh ;
+    ho:hasExecutionMode id:mode-agent-teams ;
     ho:tagged id:c-multiagent, id:c-design ;
     ho:derivedFrom id:h-multiagent ;
     ho:maturity "draft" .
@@ -163,6 +165,7 @@ id:h-workspace-synthesis a ho:Harness ;
     ho:hasRole id:role-developer, id:role-research, id:role-inspection-worker,
         id:role-vnv, id:role-design, id:role-synthesizer ;
     ho:hasChannel id:chan-workspace ;
+    ho:hasExecutionMode id:mode-sub-agents ;
     ho:requiresCapability id:cap-synthesis ;
     ho:tagged id:c-multiagent, id:c-design, id:c-synthesis ;
     ho:derivedFrom id:h-multiagent ;
@@ -190,7 +193,12 @@ id:h-workspace-synthesis a ho:Harness ;
 # again leaves id:h-multiagent's materialized document byte-identical. Those
 # fixtures and rows now reach the emitted document through the run-behaviour
 # assembly sections (error-handling / test-scenarios, plus execution-mode and
-# data-flow) carried by the central default order. Still missing (later wave):
+# data-flow) carried by the central default order. Its execution mode is
+# id:mode-hybrid because the topology differs BY PHASE: authoring runs as
+# spawn-and-reclaim dispatch (id:wf-multiagent, inherited from id:h-multiagent),
+# while the verification and evolution phases (id:wf-verify-harness /
+# id:wf-harness-evolution) run as a standing team claiming and reporting work on
+# the shared board (id:chan-task-board). Still missing (later wave):
 # the cap-skill requirement.
 id:h-harness-factory a ho:Harness ;
     skos:prefLabel "Harness-factory harness" ; skos:altLabel "harness-authoring methodology host" ;
@@ -209,6 +217,7 @@ id:h-harness-factory a ho:Harness ;
     ho:hasTestScenario id:scn-compose-smoke, id:scn-trigger-near-miss ;
     ho:hasFailurePolicy id:fp-dispatch-timeout, id:fp-validation-fail ;
     ho:appliesPattern id:pat-orchestrator-workers ;
+    ho:hasExecutionMode id:mode-hybrid ;
     ho:requiresCapability id:cap-orchestration, id:cap-fileedit, id:cap-codeexec ;
     ho:tagged id:c-multiagent, id:c-composition, id:c-agent-methodology ;
     ho:derivedFrom id:h-multiagent ;

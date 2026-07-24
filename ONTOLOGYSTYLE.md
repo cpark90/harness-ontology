@@ -128,6 +128,7 @@ kebab 세그먼트로, 독립 repo 간 slug 충돌·orphan을 막는다.
 | Contract | `contract-` | `id:contract-greeter-emitted` |
 | Concept | `c-` | `id:c-softeng` |
 | DesignPattern | `pat-` | `id:pat-react` |
+| ExecutionMode | `mode-` | `id:mode-sub-agents` |
 | Constraint | `con-` | `id:con-lowlatency` |
 | ModelConfig | `mc-` | `id:mc-opus` |
 | Tool | `tool-` | `id:tool-shell` |

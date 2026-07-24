@@ -206,7 +206,7 @@ ho:AreaOfObservation a owl:Class ;
 
 ho:SpecConcept a owl:Class ;
     rdfs:label "Spec Concept" ;
-    skos:definition "An abstract specification a harness relates to but does not itself contain as a component — the abilities it REQUIRES/PROVIDES, the domain it TARGETS, the use-cases it ADDRESSES, the patterns it APPLIES and the non-functional limits that CONSTRAIN it. Its leaves are ho:Capability, ho:Task, ho:Domain, ho:DesignPattern and ho:Constraint. A top-level taxonomy layer (NOT a ho:HarnessComponent, so no ho:hasComponent wiring and no ho:ComponentConnectivityShape coverage) with no direct instances." .
+    skos:definition "An abstract specification a harness relates to but does not itself contain as a component — the abilities it REQUIRES/PROVIDES, the domain it TARGETS, the use-cases it ADDRESSES, the patterns it APPLIES, the runtime topology it RUNS IN and the non-functional limits that CONSTRAIN it. Its leaves are ho:Capability, ho:Task, ho:Domain, ho:DesignPattern, ho:ExecutionMode and ho:Constraint. A top-level taxonomy layer (NOT a ho:HarnessComponent, so no ho:hasComponent wiring and no ho:ComponentConnectivityShape coverage) with no direct instances." .
 
 ho:InformationSpace a owl:Class ;
     rdfs:label "Information Space" ;
@@ -241,6 +241,11 @@ ho:DesignPattern a owl:Class ;
     rdfs:subClassOf ho:SpecConcept ;
     rdfs:label "Design Pattern" ;
     skos:definition "An abstract, named composition pattern a harness ho:appliesPattern as a classification tag (orchestrator-workers, peer-mesh, pipeline, fan-out-fan-in, reflection). It is never instantiated into steps and several may apply to one harness at once. Distinguished from a concrete ho:Workflow (the instantiated control flow realized by ho:hasStep): a DesignPattern names the shape, a Workflow enacts it." .
+
+ho:ExecutionMode a owl:Class ;
+    rdfs:subClassOf ho:SpecConcept ;
+    rdfs:label "Execution Mode" ;
+    skos:definition "The runtime coordination topology a harness runs its agents in — how agents come into being and coordinate while the harness runs (a persistent peer team, a lead spawning and reclaiming short-lived sub-agents, or a phase-varying mixture). A harness declares one via ho:hasExecutionMode. This axis is ORTHOGONAL to ho:DesignPattern: a pattern names how work is architecturally shaped and flows (pipeline, fan-out/fan-in, orchestrator-workers), an ExecutionMode names the runtime topology that shape is executed in, so the same pattern can run in different modes and the two must not be conflated on ho:appliesPattern. EXTENSIBILITY: modes are enumerated as INDIVIDUALS, so a new execution mode is added by authoring one more ho:ExecutionMode individual — no class, property or shape change (deliberately not a closed string enum). Extension point (not yet modelled, add only when a consumer exists): a per-phase/per-step refinement of a hybrid mode." .
 
 ho:Constraint a owl:Class ;
     rdfs:subClassOf ho:SpecConcept ;
@@ -582,6 +587,12 @@ ho:appliesPattern a owl:ObjectProperty ;
     rdfs:domain ho:Harness ;
     rdfs:range ho:DesignPattern ;
     rdfs:label "applies pattern" .
+
+ho:hasExecutionMode a owl:ObjectProperty ;
+    rdfs:domain ho:Harness ;
+    rdfs:range ho:ExecutionMode ;
+    rdfs:label "has execution mode" ;
+    skos:definition "The runtime coordination topology this harness runs its agents in — a first-class, directly queryable property of the harness rather than something recovered by joining ho:appliesPattern with a concept tag. Optional: single-agent harnesses declare none. NOT a sub-property of ho:hasComponent (an ExecutionMode is a spec concept, not a component the harness contains)." .
 
 ho:constrainedBy a owl:ObjectProperty ;
     rdfs:range ho:Constraint ;

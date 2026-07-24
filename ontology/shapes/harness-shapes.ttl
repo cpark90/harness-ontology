@@ -100,6 +100,7 @@ ho:EdgeTypingShape a sh:NodeShape ;
     sh:property [ sh:path ho:usesTool ;    sh:class ho:Tool ] ;
     sh:property [ sh:path ho:hasGuardrail ; sh:class ho:Guardrail ] ;
     sh:property [ sh:path ho:appliesPattern ; sh:class ho:DesignPattern ] ;
+    sh:property [ sh:path ho:hasExecutionMode ; sh:class ho:ExecutionMode ] ;
     sh:property [ sh:path ho:requiresCapability ; sh:class ho:Capability ] ;
     sh:property [ sh:path ho:constrainedBy ; sh:class ho:Constraint ] .
 

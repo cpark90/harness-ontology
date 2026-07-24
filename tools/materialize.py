@@ -346,23 +346,21 @@ def _render_skills(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
     out.append("")
 
 
-def _execution_mode_patterns(g: Graph, h: URIRef) -> list:
-    """The harness's ho:appliesPattern picks that name a RUNTIME EXECUTION MODE,
-    sorted by IRI. There is no ho:ExecutionMode class — the execution-mode axis is
-    carried by DesignPatterns tagged with the execution-mode concept
-    (lib.EXECUTION_MODE_CONCEPT), e.g. agent-teams / sub-agents / hybrid — so this
-    reads the existing vocabulary rather than a bespoke one. Patterns that are not
-    execution modes (the architectural work-flow patterns) are left to the Process
-    section, which renders appliesPattern as a whole."""
-    return [p for p in _sorted(g.objects(h, HO.appliesPattern))
-            if (p, HO.tagged, lib.EXECUTION_MODE_CONCEPT) in g]
+def _execution_modes(g: Graph, h: URIRef) -> list:
+    """The harness's ho:ExecutionMode declarations (ho:hasExecutionMode), sorted
+    by IRI. A first-class Harness property, read directly — the axis is NOT
+    recovered by joining ho:appliesPattern with a concept tag, so the
+    architectural patterns stay entirely with the Process section (which renders
+    appliesPattern as a whole). A new execution mode needs no change here: it is
+    one more ho:ExecutionMode individual in the ontology."""
+    return _sorted(g.objects(h, HO.hasExecutionMode))
 
 
 def _render_execution_mode(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
-    """Execution mode: the runtime coordination topology, from the appliesPattern
-    picks tagged as execution modes. Conditional — a harness that declares no
-    execution-mode pattern emits nothing."""
-    modes = _execution_mode_patterns(g, h)
+    """Execution mode: the runtime coordination topology the harness declares.
+    Conditional — a harness that declares no execution mode (e.g. any
+    single-agent harness) emits nothing."""
+    modes = _execution_modes(g, h)
     if not modes:
         return
     out.append("## Execution mode")
@@ -371,10 +369,10 @@ def _render_execution_mode(g: Graph, h: URIRef, out: list[str], ctx: dict) -> No
                "agents in (chosen separately from the architectural pattern "
                "named under Process).")
     out.append("")
-    for pat in modes:
-        desc = g.value(pat, SKOS.definition)
+    for mode in modes:
+        desc = g.value(mode, SKOS.definition)
         tail = f" — {desc}" if desc else ""
-        out.append(f"- **{lib.label_of(g, pat)}**{tail}")
+        out.append(f"- **{lib.label_of(g, mode)}**{tail}")
     out.append("")
 
 

@@ -33,14 +33,6 @@ ONT_DIR = os.path.join(ROOT, "ontology")
 # resolve the default here, so the well-known location lives in one place.
 DEFAULT_ASSEMBLY_HOLDER = ID_CORE["h-multiagent"]
 
-# The concept that marks a ho:DesignPattern as a RUNTIME EXECUTION MODE (the
-# topology agents are spawned and coordinated in: agent-teams / sub-agents /
-# hybrid). There is deliberately no ho:ExecutionMode class — the axis rides on the
-# existing pattern + concept vocabulary — so the build projection needs this one
-# well-known tag to tell an execution-mode pick apart from an architectural
-# work-flow pattern when it renders the execution-mode document section.
-EXECUTION_MODE_CONCEPT = ID_CORE["c-execution-mode"]
-
 # Federation entry points (D1): the union is the owl:imports closure of the root
 # ontology, resolved to local files through the Protégé catalog. If either is
 # absent the loader falls back to the legacy directory glob.
@@ -69,6 +61,7 @@ INSTANCE_LINK_PREDICATES = {
     HO.scopedFrom, HO.describesDomain, HO.hasGlobalState, HO.projectsFrom,
     HO.targetsDomain, HO.addressesTask, HO.addressedBy,
     HO.requiresCapability, HO.providesCapability, HO.appliesPattern,
+    HO.hasExecutionMode,
     HO.constrainedBy, HO.dependsOn, HO.specializes, HO.derivedFrom,
     HO.tagged, SKOS.broader, SKOS.narrower, SKOS.related,
 }
@@ -80,7 +73,7 @@ INSTANCE_CLASSES = {
     HO.AssemblySection, HO.Deliverable, HO.ModelConfig, HO.Example,
     HO.Role, HO.Channel, HO.Candidate, HO.Contract, HO.Capability, HO.Domain, HO.Task,
     HO.EnvironmentSpace, HO.GlobalState,
-    HO.DesignPattern, HO.Constraint, HO.Concept,
+    HO.DesignPattern, HO.ExecutionMode, HO.Constraint, HO.Concept,
 }
 
 
