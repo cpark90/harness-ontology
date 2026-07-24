@@ -7,7 +7,10 @@
 현 `ho:ObservationArea`가 **세 개념을 뭉갬**(sensing/attention 이론의 표준 3구분). 분리:
 - **`ho:ObservationSpace`**(Ω_i, 관측 공간): agent가 **관측 가능한** 전체 envelope — GlobalState의 부분투영(`projectsFrom`), agent당 **1개**, `cognitiveCapacity`(Agent)가 상한. Agent→`agentObservation`→ObservationSpace(1). `unobserved`(공간이 배제하는 것).
 - **`ho:AreaOfInterest`**(관심 영역, AoI): 역할상 **관측하길 원하는/필요한** 영역(intent/target; 정보요구). `observationKind`(internal/external). ObservationSpace→`hasAreaOfInterest`→AoI(**≥1**).
-- **`ho:AreaOfObservation`**(관측 영역, AoO): 한 추론에 **실제 관측되는** 영역(realized 입력데이터) — `observationKind`·`observesChannel/Memory/Component`·`observedFileScope`·`tokenEstimate`(실제 크기). ObservationSpace→`hasAreaOfObservation`→AoO(**≥1**); Σ AoO tokenEstimate ≤ cognitiveCapacity.
+- **`ho:AreaOfObservation`**(관측 영역, AoO): 한 추론에 **실제 관측되는** 영역(realized 입력데이터) — `observationKind`·`observesChannel/Memory/Component`·`observedFileScope`·**`observedTokenVolume`**(실제 관측량). ObservationSpace→`hasAreaOfObservation`→AoO(**≥1**); **Σ AoO `observedTokenVolume` ≤ cognitiveCapacity**.
+  > **갱신 (2026-07-25)**: 이 자리는 원래 `ho:tokenEstimate`였다. 한 술어가 "팩 admission 비용"과 "런타임
+  > 관측량" 두 뜻을 겸해 **retrieve 팩이 조기 절단되는 결함**(nodes=3, budget 125/900)을 낳았고, 관측량을
+  > **`ho:observedTokenVolume`으로 분리**했다. `tokenEstimate`는 이제 **노드 자신의 텍스트 비용**만 뜻한다.
 - **정렬**: AoO가 AoI를 **cover**(`ho:coversInterest` AoO→AoI): 원하는 걸 실제로 관측. AoI⊄AoO 간극 = partiality/loss = 비효율. 셋 다 ObservationSpace ⊆ cognitiveCapacity.
 - **관계**: Agent → ObservationSpace(1) → { AreaOfInterest(≥1, 원함) , AreaOfObservation(≥1, 실제) }, AoO `coversInterest` AoI.
 - **기존 인스턴스 refactor**: 현 `oa-<agent>-external/internal` 10개(실제 관측 서술) → **AreaOfObservation**로 retype. 각 agent에 ObservationSpace 1(projectsFrom global-state, unobserved) + AreaOfInterest(역할 정보요구) 신설. `agentObservation`은 Agent→ObservationSpace로 재지정, propertyChain rollup은 space→area까지 확장.

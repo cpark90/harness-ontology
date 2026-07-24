@@ -31,16 +31,29 @@
 3. **`INSTANCE_CLASSES` 미등록 — 범위 정정(inspection 실측)**: 2개가 아니라 **7클래스·32개체**
    (`Agent` 5 · `AreaOfInterest` 5 · `AreaOfObservation` 10 · `ObservationSpace` 5 · `Memory` 3 ·
    `TestScenario` 2 · `FailurePolicy` 2). MANIFEST type 표기뿐 아니라 카운트·reachability·retrieve 노출에 영향.
-5. **★`tokenEstimate` 의미 과부하 → 팩 조기 절단** (`docs/feedback/retrieve-pack-quality-defects.md` 결함 A).
-   `retrieve.py "what does the inspection agent observe"` → **nodes=3, budget 125/900**. 원인 ① 같은 프로퍼티가
-   "팩 비용"과 "1회 추론 관측량"(12000 등) 두 뜻 ② `traverse()`가 예산 초과 노드에서 `break`. → **수정 dispatch 진행 중.**
-6. **★deprecated 노드가 후계보다 상위 검색** (같은 항목 결함 B). `retrieve.py`가 `ho:maturity`를 안 읽어
-   폐기된 `pat-sub-agents`가 rel 8.1로 1위, 후계 `mode-sub-agents` 6.3. **→ 같은 dispatch에서 수정 중.**
-7. **산출 하네스 문서로 내부 IRI 유출** (`docs/feedback/emitted-harness-iri-leak.md`). `materialize.py`가
-   definition/promptText를 그대로 렌더해 CLAUDE.md에 `id:`/`ho:` dangling reference — 21노드·50회
-   (h-peer-mesh 10 · h-harness-factory 9 · h-workspace-synthesis 7 · h-multiagent 1). **미착수.**
 4. **execution-mode 범위 한정이 로컬 주석에만 존재** — `mode-sub-agents`를 읽는 다른 소비자에겐 안 보인다.
    같은 충돌이 다른 하네스에서 재발하면 (B)정의정정/(C)신규모드 재검토 신호.
+5. ~~`tokenEstimate` 의미 과부하 → 팩 조기 절단~~ **→ 해소 (2026-07-25, 미커밋)**. `ho:observedTokenVolume`
+   신설로 술어 분리 + `traverse()` `break`→`continue`. 실측: `"what does the inspection agent observe"`
+   **3 nodes/125 → 37 nodes/892**. 예산 초과 노드 **10 → 0**. 부수 교정: `MANIFEST.tokenEstimate` 49888→2383
+   (관측량 48000이 섞여 20배 부풀어 있던 오염 제거).
+6. ~~deprecated 노드가 후계보다 상위 검색~~ **→ 해소 (2026-07-25, 미커밋)**. `lifecycle_factor()` 0.35를
+   seed·hop 양쪽에 적용(seed만 걸면 이웃 전파로 복귀). 실측: 후계 `Sub-agent spawn mode` **6.3** >
+   폐기 `Sub-agents ⚠ DEPRECATED` **2.835**. 숨기지 않고 **배지+`maturity` 필드로 구조화**.
+   미선언 maturity 58노드는 1.0(부재 ≠ 폐기).
+8. **★webui가 DA-4 재조직 이후 abox를 하나도 못 읽는다** (dev A GAP-4, orchestrator 실측 확인).
+   `tools/webui/ttl_writer.py:97 abox_files()`가 평면 glob `ontology/abox/*.ttl`을 쓰는데 그 패턴이 잡는 파일은
+   **0개**(실제 18개는 전부 그룹 디렉토리 아래). **에러 없이 조용히 빈 목록**을 반환하는, catalog 누락과 같은
+   실패 계열. 같은 파일의 데이터 술어 화이트리스트도 관측 술어 전부 미지원. **미착수.**
+9. **후계 관계가 그래프에 없다** (dev A GAP-1). 폐기·후계가 `DEPRECATED: superseded by id:x` **산문**으로만
+   존재한다. `ho:supersededBy` edge가 있으면 폐기 노드 검색 시 후계를 함께 끌어오고, 랭킹도 배수(0.35)라는
+   휴리스틱 대신 **"후계보다 아래"를 구조적으로 보장**할 수 있다. §B.6의 후속 개선. **미착수.**
+10. **`ONTOLOGYSTYLE.md` §3 predicate order에 `ho:observedTokenVolume` 자리 없음**. 현재 저작 관례는
+   `observedTokenVolume ; tokenEstimate ; maturity`. 표 반영 필요(§2 네이밍표 감사 전례와 같은 종류). **미착수.**
+7. **산출 하네스 문서로 내부 IRI 유출** (`docs/feedback/emitted-harness-iri-leak.md`). `materialize.py`가
+   definition/promptText를 그대로 렌더해 CLAUDE.md에 `id:`/`ho:` dangling reference — 21노드·50회
+   (h-peer-mesh 10 · h-harness-factory 9 · h-workspace-synthesis 7 · h-multiagent 1).
+   **→ 수정 dispatch 진행 중** (dev B 소유: `tools/materialize.py`만. 그래프 무변경 — emit 시점 prefLabel 치환).
 
 ## C. 품질 축 작업 항목 (목표 (2) — `validate.py`가 못 보는 축)
 
@@ -69,9 +82,13 @@
   `h-harness-factory` 818 · `h-workspace-synthesis` 771 · `pat-peer-mesh` 770 · `h-multiagent` 746.
   **다중정책 Guardrail 10/34** — 특히 `gr-design-for-loss`는 한 문장에 정책 4개.
 
-## D. 현재 건전성 기준선 (2026-07-25)
+## D. 현재 건전성 기준선 (2026-07-25, 갱신)
 `validate.py` **PASS** · 205 individuals · TBox 클래스 44 · abox 18파일 · 기본 assembly order 12 sections ·
-`check_determinism.py` PASS. **미커밋**: 결정성 증분(tools/CI) + 계획 문서들.
+`check_determinism.py` PASS.
+
+**land 완료**: 결정성 수정 `d1ac476` (CI green) · 인벤토리+계획 `4575e11` (CI green) · 메모리 `f495c5a`.
+**미커밋 = 진행 중 dispatch 작업분뿐** (dev A: retrieve/tbox/shapes/observation · dev B: materialize).
+시간 경과를 완료로 가정하지 말고 매 사이클 `git status`로 재확인한다.
 
 ## E. 사이클 규약
 - 실행 중인 dispatch가 있으면 **그 파일 범위를 건드리지 않는다**(병렬 충돌 방지). 특히 **inspection이 git을
