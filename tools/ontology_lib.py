@@ -67,12 +67,24 @@ INSTANCE_LINK_PREDICATES = {
 }
 
 # The classes we treat as first-class ontology individuals.
+#
+# List every class that ABox nodes are ASSERTED as — leaves, not the
+# intermediate superclasses of the DA-4 taxonomy. A leaf missing here is only
+# masked while `owlrl` is on (the inferred `ho:HarnessComponent` type is in this
+# set and picks the node up); with `load_graph(reason=False)` the node vanishes,
+# so the individual count would differ per tool path. The invariant that catches
+# it: `instance_nodes` must be the same size with and without reasoning.
+# Intermediate superclasses stay OUT — they have no direct instances and would
+# only add redundant lookups.
 INSTANCE_CLASSES = {
     HO.Harness, HO.HarnessComponent, HO.SystemPrompt, HO.Instruction,
     HO.Tool, HO.Guardrail, HO.Workflow, HO.WorkflowStep, HO.PromptSection,
     HO.AssemblySection, HO.Deliverable, HO.ModelConfig, HO.Example,
-    HO.Role, HO.Channel, HO.Candidate, HO.Contract, HO.Capability, HO.Domain, HO.Task,
+    HO.Role, HO.Agent, HO.Memory, HO.Channel, HO.Candidate, HO.Contract,
+    HO.TestScenario, HO.FailurePolicy,
+    HO.Capability, HO.Domain, HO.Task,
     HO.EnvironmentSpace, HO.GlobalState,
+    HO.ObservationSpace, HO.AreaOfInterest, HO.AreaOfObservation,
     HO.DesignPattern, HO.ExecutionMode, HO.Constraint, HO.Concept,
 }
 

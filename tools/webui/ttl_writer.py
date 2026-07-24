@@ -95,7 +95,15 @@ def render_block(node: dict) -> str:
 
 
 def abox_files() -> list[str]:
-    return sorted(glob.glob(os.path.join(ABOX_DIR, "*.ttl")))
+    """Every ABox TTL under `ontology/abox`, at any depth, path-sorted.
+
+    The glob must be RECURSIVE: the ABox is organised into per-group
+    directories (`abox/core/<group>/<type>.ttl`, ONTOLOGYSTYLE §4), so a flat
+    `abox/*.ttl` matches nothing and the UI would silently see an empty
+    ontology. `**` with recursive=True also matches zero directories, so a
+    flat file such as `abox/authored.ttl` is still found."""
+    return sorted(glob.glob(os.path.join(ABOX_DIR, "**", "*.ttl"),
+                            recursive=True))
 
 
 def _read(path: str) -> str:
