@@ -25,6 +25,13 @@ approved + 적용 실증(validate PASS·산출물 존재)만으로는 **부족**
 4. 문서만 커밋할 때 `validate.py` 실패는 차단 사유가 아니다(스테이지에 그래프 파일이 없으므로
    CI가 보는 트리는 이전 그래프 + 문서). 단 과도기라는 사실을 보고에 남긴다.
 
+## 관심사별 커밋 분리 시 **공유 메모리 파일**은 hunk 단위로 쪼갠다
+developer 2인 증분을 커밋 2개로 나눌 때 `.claude/agent-memory/developer/MEMORY.md`에는 인덱스
+줄이 **각 1줄씩** 들어와 파일이 양쪽에 걸린다. 파일 단위 add로는 못 나누므로:
+`git diff <file> > p.patch` → 헤더 + `@@` 훅 하나씩으로 patch 파일을 만들고
+`git apply --cached mem-0.patch` 로 **첫 커밋엔 첫 훅만** 스테이징, 두 번째 커밋에서 나머지를
+통째로 add. `git diff --cached <file> | grep -c '^+- \['` 로 스테이지된 인덱스 줄 수를 확인.
+
 ## 이 repo git 사실
 - `.claude/settings.local.json`은 사용자 전역 ignore(`~/.config/git/ignore`)로 제외 — 안전.
 - `gh` CLI 미설치, remote 없음 → 공개 repo 생성/ push는 사용자가 remote를 제공해야 가능.

@@ -52,6 +52,32 @@
   (21노드·50회, `h-peer-mesh` 10 / `h-harness-factory` 9). scratch `--out`으로 7 하네스를
   빌드해 `grep -oP "\bid:[a-z]+-[a-z0-9-]+"` 하면 즉시 잡힌다.
 
+## 3b. 그 3결함의 수정 검증법 (2026-07-25 land, `8aecd6f`·`f71a033`)
+수정 증분을 재검증할 때 **결함별 불변식 1줄**로 재라. 브리프 수치를 그대로 믿지 말 것.
+- 예산 절단: `tokenEstimate > DEFAULT_BUDGET(900)`인 노드 **0개**(수정 전 10) +
+  `"what does the inspection agent observe"` **37 nodes/892**(전 3/125). 술어 이관은 개체를 늘리지
+  않으므로 **205 불변**이 같이 걸리는 게이트.
+- deprecated 랭킹: 후계 > 폐기 **이면서 폐기가 팩에 남아 있을 것**(숨김은 결함이지 수정이 아니다).
+  json의 `maturity` 필드 존재도 같이 본다. ★json 노드 키는 `type`이 아니라 **`types`(리스트)** —
+  `type`으로 읽으면 `None`이 나와 §B.3(INSTANCE_CLASSES) 결함으로 오진한다.
+- IRI 유출: grep은 `CLAUDE.md`가 아니라 **산출 트리 전체**에 걸어라(MANIFEST.json에도 definition이
+  복제된다). 남는 1건은 대개 `ho:artifactTemplate` **본문 파일**(설계상 미해소)이므로 old/new
+  동일한지로 회귀 여부를 가른다.
+
+## 3c. 산출물 회귀의 "성격" 판정 — line-for-line 여부
+라벨 치환 같은 수정은 **줄 수가 변하면 안 된다**. `diff | grep -c '^<'` == `grep -c '^>'` 이고
+`wc -l` old==new 면 순수 치환, 아니면 문장이 생기거나 사라진 것 = 조사 대상.
+추가로 **변경된 old 줄이 전부 토큰을 갖고 있었는지** 역확인하면 "치환 외의 변경 0"이 증명된다.
+MANIFEST의 `tokenEstimate` 합 변화(49888→2383)는 **관측량 오염 제거**이지 회귀가 아니지만,
+바뀐 하네스가 관측 컴포넌트를 물고 있는 하나(`h-multiagent`)뿐인지 확인해야 그렇게 말할 수 있다.
+
+## 3d. 파급효과는 연합까지 — 8 recipe federate + **산출물**까지 본다
+중앙 tools/TBox 수정도 recipe 산출물을 바꾼다(중앙 컴포넌트 definition이 recipe 문서에 렌더되므로).
+`staging/harness-recipes/central` 심링크로 8건 federate PASS를 먼저 걸고(→ `federation-lockstep`),
+그 다음 recipe 하네스를 **materialize**해 old/new diff까지 본다. recipe의 하네스 slug는
+`grep -rhoP "^id:\Kh-[a-z0-9-]+" recipes/<R>/*.ttl`로 뽑는다. 교차 도메인 인용
+(techdoc의 `core:h-research`)이 라벨로 해소되는지가 resolver의 진짜 시험대.
+
 ## 4. 회귀 가드의 실효성 검증 (negative control)
 가드 스크립트가 **정말 실패를 잡는지**는 옛 버전에 돌려봐야 안다. repo를 건드리지 않는 방법:
 scratchpad에 `tools/` 트리를 만들어 `git show HEAD:tools/<tool>.py`를 넣고, 같은 디렉토리에
