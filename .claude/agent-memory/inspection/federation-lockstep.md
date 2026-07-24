@@ -24,5 +24,19 @@ recipe가 **개별 core 유닛이 아니라 중앙 root ontology(`.../ontology`)
 또한 **push 전 로컬 federate dry-run**(working-tree 중앙 + staging 레시피 조립)을 게이트로 두면
 회귀를 push 전에 잡는다 — 이번에 그렇게 검증하고 통과 후 push함.
 
+## 파일 **이동**(경로 변경)도 lockstep 축이다 (2026-07-24, DA-4/REORG)
+개체가 늘지 않는 **순수 재조직**(`abox/core/<type>.ttl` → `<group>/<type>.ttl`)도 published
+recipe catalog의 `uri=` 물리 경로를 전부 깨뜨린다 — 중앙 push와 recipe catalog push 사이가
+회귀 창이므로 **연달아** 처리한다. dry-run은 staging의 `central` **symlink**
+(`staging/harness-recipes/central -> /home/cpark/git/harness_ontology`) 덕에 uncommitted
+working tree를 그대로 federate할 수 있다:
+`HARNESS_CATALOG=$PWD/catalog-v001.xml HARNESS_ROOT_ONTOLOGY=https://harness-ontology.dev/recipes/<R> /usr/bin/python3 central/tools/validate.py`
+
+## ⚠ recipes CI는 8 recipe를 게이트하지 않는다 (2026-07-24 실측)
+`harness-recipes/.github/workflows/validate.yml` 매트릭스는 **lpranging·techdoc 2건뿐**이다
+(run 29988434992·30069377159 모두 job 2개). contract-demo·pilot 5는 CI 밖 — 과거 완료 보고서의
+"8 recipe 매트릭스 CI green" 기술은 **부정확**하다. 따라서 중앙 push마다 **로컬 8건 federate를
+직접** 돌려야 하며, CI green을 회귀 부재의 근거로 삼지 않는다.
+
 ## 관련
 [[federation-physical-split]] (recipes repo 구조·federate 재현 명령).
