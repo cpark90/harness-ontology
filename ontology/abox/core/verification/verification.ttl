@@ -60,3 +60,46 @@ id:fp-validation-fail a ho:FailurePolicy ;
     ho:failureCondition "The validation gate rejects an authored change: a shape violation, an orphaned node or an unsatisfied capability." ;
     ho:recoveryStrategy "Do not admit the change; return it to the authoring step with the failing check named and repair the model, never weaken the check to make it pass." ;
     ho:tokenEstimate 100 ; ho:maturity "draft" .
+
+#===================== Failure policies (neutral archetypes) ===========
+# The error rows a delegating, document-producing team declares regardless of
+# its problem domain: a worker that fails, an input too thin to work from, a
+# critical review finding, an unreachable source, and two deliverables that
+# contradict each other. They are generalised archetypes, siblings of the two
+# methodology-specific rows above -- each says how it differs from the nearest
+# one so the set stays discriminating rather than overlapping.
+
+id:fp-agent-failure-retry a ho:FailurePolicy ;
+    skos:prefLabel "Dispatched worker fails its task" ;
+    skos:definition "The row a delegating team needs most often: the worker does come back, and what it brings back is a failure. Choose it for any harness that hands work to units it cannot supervise, so a failed unit is retried once under the same brief and then bounded, instead of being retried without limit or dropped without trace. Distinguished from id:fp-dispatch-timeout, whose condition is SILENCE -- here the worker reports, and the report is failure." ;
+    ho:failureCondition "A dispatched worker returns having failed its assignment: it reports an error or an unusable result instead of the requested deliverable." ;
+    ho:recoveryStrategy "Retry the same assignment once; if it fails again, continue the run without that unit of work and mark the gap explicitly in the final deliverable, so the missing scope is visible rather than silently absent." ;
+    ho:tokenEstimate 150 ; ho:maturity "draft" .
+
+id:fp-insufficient-input a ho:FailurePolicy ;
+    skos:prefLabel "Input too thin to determine the deliverable" ;
+    skos:definition "Pre-decides the commonest quality trap of a request-driven team: a role handed too little either stalls waiting for more or quietly invents the missing context and presents it as given. Choose it for any harness whose first step consumes a brief supplied by someone outside the team." ;
+    ho:failureCondition "The input a step depends on is missing, ambiguous or too thin to determine what the deliverable should be." ;
+    ho:recoveryStrategy "Proceed on stated general defaults rather than stopping, and mark every place a default stood in for real input as needing confirmation, so the deliverable stays usable while its assumptions stay visible and correctable." ;
+    ho:tokenEstimate 115 ; ho:maturity "draft" .
+
+id:fp-review-critical-rework a ho:FailurePolicy ;
+    skos:prefLabel "Review raises a critical finding" ;
+    skos:definition "Fixes in advance what the top severity band actually costs, because deciding that in the moment is what turns a review loop either unbounded or toothless. Choose it together with the cross-validation guardrail: without a bound, a critical finding either reopens the work indefinitely or is quietly downgraded to fit the schedule." ;
+    ho:failureCondition "Cross-validation raises a finding in the top severity band against a deliverable." ;
+    ho:recoveryStrategy "Return the deliverable to the role that produced it for rework, at most twice; if the finding survives, escalate it and ship the deliverable as a clearly flagged partial rather than looping further." ;
+    ho:tokenEstimate 112 ; ho:maturity "draft" .
+
+id:fp-source-unavailable a ho:FailurePolicy ;
+    skos:prefLabel "A depended-on source cannot be reached" ;
+    skos:definition "Keeps an unreachable external source from becoming either a hard stop or an invisible fabrication -- the two ways a grounded deliverable normally degrades. Choose it for any harness whose output rests on evidence the team does not itself hold." ;
+    ho:failureCondition "An external source the work depends on cannot be reached, or returns nothing usable." ;
+    ho:recoveryStrategy "Fall back to the best available substitute evidence and state in the deliverable which claim rests on the substitute and what could not be reached, rather than dropping the claim or presenting it as fully grounded." ;
+    ho:tokenEstimate 105 ; ho:maturity "draft" .
+
+id:fp-conflict-contradiction a ho:FailurePolicy ;
+    skos:prefLabel "Deliverables contradict each other" ;
+    skos:definition "Names in advance who resolves a contradiction between two roles' outputs and on what basis. Choose it for any harness whose deliverables are produced in parallel and merged afterwards: without this row the contradiction is settled by whichever text the merging step happens to read last." ;
+    ho:failureCondition "Two deliverables that must be merged state incompatible facts or incompatible recommendations." ;
+    ho:recoveryStrategy "Do not silently keep one: have the reviewing role state both positions, name the direction of resolution with the reason for it, and record the discarded position so the choice stays traceable." ;
+    ho:tokenEstimate 105 ; ho:maturity "draft" .

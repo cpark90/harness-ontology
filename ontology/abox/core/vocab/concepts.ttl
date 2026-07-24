@@ -115,6 +115,11 @@ id:c-skill-authoring a ho:Concept ;
     skos:altLabel "well-formed skill packaging" ;
     skos:definition "The principle of authoring and packaging an agent skill in well-formed shape -- a present description, the required section headings and no forbidden files -- so it is discoverable, invocable and contract-checkable; tag the capability and guardrail that govern how a skill is written." ;
     skos:broader id:c-agent-methodology .
+id:c-acceptance-coverage a ho:Concept ;
+    skos:prefLabel "Acceptance coverage" ;
+    skos:altLabel "three-flow fixtures" ;
+    skos:definition "The principle that behaviour fixtures must cover the normal flow, the flow resumed over existing input and the error flow rather than the happy path alone, so a run that merely completed is never mistaken for one that was accepted; tag the components that fix how much behaviour a harness must demonstrate before it counts as done." ;
+    skos:broader id:c-agent-methodology .
 
 id:c-root-cause a ho:Concept ;
     skos:prefLabel "Root-cause resolution" ;
@@ -185,6 +190,16 @@ id:c-complexity-governance a ho:Concept ;
     skos:prefLabel "Complexity governance" ;
     skos:altLabel "orchestration complexity limits" ;
     skos:definition "The principle of bounding multi-agent orchestration complexity -- limiting delegation depth, forbidding nested teams, keeping a single active team, avoiding coordination bottlenecks and flattening hierarchy -- so a harness stays tractable and debuggable rather than sprawling; tag guardrails that cap structural complexity." ;
+    skos:broader id:c-multiagent .
+id:c-cross-validation a ho:Concept ;
+    skos:prefLabel "Cross-validation" ;
+    skos:altLabel "severity-triaged peer review" ;
+    skos:definition "The principle that a deliverable is checked by a role other than the one that produced it and that each finding is graded by severity, only the top band forcing rework -- the review discipline that keeps a producer-reviewer loop convergent instead of letting every remark reopen the work. Distinct from synthesis, which merges the reviewed contributions into the final result." ;
+    skos:broader id:c-multiagent .
+id:c-deliverable-artifact a ho:Concept ;
+    skos:prefLabel "Deliverable artifact" ;
+    skos:altLabel "workspace artifact naming" ;
+    skos:definition "The named file a role writes into the shared workspace as its unit of hand-off, together with the naming discipline (ordinal prefix, document type, extension) that makes production order readable and lets a consumer resolve exactly which artifact a producer wrote; tag the components that govern how hand-off artifacts are named and ordered." ;
     skos:broader id:c-multiagent .
 
 #===================== Concept scheme ==================================

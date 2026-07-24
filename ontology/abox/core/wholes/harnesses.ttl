@@ -163,19 +163,35 @@ id:h-peer-mesh a ho:Harness ;
 # and its bound id:role-synthesizer provides it, so capability satisfaction holds
 # internally. Reuses central parts by IRI (sp-methodical / wf-multiagent /
 # tool-editor / mc-opus / dom-design / task-designdecision).
+# It now also carries the NEUTRAL WORKER ARCHETYPES a staffed team is picked
+# from (analyst / author / implementer / planner / strategist / tester), the
+# team-discipline guardrails those roles run under (cross-validation with
+# severity triage, declared hand-off routes, sequenced workspace artifacts,
+# three-flow acceptance) and the domain-independent error rows such a team
+# declares (worker failure, thin input, critical review finding, unreachable
+# source, contradicting deliverables). They are hosted here for the same reason
+# as the parts above -- this is the library carrier, so wiring them leaves every
+# other harness's materialized document byte-identical.
 id:h-workspace-synthesis a ho:Harness ;
     skos:prefLabel "Workspace-synthesis harness" ; skos:altLabel "convergence-gate library host" ;
-    skos:definition "A neutral, domain-independent template that wires the recurring central-library parts a multi-agent worker team reuses: worker roles hand off deliverables over a shared file workspace (id:chan-workspace), each deliverable follows a structured-output template and the run scales to the request and degrades gracefully on failure (the recurring guardrails), and a terminal synthesizer gate (id:role-synthesizer) cross-checks every contribution and compiles the integrated final result (providing id:cap-synthesis, which this harness requires). It exists to make those parts connected, reusable components (anti-orphan) and stands as a neutral template -- it names no specific problem domain, tool or technology. Derives from id:h-multiagent and reuses central parts by IRI." ;
+    skos:definition "A neutral, domain-independent template that wires the recurring central-library parts a multi-agent worker team reuses: the worker archetypes a team is staffed from (analyst, author, implementer, planner, strategist, tester), which hand off deliverables over a shared file workspace (id:chan-workspace) under the recurring team disciplines -- structured output, ordinal artifact naming, declared hand-off routes, severity-triaged cross-validation, scaling to the request and graceful degradation -- with a terminal synthesizer gate (id:role-synthesizer) that cross-checks every contribution and compiles the integrated final result (providing id:cap-synthesis, which this harness requires), plus the domain-independent error rows such a team declares. It exists to make those parts connected, reusable components (anti-orphan) and stands as a neutral template -- it names no specific problem domain, tool or technology. Derives from id:h-multiagent and reuses central parts by IRI." ;
     ho:targetsDomain id:dom-design ;
     ho:addressesTask id:task-designdecision ;
     ho:hasSystemPrompt id:sp-methodical ;
     ho:usesTool id:tool-editor ;
     ho:hasWorkflow id:wf-multiagent ;
-    ho:hasGuardrail id:gr-lang, id:gr-structured-output, id:gr-scale-modes, id:gr-graceful-fallback ;
+    ho:hasGuardrail id:gr-lang, id:gr-structured-output, id:gr-scale-modes, id:gr-graceful-fallback,
+        id:gr-cross-validation, id:gr-declared-routes, id:gr-sequenced-artifacts,
+        id:gr-three-flow-acceptance ;
     ho:usesModel id:mc-opus ;
     ho:hasRole id:role-developer, id:role-research, id:role-inspection-worker,
-        id:role-vnv, id:role-design, id:role-synthesizer ;
+        id:role-vnv, id:role-design, id:role-synthesizer,
+        id:role-analyst, id:role-author, id:role-implementer,
+        id:role-planner, id:role-strategist, id:role-tester ;
     ho:hasChannel id:chan-workspace ;
+    ho:hasFailurePolicy id:fp-agent-failure-retry, id:fp-insufficient-input,
+        id:fp-review-critical-rework, id:fp-source-unavailable,
+        id:fp-conflict-contradiction ;
     ho:hasExecutionMode id:mode-sub-agents ;
     ho:requiresCapability id:cap-synthesis ;
     ho:tagged id:c-multiagent, id:c-design, id:c-synthesis ;

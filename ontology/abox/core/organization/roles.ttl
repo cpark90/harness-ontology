@@ -82,7 +82,7 @@ id:role-inspection-worker a ho:Role ;
     ho:maturity "reviewed" .
 
 id:role-vnv a ho:Role ;
-    skos:prefLabel "Verification and validation agent" ;
+    skos:prefLabel "Verification and validation agent" ; skos:altLabel "quality reviewer" ;
     skos:definition "A work-performing role, dispatch-invoked only, that verifies and evaluates composition results and returns a verdict on confirmed state, escalating rather than deciding open questions." ;
     ho:roleTool id:tool-shell, id:tool-retriever ;
     ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
@@ -92,7 +92,7 @@ id:role-vnv a ho:Role ;
     ho:maturity "reviewed" .
 
 id:role-design a ho:Role ;
-    skos:prefLabel "Design agent" ;
+    skos:prefLabel "Design agent" ; skos:altLabel "visual designer" , "instructional designer" ;
     skos:definition "A work-performing role, dispatch-invoked only, dedicated to design work (system/architecture design tasks): choosing the simplest working form, fixing root causes, and grounding each decision." ;
     ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
         id:gr-simplicity, id:gr-root-cause, id:gr-grounding ;
@@ -107,7 +107,7 @@ id:role-design a ho:Role ;
 # integrated output, so it provides id:cap-synthesis. Recurs across the corpus of
 # multi-agent harnesses as the reviewer/writer/synthesizer terminal step.
 id:role-synthesizer a ho:Role ;
-    skos:prefLabel "Synthesizer agent" ; skos:altLabel "convergence/reviewer gate" ;
+    skos:prefLabel "Synthesizer agent" ; skos:altLabel "convergence/reviewer gate" , "cross-validator" ;
     skos:definition "A work-performing role, dispatch-invoked only, that serves as the terminal convergence gate of a multi-agent harness: it cross-checks every worker's deliverable, requests bounded rework on the issues it finds, and compiles the reviewed contributions into one coherent final result. Broader than the verification role, which only judges and returns a verdict -- the synthesizer also produces the integrated deliverable, so it provides the synthesis capability." ;
     ho:roleTool id:tool-editor ;
     ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
@@ -116,6 +116,75 @@ id:role-synthesizer a ho:Role ;
     ho:tagged id:c-multiagent, id:c-synthesis ;
     ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable synthesis/review heuristics at session end; touches no other role's memory." ;
     ho:maturity "reviewed" .
+
+#===================== Neutral worker archetypes =======================
+# The recurring worker roles of a multi-agent team, generalised away from any
+# problem domain: a team is normally staffed by picking the archetypes its work
+# needs (analyse / write / build / plan / advise / test) and specialising each
+# one locally. They are deliberately siblings of -- not edits to -- the concrete
+# roles above, which are this repository's own agents; each definition says how
+# it differs from the nearest existing role so the two never collapse into
+# near-synonyms. Hosted by id:h-workspace-synthesis, the central-library carrier.
+
+id:role-analyst a ho:Role ;
+    skos:prefLabel "Analyst agent" ; skos:altLabel "evaluator" , "modeler-calculator" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that examines material it is given against stated criteria and reports what it found ranked by severity or impact, so the next role can spend its effort on the costliest issues first. Choose it when the deliverable is a diagnosis of material that already exists. Distinguished from id:role-research, which GATHERS material rather than judging it, and from id:role-vnv, whose subject is the harness's own composition output and whose return is a pass/fail verdict rather than a graded finding list." ;
+    ho:roleTool id:tool-editor ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-grounding, id:gr-structured-output ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable diagnostic heuristics at session end; touches no other role's memory." ;
+    ho:maturity "draft" .
+
+id:role-author a ho:Role ;
+    skos:prefLabel "Author agent" ; skos:altLabel "writer" , "document producer" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that turns findings or a specification into a finished, structured document written for a named reader. Choose it when the prose artifact IS the deliverable rather than a by-product of other work. Distinguished from id:role-synthesizer, which is the terminal convergence gate that judges and merges what everyone else produced: the author is a producer that writes one deliverable of its own and hands it to that gate." ;
+    ho:roleTool id:tool-editor ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-structured-output, id:gr-cite ;
+    ho:tagged id:c-multiagent, id:c-structured-output ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable drafting conventions at session end; touches no other role's memory." ;
+    ho:maturity "draft" .
+
+id:role-implementer a ho:Role ;
+    skos:prefLabel "Implementer agent" ; skos:altLabel "builder" , "data preparer" , "optimizer-tuner" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that turns an agreed specification into the working artifact it describes -- code, a configuration, a prepared dataset, a tuned setup -- and reports what it actually produced against what was specified. Choose it for the construction step of any domain. Distinguished from id:role-developer, which is this repository's own concrete authoring agent (it writes ontology individuals from a dispatch brief); this role is the domain-independent archetype a harness binds for construction work of any kind, and the two are separate nodes rather than one broadened one." ;
+    ho:roleTool id:tool-editor ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-simplicity, id:gr-root-cause ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable construction knowledge at session end; touches no other role's memory." ;
+    ho:maturity "draft" .
+
+id:role-planner a ho:Role ;
+    skos:prefLabel "Planner agent" ; skos:altLabel "scheduler" , "roadmap owner" ;
+    skos:definition "A work-performing role, dispatch-invoked only, whose deliverable is the plan itself: the ordered task breakdown, the dependencies between the tasks and the schedule or roadmap that follows from them. Choose it when the request needs a plan document that other roles will then execute. Distinguished from id:role-orchestrator, which performs no substantive work itself and only decomposes and dispatches -- this role is an ordinary worker that happens to produce a plan, and is dispatched like any other." ;
+    ho:roleTool id:tool-editor ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-bottleneck-avoidance, id:gr-structured-output ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable planning heuristics at session end; touches no other role's memory." ;
+    ho:maturity "draft" .
+
+id:role-strategist a ho:Role ;
+    skos:prefLabel "Strategist agent" ; skos:altLabel "advisor" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that frames a decision: it lays out the viable options with their trade-offs and recommends one, leaving the choice with the decision authority. Choose it when the request is what should be done rather than to do it. Distinguished from id:role-planner, which sequences work that has ALREADY been decided, and from id:role-analyst, which reports what is wrong rather than which way to go next." ;
+    ho:roleTool id:tool-editor ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-grounding, id:gr-no-arbitrary-decision ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable option-framing heuristics at session end; touches no other role's memory." ;
+    ho:maturity "draft" .
+
+id:role-tester a ho:Role ;
+    skos:prefLabel "Tester agent" ; skos:altLabel "simulator" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that produces the checks themselves -- test cases, fixtures and simulated runs with the outcome each expects -- instead of passing judgment. Choose it when the deliverable is the acceptance material some later gate will run. Distinguished from id:role-vnv, which CONSUMES such material and returns a verdict on it. It recurs in only a small share of observed teams, so bind it only when the acceptance material is genuinely a deliverable of its own rather than a by-product of the verification step." ;
+    ho:roleTool id:tool-editor ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-three-flow-acceptance, id:gr-discriminating-eval ;
+    ho:tagged id:c-multiagent, id:c-acceptance-coverage ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable fixture-design knowledge at session end; touches no other role's memory." ;
+    ho:salience 0.25 ; ho:maturity "draft" .
 
 ########################################################################
 # Operating agents — this repo's own five agents modelled as MAS nodes.
