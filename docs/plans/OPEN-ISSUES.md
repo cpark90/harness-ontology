@@ -17,7 +17,7 @@
 
 | 항목 | 상태 | 남은 일 |
 |---|---|---|
-| `harness-100-augmentation.md` | **진행 중** | ✅Phase 0.5 인벤토리(`4575e11`) → ✅Phase 0.6 중앙 어휘 GAP 18개체(`27c6582`, 223) → **Phase 0.7 recipe 3축 보정(진행 중)** → P0-b catalog/CI glob → importer → 대표 35 임포트. 계획: `harness-100-scaleup-plan.md` |
+| `harness-100-augmentation.md` | **진행 중 — 대량 임포트 직전에서 사용자 결정 대기** | ✅0.5 인벤토리(`4575e11`) → ✅0.6 중앙 어휘 18개체(`27c6582`) → ✅0.7 recipe 3축(`f096036`) → ✅P0-b catalog/CI glob(`5084827`/`d9ebf0c`) → ✅importer(`9f22590`). **남은 것 = 대표 35 대량 임포트뿐**, 그 앞에 **D2 결정 + B21(importer 3축 확장)** 필요. 계획: `harness-100-scaleup-plan.md` |
 | `harness-repo-survey.md` | **미착수** (승인+답변 완료) | ①전체 로드맵(c) ②**`ho:Hook` 신설** ③agent-rules-books는 온톨로지에만 ④role 원형: 온톨로지 전량 + 예제 10~20. 계획: `harness-repo-survey/mining-plan.md` Wave 0~4 |
 | `revfactory-harness-reflection.md` | **거의 완료** | P1·P2 land 완료. **잔여 확인 필요** — delta-inventory 대조로 미반영분이 정말 없는지 1회 감사 |
 | `retrieve-nondeterministic-pack.md` | **land 완료** (`d1ac476`, CI green) | 파일 태그만 `open` 유지 — 사용자가 `approved`로 고치면 즉시 refresh 가능. 근거: `verified/retrieve-determinism-finalize.md`. negative control로 가드 실효 확인(8/8 FAIL) |
@@ -25,8 +25,6 @@
 ## B. 기술 GAP — 미해결
 > 번호는 **안정 ID**로 취급한다(해소돼도 재사용하지 않는다). 해소분은 §B-done으로 옮긴다.
 
-- **B1. P0-b — catalog/CI glob 생성**: catalog·CI matrix가 손 나열. batch 임포트 **전 차단요소**.
-  누락이 에러가 아니라 **조용한 부분 closure**로 나타나는 실패 양식을 이미 겪었다.
 - **B2. retrieve tie-break 정책**: 지금은 IRI 사전순(재현성용). 동점 17개에 슬롯 5개인 질의가 실재하므로
   **검색 품질** 관점의 정책(maturity/salience 가중)은 미결. → Q2와 함께 다루면 좋다.
 - **★B17. 원형↔인스턴스를 잇는 술어가 없다 (TBox GAP, inspection 발견 — 세분화 축 직결).**
@@ -38,8 +36,15 @@
   (`role-implementer`↔`role-developer` L0.00 — 원형은 일반어·구체는 도메인어라 어휘가 안 겹치는데 의미가 겹침).
 - **B18. `retrieve.py`엔 IRI 해소가 없다** (B7의 미해소 축). materialize는 emit 시 `id:`→라벨 해소하지만
   retrieve 팩엔 그대로 실린다 — 텍스트 술어 내 참조 **32/17노드 → 41/24노드**로 증가 중. B7을 "materialize 한정"으로 정정.
-- **B19. recipes CI에 `workflow_dispatch` 트리거 없음** — 중앙만 바뀐 라운드에서 연합 CI를 못 돌린다
-  (`gh workflow run` → 422). 이번 라운드도 로컬 8/8 federate가 유일 게이트였다. 트리거 1줄 추가 권고.
+- **B21. importer가 TestScenario/FailurePolicy를 추출하지 않는다** (inspection 발견, importer land 후속).
+  `tools/import_corpus.py`는 skeleton·role·persona·instruction·상수만 기계 생성하고 `hasTestScenario`/
+  `hasFailurePolicy`는 브리프 SHOULD 밖이라 미구현. 소스는 거의 전수 제공 → Phase 0.7이 8 recipe에 backfill로
+  채운 축. **대량 임포트(대표 35) 전 importer 다음 증분으로 넣지 않으면 동일 누락 35× 복제.** scenarioKind는
+  orchestrator skill.md heading 1:1, error표는 중앙 `core:fp-*` 원형 재사용. **착수 조건: D2 결정과 함께.**
+- **B20. `docs/ci/data-repo-validate.yml` 이중 stale** (inspection 발견). retired pure-data-repo 템플릿:
+  L35 `CENTRAL_REPO: hhmm2728/harness_ontology`(owner·언더스코어 stale → `cpark90/harness-ontology`) ·
+  L38 `HARNESS_ROOT_ONTOLOGY: …/data/lpranging`(lpranging은 이제 recipe). recipe repo 패턴이 이 템플릿을
+  사실상 대체 → **갱신 또는 폐기 결정 필요**. committed/clean. **미착수.**
 - **★B16. "레지스트리 표류" 계열 — 개별 수정이 아니라 불변식으로 막아야 한다** (inspection 진단).
   **B3·B8·B13·B14가 전부 같은 결함**이다: **TBox/디스크가 진실인데 파이썬 리터럴이 그 사본**이고, 사본이
   조용히 뒤처진다(`INSTANCE_CLASSES` · abox glob · `ttl_writer.ORDER` · `INSTANCE_LINK_PREDICATES`).
@@ -89,6 +94,10 @@
   `find_subject_file` core 개체 **205/205 해소**(unresolved 0).
 - **B10** `ONTOLOGYSTYLE §3`에 `observedTokenVolume` 자리 없음 — **land `7baca84`**. §3 등재 +
   두 술어를 섞지 말라는 [지킴] 계약 + 진단 불변식("`tokenEstimate`가 기본 예산을 넘는 노드 0개").
+- **B1** P0-b catalog/CI glob 생성 — **land 중앙 `5084827` / published `d9ebf0c`, CI 9/9 green**.
+  `tools/gen_recipe_catalog.py`가 `recipes/*/`를 단일 진실로 catalog+matrix 생성, `--check` 드리프트 가드가 CI에.
+  위조 negative control(recipe 빼면 exit 1) 실효 확인. importer 착수 차단 해제.
+- **B19** recipes CI `workflow_dispatch` 부재 — **land `d9ebf0c`**. 추가 + 발동 실증(dispatch run success, 전엔 422).
 
 ## C. 품질 축 작업 항목 (목표 (2) — `validate.py`가 못 보는 축)
 
