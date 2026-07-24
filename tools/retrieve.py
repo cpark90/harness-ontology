@@ -94,13 +94,25 @@ def lexical_score(g: Graph, node, terms: list[str]) -> float:
     return score * prior
 
 
+def _rank_key(item: tuple[object, float]):
+    """Total, process-independent ranking key for a (node, score) pair:
+    score descending, IRI ascending. Only the score is negated — a plain
+    `reverse=True` would reverse the IRI tie-breaker too."""
+    node, score = item
+    return (-score, str(node))
+
+
 def select_seeds(g: Graph, terms: list[str]) -> list[tuple[object, float]]:
     scored = []
     for n in lib.instance_nodes(g):
         s = lexical_score(g, n, terms)
         if s > 0:
             scored.append((n, s))
-    scored.sort(key=lambda x: x[1], reverse=True)
+    # Score descending, IRI ascending. The IRI is a TOTAL tie-breaker: without
+    # it the order of equally-scored seeds came from set iteration (URIRef hash
+    # randomisation), and MAX_SEEDS then cut the tie group at an arbitrary
+    # point — so the same request produced a different pack per process.
+    scored.sort(key=_rank_key)
     return scored[:MAX_SEEDS]
 
 
@@ -174,15 +186,24 @@ def project(g: Graph, request: str, budget: int) -> dict:
         "promptText": _truncate(g.value(n, HO.promptText)),
         "provides": [lib.label_of(g, c) for c in g.objects(n, HO.providesCapability)],
         "requires": [lib.label_of(g, c) for c in g.objects(n, HO.requiresCapability)],
-    } for n, sc in sorted(admitted, key=lambda x: x[1], reverse=True)]
+    } for n, sc in sorted(admitted, key=_rank_key)]
 
-    edges = [{"s": lib.label_of(g, s), "p": p.split("#")[-1], "o": lib.label_of(g, o)}
-             for s, p, o in lib.instance_edges(g)
-             if s in in_scope and o in in_scope]
+    # Graph iteration order is not reproducible across processes (OWL-RL
+    # materialisation inserts inferred triples in set order), so the edge list
+    # is sorted on a total key: reading order first, IRIs to break ties.
+    edges = [
+        {"s": lib.label_of(g, s), "p": p.split("#")[-1], "o": lib.label_of(g, o)}
+        for s, p, o in sorted(
+            (t for t in lib.instance_edges(g)
+             if t[0] in in_scope and t[2] in in_scope),
+            key=lambda t: (lib.label_of(g, t[0]), t[1].split("#")[-1],
+                           lib.label_of(g, t[2]), str(t[0]), str(t[1]), str(t[2])),
+        )
+    ]
 
     candidates = [
         {"label": lib.label_of(g, n), "relevance": round(score_of[n], 3)}
-        for n in sorted(in_scope, key=lambda x: score_of[x], reverse=True)
+        for n in sorted(in_scope, key=lambda n: _rank_key((n, score_of[n])))
         if (n, HO.Harness) in _typed(g)
     ]
 

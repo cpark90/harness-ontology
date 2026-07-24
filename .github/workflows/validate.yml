@@ -20,3 +20,6 @@ jobs:
         run: pip install -r requirements.txt
       - name: Validate ontology (anti-orphan / anti-drift / buildable)
         run: python3 tools/validate.py
+      - name: Check projection determinism (same request => same context pack)
+        # Deliberately does NOT pin PYTHONHASHSEED — pinning hides the bug.
+        run: python3 tools/check_determinism.py
