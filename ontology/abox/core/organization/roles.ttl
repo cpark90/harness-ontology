@@ -1,0 +1,187 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Role partition of the `core` domain. Imports the
+# central TBox only; cross-unit references (the h-multiagent harness binding
+# these roles via hasRole, the tools/guardrails each role scopes via
+# roleTool/roleGuardrail, the c-multiagent/c-design tags) resolve in the
+# root union (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/roles> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+########################################################################
+# Sub-agent roles — the neutral multi-agent role taxonomy.
+#
+# Each role is characterised, not just classified: its defining traits are
+# modelled explicitly so a harness can make its agent perform the role
+# clearly — the governance it operates under (ho:roleGuardrail), the
+# least-privilege tools in its scope (ho:roleTool), and its memory
+# discipline (ho:roleMemoryPolicy). ho:userFacing is OPTIONAL: it is present
+# (true) only on roles that communicate with the user; its ABSENCE means the
+# role is dispatch-invoked and does not talk to the user (it is not a
+# defining/required property). All roles are bound to the neutral
+# id:h-multiagent template via ho:hasRole (subPropertyOf hasComponent) and
+# scope only parts that harness already binds (usesTool / hasGuardrail), so
+# each stays a connected, orphan-free HarnessComponent.
+########################################################################
+
+#===================== ROLES ===========================================
+
+id:role-orchestrator a ho:Role ;
+    skos:prefLabel "Orchestrator agent" ;
+    skos:definition "The user-facing planner that decomposes a request into node-scoped briefs and dispatches them to workers, then integrates and gate-checks their results. Performs no substantive work itself." ;
+    ho:roleGuardrail id:gr-delegated-orchestration, id:gr-report-over-prompt,
+        id:gr-bounded-context, id:gr-reuse-first ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads and writes only its own role-scoped memory at session start/end; plans from a bounded retrieval pack, never the whole store." ;
+    ho:userFacing true ; ho:maturity "reviewed" .
+
+id:role-inspection a ho:Role ;
+    skos:prefLabel "Inspection agent" ;
+    skos:definition "The user-facing role that handles user feedback and its ripple effects and owns the git lifecycle in its own session." ;
+    ho:roleTool id:tool-shell, id:tool-editor ;
+    ho:roleGuardrail id:gr-traceability, id:gr-report-over-prompt,
+        id:gr-least-privilege, id:gr-verify-proceed ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Runs in its own session; reads and writes only its own role-scoped memory at session start/end and consumes the feedback channel by verified status, never by elapsed time." ;
+    ho:userFacing true ; ho:maturity "reviewed" .
+
+id:role-developer a ho:Role ;
+    skos:prefLabel "Developer agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that authors the ontology nodes (abox individuals) assigned in a brief, reusing the controlled vocabulary." ;
+    ho:roleTool id:tool-editor, id:tool-shell ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-reuse-first, id:gr-controlled-vocabulary ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable authoring knowledge at session end; touches no other role's memory." ;
+    ho:maturity "reviewed" .
+
+id:role-research a ho:Role ;
+    skos:prefLabel "Research agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that gathers and synthesises information needed by a brief, grounding each finding in its source." ;
+    ho:roleTool id:tool-websearch, id:tool-retriever ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-grounding, id:gr-bounded-context ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable findings at session end; touches no other role's memory." ;
+    ho:maturity "reviewed" .
+
+id:role-inspection-worker a ho:Role ;
+    skos:prefLabel "Inspection worker agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that carries out inspection/investigation tasks and reports findings; distinct from the user-facing inspection role." ;
+    ho:roleTool id:tool-retriever, id:tool-shell ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-report-over-prompt, id:gr-verify-proceed ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable investigation notes at session end; touches no other role's memory." ;
+    ho:maturity "reviewed" .
+
+id:role-vnv a ho:Role ;
+    skos:prefLabel "Verification and validation agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that verifies and evaluates composition results and returns a verdict on confirmed state, escalating rather than deciding open questions." ;
+    ho:roleTool id:tool-shell, id:tool-retriever ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-verify-proceed, id:gr-no-arbitrary-decision ;
+    ho:tagged id:c-multiagent ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable verification heuristics at session end; touches no other role's memory." ;
+    ho:maturity "reviewed" .
+
+id:role-design a ho:Role ;
+    skos:prefLabel "Design agent" ;
+    skos:definition "A work-performing role, dispatch-invoked only, dedicated to design work (system/architecture design tasks): choosing the simplest working form, fixing root causes, and grounding each decision." ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-simplicity, id:gr-root-cause, id:gr-grounding ;
+    ho:tagged id:c-multiagent, id:c-design ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable design rationale at session end; touches no other role's memory." ;
+    ho:maturity "reviewed" .
+
+# The final convergence gate of a multi-agent harness: a work-performing role
+# that both cross-checks every worker's deliverable AND compiles the reviewed
+# contributions into one coherent final result. Broader than id:role-vnv (which
+# only judges and returns a verdict) -- a neutral sibling that also PRODUCES the
+# integrated output, so it provides id:cap-synthesis. Recurs across the corpus of
+# multi-agent harnesses as the reviewer/writer/synthesizer terminal step.
+id:role-synthesizer a ho:Role ;
+    skos:prefLabel "Synthesizer agent" ; skos:altLabel "convergence/reviewer gate" ;
+    skos:definition "A work-performing role, dispatch-invoked only, that serves as the terminal convergence gate of a multi-agent harness: it cross-checks every worker's deliverable, requests bounded rework on the issues it finds, and compiles the reviewed contributions into one coherent final result. Broader than the verification role, which only judges and returns a verdict -- the synthesizer also produces the integrated deliverable, so it provides the synthesis capability." ;
+    ho:roleTool id:tool-editor ;
+    ho:roleGuardrail id:gr-dispatch-execution, id:gr-least-privilege,
+        id:gr-structured-output, id:gr-grounding ;
+    ho:providesCapability id:cap-synthesis ;
+    ho:tagged id:c-multiagent, id:c-synthesis ;
+    ho:roleMemoryPolicy "Reads its own role-scoped memory at session start and writes back reusable synthesis/review heuristics at session end; touches no other role's memory." ;
+    ho:maturity "reviewed" .
+
+########################################################################
+# Operating agents — this repo's own five agents modelled as MAS nodes.
+#
+# Each ho:Agent is the partially-observed distributed node the harness
+# compiles from a Role: it bundles ho:agentRole (its mandate/policy, an
+# existing role above), ho:agentObservation (exactly one ObservationSpace =
+# its observable envelope Omega_i, declared in the next section), and
+# ho:agentFunction (its action space A_i, EXISTING capabilities the harness
+# already provides/requires). All five share one modelled ho:cognitiveCapacity
+# (150000) — the loss-free context each can use in one inference, derived
+# from and kept consistent with id:mc-opus; the summed ho:tokenEstimate of
+# an agent's AreasOfObservation stays well within it (capacity fit, checked by
+# review since SHACL cannot sum). Bound to id:h-multiagent via ho:hasAgent
+# (a sub-property of hasComponent, so each agent is a connected, orphan-free
+# component and its ObservationSpace + areas roll up by the hasComponent chain).
+########################################################################
+
+#===================== AGENTS ==========================================
+
+id:agent-orchestrator a ho:Agent ;
+    skos:prefLabel "Orchestrator agent (node)" ;
+    skos:definition "The planning/dispatch node the harness compiles from the orchestrator role: it perceives the dispatch, agent-user and orchestrator-inspection channels and the plan/brief documents (external area) plus its own role and cache (internal area), and its function is multi-agent orchestration. It does NOT observe any worker's execution internals." ;
+    ho:agentRole id:role-orchestrator ;
+    ho:agentObservation id:os-orchestrator ;
+    ho:agentFunction id:cap-orchestration ;
+    ho:cognitiveCapacity 150000 ;
+    ho:tagged id:c-multiagent ;
+    ho:maturity "draft" .
+
+id:agent-developer a ho:Agent ;
+    skos:prefLabel "Developer agent (node)" ;
+    skos:definition "The authoring node the harness compiles from the developer role: it perceives its own dispatch brief and the assigned ontology nodes as a budget-capped retrieval pack (external area) plus its own role and cache (internal area), and its functions are file editing and code execution. It does NOT observe other nodes of the graph or other workers' internals." ;
+    ho:agentRole id:role-developer ;
+    ho:agentObservation id:os-developer ;
+    ho:agentFunction id:cap-fileedit, id:cap-codeexec ;
+    ho:cognitiveCapacity 150000 ;
+    ho:tagged id:c-multiagent ;
+    ho:maturity "draft" .
+
+id:agent-vnv a ho:Agent ;
+    skos:prefLabel "Verification agent (node)" ;
+    skos:definition "The verification node the harness compiles from the vnv role: it perceives the verification-target artifacts and the validator/tool output over the dispatch channel (external area) plus its own role and cache (internal area), and its function is code execution (running the validators). It does NOT observe the authoring internals of the components it judges." ;
+    ho:agentRole id:role-vnv ;
+    ho:agentObservation id:os-vnv ;
+    ho:agentFunction id:cap-codeexec ;
+    ho:cognitiveCapacity 150000 ;
+    ho:tagged id:c-multiagent ;
+    ho:maturity "draft" .
+
+id:agent-inspection a ho:Agent ;
+    skos:prefLabel "Inspection agent (node)" ;
+    skos:definition "The inspection node the harness compiles from the inspection role, running in its own session: it perceives the WHOLE design graph and the feedback documents over the agent-user and orchestrator-inspection channels (a WIDE external area) plus its own role and cache (internal area), yet acts narrowly (feedback + git lifecycle) — its function is traceability, keeping a single source of truth. It does NOT observe the internal sessions of the dispatched workers." ;
+    ho:agentRole id:role-inspection ;
+    ho:agentObservation id:os-inspection ;
+    ho:agentFunction id:cap-traceability ;
+    ho:cognitiveCapacity 150000 ;
+    ho:tagged id:c-multiagent ;
+    ho:maturity "draft" .
+
+id:agent-synthesizer a ho:Agent ;
+    skos:prefLabel "Synthesizer agent (node)" ;
+    skos:definition "The convergence node the harness compiles from the synthesizer role: it perceives every worker's deliverable in the shared file workspace (external area) plus its own role and cache (internal area), and its function is synthesis (cross-checking and compiling the integrated result). It does NOT observe each worker's internal reasoning behind the deliverables it converges." ;
+    ho:agentRole id:role-synthesizer ;
+    ho:agentObservation id:os-synthesizer ;
+    ho:agentFunction id:cap-synthesis ;
+    ho:cognitiveCapacity 150000 ;
+    ho:tagged id:c-multiagent ;
+    ho:maturity "draft" .

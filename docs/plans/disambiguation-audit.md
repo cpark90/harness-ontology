@@ -32,6 +32,30 @@
 - Role="bundles persona + least-privilege tools + guardrails + memory policy"; Agent(신규)="Role + ObservationSpace + functions를 묶는 분산노드". Role의 "tools/memory bundle"과 Agent의 agentFunction/observation이 경계 모호.
 - 정리: **Role=mandate + 정책 π_i**(persona·guardrail·수행 책임) vs **Agent=분산노드 인스턴스**(Role + Ω_i 관측 + A_i 기능). Role 정의를 mandate/policy로 좁히고 "관측/기능은 Agent가 부여" 명시.
 
+## G. 상위 taxonomy 정리 (flat → 중간 superclass, 사용자 확정 2026-07-23)
+현재 HarnessComponent 하위 22 클래스가 **전부 flat**(중간 계층 0). MAS 튜플 정렬 중간 superclass로 재부모화(순수 additive TBox: leaf `subClassOf`를 HarnessComponent→중간으로, 중간 ⊑ HarnessComponent; 인스턴스는 transitivity로 여전히 HarnessComponent → shape/reachability/count 무영향).
+
+### HarnessComponent 하위 (9 중간 superclass)
+| 중간 superclass | MAS 대응 | leaf |
+|---|---|---|
+| `ho:BehavioralComponent` | π_i 정책·행위 | SystemPrompt, PromptSection, Guardrail, Instruction, Example |
+| `ho:ObservationalComponent` | O_i 지각 | ObservationSpace, AreaOfInterest, AreaOfObservation |
+| `ho:OperationalComponent` | A_i 행동 | Tool, Candidate |
+| `ho:StateComponent` | b_i 신념 | Memory |
+| `ho:OrganizationComponent` | 노드·통신 | Agent, Role, Channel |
+| `ho:ProcessComponent` | 제어흐름·데이터 | Workflow, WorkflowStep, Deliverable |
+| `ho:VerificationComponent` | spec 검증 | Contract, TestScenario, FailurePolicy |
+| `ho:AssemblyComponent` | 문서 emit | AssemblySection |
+| `ho:SubstrateComponent` | 인지 substrate | ModelConfig (cognitiveCapacity 결정) |
+
+### 비-component (2 상위 + vocab)
+- `ho:SpecConcept`(추상 spec — harness가 require/target/apply/constrain): Capability, Task, Domain, DesignPattern, Constraint.
+- `ho:InformationSpace`(관측 투영 공간): EnvironmentSpace, GlobalState. (Domain은 SpecConcept 소속이되 4-space 사슬엔 property로 참여 — scopedFrom/describesDomain/projectsFrom.)
+- `ho:Concept`(⊑ skos:Concept, tagging vocab): 그대로.
+
+### 리스크
+순수 TBox 재부모화 — ABox/tools/shapes 무변경. validate PASS·materialize byte-identity·recipe 무영향 기대. 중간 superclass는 INSTANCE_CLASSES 불요(직접 인스턴스 없음; leaf가 여전히 직접 타입).
+
 ## 성격·리스크
 - **A**=구조 분리(신규 클래스 2 + 기존 ObservationArea 인스턴스 refactor + tools/shapes) — MAS-W4 vnv 완료 후.
 - **B~F**=**정의(skos:definition) 명확화 편집**(그래프 구조 무변경, materialize 무영향, orphan/ripple 없음, altLabel 보강). 저위험.

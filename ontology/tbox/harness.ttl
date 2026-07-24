@@ -34,143 +34,216 @@ ho:HarnessComponent a owl:Class ;
     rdfs:label "Harness Component" ;
     skos:definition "An abstract reusable building block that a harness is composed of." .
 
-ho:SystemPrompt a owl:Class ;
+#-----------------------------------------------------------------------
+# Intermediate component superclasses (MAS-tuple aligned taxonomy layer).
+# Each groups the leaf component classes that realise one facet of a
+# multi-agent-system node; leaves remain ho:HarnessComponent by subsumption
+# (owlrl transitivity), so shapes, reachability and instance counts are
+# unaffected. These intermediates have NO direct instances.
+#-----------------------------------------------------------------------
+
+ho:BehavioralComponent a owl:Class ;
     rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Behavioral Component" ;
+    skos:definition "An intermediate grouping of the harness components that constitute an agent's behavioural policy (pi_i) — how it is framed to act and the rules and exemplars that bound that behaviour. Its leaves are ho:SystemPrompt, ho:PromptSection, ho:Guardrail, ho:Instruction and ho:Example. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:ObservationalComponent a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Observational Component" ;
+    skos:definition "An intermediate grouping of the harness components that constitute an agent's perception (O_i) — the observation envelope and its interest- and realization-facets. Its leaves are ho:ObservationSpace, ho:AreaOfInterest and ho:AreaOfObservation. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:OperationalComponent a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Operational Component" ;
+    skos:definition "An intermediate grouping of the harness components that constitute an agent's action repertoire (A_i) — the invokable operations it can call and their concrete implementation options. Its leaves are ho:Tool and ho:Candidate. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:StateComponent a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "State Component" ;
+    skos:definition "An intermediate grouping of the harness components that constitute an agent's belief/state (b_i) — the memory stores it maintains across and within tasks. Its leaf is ho:Memory. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:OrganizationComponent a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Organization Component" ;
+    skos:definition "An intermediate grouping of the harness components that constitute the multi-agent organization — the distributed nodes, their mandates and the communication topology among them. Its leaves are ho:Agent, ho:Role and ho:Channel. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:ProcessComponent a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Process Component" ;
+    skos:definition "An intermediate grouping of the harness components that constitute the control flow and data flow a harness executes — the process, its ordered steps and the artifacts that flow along its task DAG. Its leaves are ho:Workflow, ho:WorkflowStep and ho:Deliverable. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:VerificationComponent a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Verification Component" ;
+    skos:definition "An intermediate grouping of the harness components that verify a harness against its spec — the contracts on emitted artifacts, the behaviour-acceptance fixtures and the failure/recovery policy. Its leaves are ho:Contract, ho:TestScenario and ho:FailurePolicy. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:AssemblyComponent a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Assembly Component" ;
+    skos:definition "An intermediate grouping of the harness components that govern how a harness's parts are assembled and emitted into its materialized document. Its leaf is ho:AssemblySection. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:SubstrateComponent a owl:Class ;
+    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:label "Substrate Component" ;
+    skos:definition "An intermediate grouping of the harness components that fix the cognitive substrate an agent runs on — the model selection and inference parameters that determine its cognitive capacity. Its leaf is ho:ModelConfig. A taxonomy layer under ho:HarnessComponent with no direct instances; its leaves remain harness components by subsumption." .
+
+ho:SystemPrompt a owl:Class ;
+    rdfs:subClassOf ho:BehavioralComponent ;
     rdfs:label "System Prompt" ;
     skos:definition "The standing persona framing of an agent: the text loaded on every inference that frames who the agent is and how it behaves. Distinguished from ho:Instruction (an on-demand skill injected only when triggered): a SystemPrompt is always-on persona framing, not a triggered procedure." .
 
 ho:Instruction a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:BehavioralComponent ;
     rdfs:label "Instruction" ;
     skos:definition "An on-demand named procedure — a skill / slash-command: a discrete unit injected only when triggered (via ho:triggerPhrase, wired to the agent by ho:integrationMode), not loaded standingly. Distinguished from ho:SystemPrompt (the always-on persona framing): an Instruction is invoked on demand, a SystemPrompt frames every inference." .
 
 ho:Tool a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:OperationalComponent ;
     rdfs:label "Tool" ;
     skos:definition "A concrete, invokable operation an agent can call (function, API, retrieval, code execution) that PROVIDES one or more capabilities (via ho:providesCapability). Distinguished from ho:Capability (the abstract ability): a Tool is the concrete means, a Capability is what it realises." .
 
 ho:Guardrail a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:BehavioralComponent ;
     rdfs:label "Guardrail" ;
     skos:definition "A behavioural policy an agent must follow: an imperative rule that disciplines how it acts (e.g. least-privilege, verify-then-proceed, cite-sources). Distinguished from ho:Constraint (a declarative non-functional requirement): a Guardrail governs behaviour, it is not an NFR." .
 
 ho:Workflow a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:ProcessComponent ;
     rdfs:label "Workflow" ;
     skos:definition "The concrete control flow a harness actually executes: the instantiated process it runs, decomposed into ordered steps (via ho:hasStep). A Workflow is a realized flow shape — e.g. a single pass, a sense-act-observe loop, a plan-then-dispatch-then-integrate sequence, or a branch-and-merge over parallel work. Distinguished from an abstract ho:DesignPattern (which a harness merely ho:appliesPattern as a classification tag and which is never instantiated into steps): a Workflow is the flow made real by its steps, a DesignPattern is only the named shape." .
 
 ho:ModelConfig a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:SubstrateComponent ;
     rdfs:label "Model Config" ;
     skos:definition "Model selection and inference parameters (model id, temperature, token budget)." .
 
 ho:Example a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:BehavioralComponent ;
     rdfs:label "Example" ;
     skos:definition "A few-shot exemplar demonstrating desired input/output behaviour." .
 
 ho:Role a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:OrganizationComponent ;
     rdfs:label "Role" ;
     skos:definition "A first-class sub-agent role in a multi-agent harness: its mandate plus its behavioural policy pi_i — the responsibilities it holds, its persona (via ho:rolePersona), the guardrails that bound it and the least-privilege scope of tools it may use. Choose this over a bare SystemPrompt when the harness dispatches distinct agents (orchestrator/worker/reviewer) whose tool/guardrail boundaries must be captured and materialized as separate .claude/agents/<role>.md files. Distinguished from ho:Agent (the distributed execution node that binds a Role to WHAT it observes — via ho:agentObservation over an ObservationSpace — and WHAT it can do — via ho:agentFunction over Capabilities): a Role is the mandate/policy, an Agent is the composite node that enacts it." .
 
 ho:Channel a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:OrganizationComponent ;
     rdfs:label "Channel" ;
     skos:definition "A coordination/communication channel in a multi-agent harness: the durable conduit over which agent roles (and sometimes the user) exchange status, requests, judgments and results. Choose this to capture HOW roles coordinate — the medium, the participants and the hand-off protocol — as distinct from the roles themselves (ho:Role) or the policies on them (ho:Guardrail). Because sessions can be separate, channels are typically durable files with status markers rather than volatile chat. Inter-agent relationships are NOT globally fixed: the central Channel individuals are reusable DEFAULTS, and a specific harness MAY redefine them — declaring its own ho:hasChannel with its own channelParticipant set and medium (adding, dropping or overriding participants) to fit how ITS agents relate." .
 
 ho:Memory a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:StateComponent ;
     rdfs:label "memory" ;
     skos:definition "A memory store an agent/harness maintains, distinguished by WHEN it is read relative to execution and HOW LONG it persists: the always-loaded baseline (firmware), the task-scoped volatile working store (cache), and the durable store consulted only on a trigger (long-term). A first-class harness component so an agent's memory architecture is explicit, not buried in a free-text policy." .
 
 ho:Candidate a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:OperationalComponent ;
     rdfs:label "Candidate" ;
     skos:definition "One implementation option for a Tool (a function/tool bound to a concrete file/URL, version and tag). A Tool may carry several Candidates via ho:implementationCandidate; the build projection (tools/materialize.py) applies ho:selectionPolicy — or a supplied lock — to pick exactly one. This is the ODR BIND axis made first-class: the neutral SPEC names the Tool's capability, while WHICH implementation realises it (and its version) lives here, on the recipe side, so the spec stays technology-neutral (INV-1)." .
 
 ho:Contract a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:VerificationComponent ;
     rdfs:label "Contract" ;
     skos:definition "A verifiable spec contract attached to a Capability: a condition the materialized artifact must satisfy for a harness that binds a provider of that capability. This is the ODR VERIFY axis made first-class (METHODOLOGY.md principle 3 / INV-3): the contract states WHAT the emitted tree must exhibit, tech-neutrally, and tools/verify_contract.py judges the built tree against it — independently of WHICH implementation candidate produced it (INV-4). A Contract carries ho:contractKind ('executable' or 'structural') and ho:contractCheck (the command to run, or the structural assertion). It hangs off a Capability via ho:capabilityContract and is rolled up to the binding harness by the ho:hasComponent propertyChainAxiom, so it is a reachable, orphan-free component without a bespoke shape (mirroring ho:Candidate)." .
 
 ho:WorkflowStep a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:ProcessComponent ;
     rdfs:label "Workflow Step" ;
     skos:definition "One ordered step of a Workflow: a discrete phase of the control flow (e.g. plan-and-dispatch, author-and-verify, integrate-and-gate) that carries its own part-to-part assembly edges — the Tool it uses (ho:stepUsesTool), the Role that performs it (ho:stepByRole) and the Guardrail that bounds it (ho:stepGuardedBy). Choose this to decompose a coarse one-node Workflow into inspectable, individually-wired parts whose sequence is explicit graph data (ho:stepOrder); the steps REFINE the workflow's prose definition, they do not replace it. A step is bound to its workflow by ho:hasStep and rolled up to the binding harness by the ho:hasComponent propertyChainAxiom (hasComponent o hasStep), so it is a reachable, orphan-free component without a bespoke shape (mirroring ho:Candidate and ho:Contract)." .
 
 ho:PromptSection a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:BehavioralComponent ;
     rdfs:label "Prompt Section" ;
     skos:definition "One ordered section of a SystemPrompt: a discrete, composable fragment of the persona (e.g. decision-capture, error-handling, escalation) carried as its own node with ho:promptText and an explicit position (ho:sectionOrder). Choose this to decompose a blob SystemPrompt into inspectable, individually-reusable fragments whose sequence is explicit graph data; the sections REFINE/compose the prompt, they do not replace it — a section-less SystemPrompt still renders from its own ho:promptText blob. A section is bound to its SystemPrompt by ho:hasSection and rolled up to the binding harness by the ho:hasComponent propertyChainAxiom (hasComponent o hasSection), so it is a reachable, orphan-free component without a bespoke shape (mirroring ho:WorkflowStep, ho:Candidate and ho:Contract)." .
 
 ho:AssemblySection a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:AssemblyComponent ;
     rdfs:label "Assembly Section" ;
     skos:definition "One ordered section of a harness's MATERIALIZED document (CLAUDE.md): it names a document section by kind (ho:sectionKind — overview, persona, operating-rules, process, model, roles, channels, skills) and fixes its position in the assembled document (ho:assemblyOrder). This is the ODR EMIT axis's assembly ORDER made first-class graph data: HOW a harness's parts are assembled into the final document is SPEC (inspectable and per-harness redefinable), not logic hardcoded in tools/materialize.py — the build projection only READS this order to sequence the sections it emits. A neutral central DEFAULT ordered set is attached to the base template harness (core:h-multiagent) and inherited by any harness that declares no ho:hasAssemblySection of its own; a harness MAY declare its own set to override the order. The order must be TOTAL and well-defined (each section a unique ho:assemblyOrder and a recognised ho:sectionKind) so materialization stays deterministic and byte-identical; an unresolvable order is a hard error, never a silent code fallback. A section is bound to its harness by ho:hasAssemblySection — a Harness→AssemblySection sub-property of ho:hasComponent (like ho:hasRole and ho:hasChannel, since the subject IS the Harness), so it is a reachable, orphan-free component without a bespoke shape. Unlike ho:WorkflowStep / ho:PromptSection (whose subject is an intermediate Workflow / SystemPrompt and which therefore roll up via a propertyChainAxiom), an AssemblySection hangs directly off the harness." .
 
 ho:Deliverable a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:ProcessComponent ;
     rdfs:label "Deliverable" ;
     skos:definition "A typed, named artifact that a WorkflowStep (or the role performing it) PRODUCES and a downstream step CONSUMES — the unit of data that flows along a workflow's task DAG (e.g. a written file dropped in a shared workspace, a verified result, a dispatch brief). Choose this to make step-to-step DATA FLOW explicit graph data: ho:stepProduces / ho:stepConsumes name which step emits and which step reads each Deliverable, so the DAG is recoverable by joining producers to consumers (parallel branches = several steps producing/consuming independently, which a single ho:stepOrder integer cannot express). A Deliverable may carry ho:artifactTemplate (its output schema/shape) and ho:tokenEstimate. It is bound into a workflow via a producing step's ho:stepProduces and rolled up to any binding harness by the ho:hasComponent propertyChainAxiom (hasComponent o hasStep o stepProduces), so it is a reachable, orphan-free component without a bespoke shape (mirroring ho:WorkflowStep, ho:Candidate and ho:Contract)." .
 
 ho:TestScenario a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:VerificationComponent ;
     rdfs:label "Test Scenario" ;
     skos:definition "A behaviour-acceptance fixture: a representative request plus its expected result, by kind; judges the assembled harness's runtime behaviour (distinct from ho:Contract which judges the emitted artifact tree, and ho:Example which is a few-shot prompt sample). Carries ho:scenarioKind (normal / existing-input / error / trigger-positive / trigger-negative), ho:scenarioPrompt (the request) and one or more ho:scenarioExpected assertions, and MAY name the ho:WorkflowStep it exercises via ho:scenarioReferences. It is bound to its harness by ho:hasTestScenario — a Harness→TestScenario sub-property of ho:hasComponent (like ho:hasRole and ho:hasMemory, since the subject IS the Harness) — so it is a reachable, orphan-free component covered by ho:ComponentConnectivityShape without a bespoke shape." .
 
 ho:FailurePolicy a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:VerificationComponent ;
     rdfs:label "Failure Policy" ;
     skos:definition "One row of a harness's error-handling policy: a failure condition (ho:failureCondition) paired with its recovery strategy (ho:recoveryStrategy). Choose this to make a harness's error handling explicit graph data — the situation-to-strategy table an orchestrator template carries — rather than free-text prose. It is bound to its harness by ho:hasFailurePolicy — a Harness→FailurePolicy sub-property of ho:hasComponent (like ho:hasRole and ho:hasMemory, since the subject IS the Harness) — so it is a reachable, orphan-free component covered by ho:ComponentConnectivityShape without a bespoke shape." .
 
 ho:Agent a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:OrganizationComponent ;
     rdfs:label "Agent" ;
     skos:definition "A partially-observed distributed node: the execution unit a harness compiles from a Role. An Agent bundles three facets of one dispatched agent — its Role (mandate + policy, via ho:agentRole; the Role's persona/guardrails/workflow are its policy), exactly one ObservationSpace (Omega_i, its observable envelope: the partial projection of global state it can perceive, holding its AreasOfInterest and AreasOfObservation, via ho:agentObservation), and the functions it can perform (Capability, via ho:agentFunction) — and is bounded by its cognitive capacity (ho:cognitiveCapacity, the loss-free context size usable in one inference, the upper bound of its ObservationSpace). The Role stays a first-class component (Agent does not replace it); the Agent is the composite that ties a role to WHAT it observes and WHAT it can do. Choose this to model the multi-agent system as distributed nodes: an Agent perceives only within its ObservationSpace (partiality), acts within its functions/tools, holds beliefs in memory, and coordinates only through channels. It is bound to its harness by ho:hasAgent — a Harness→Agent sub-property of ho:hasComponent (like ho:hasRole, since the subject IS the Harness) — so it is a reachable, orphan-free component covered by ho:ComponentConnectivityShape without a bespoke shape." .
 
 ho:ObservationSpace a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:ObservationalComponent ;
     rdfs:label "Observation Space" ;
     skos:definition "The observation space (Omega_i) of an Agent: the entire envelope of global state the agent CAN observe — a partial projection of the harness's GlobalState (via ho:projectsFrom), bounded ABOVE by the agent's ho:cognitiveCapacity. There is exactly one per Agent (via ho:agentObservation). It contains the agent's AreasOfInterest (what the role NEEDS/WANTS to observe, via ho:hasAreaOfInterest) and its AreasOfObservation (what is ACTUALLY observed in one inference, via ho:hasAreaOfObservation); ho:unobserved records what the space deliberately excludes (explicit partiality). Distinguished from ho:AreaOfInterest (the intent/target) and ho:AreaOfObservation (the realized input data): the space is the whole observable envelope, the areas are its interest- and realization-facets. Bound to its Agent by ho:agentObservation and rolled up to the binding harness by the ho:hasComponent propertyChainAxiom (hasComponent o agentObservation) — which holds because ho:hasAgent is a sub-property of hasComponent — so it is a reachable, orphan-free component without a bespoke shape (mirroring ho:WorkflowStep and ho:PromptSection)." .
 
 ho:AreaOfInterest a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:ObservationalComponent ;
     rdfs:label "Area of Interest" ;
     skos:definition "An area of interest (AoI) within an Agent's ObservationSpace: a target the agent's role NEEDS or WANTS to observe — an information requirement / intent — independent of whether it is actually observed on any given inference. By ho:observationKind it is either \"internal\" (introspection over the agent's own parts) or \"external\" (beyond its parts — the environment, other agents' outputs, channels, files). An ObservationSpace holds one or more (via ho:hasAreaOfInterest, at least one required). The gap between what is wanted (AreaOfInterest) and what is realized (ho:AreaOfObservation) is partiality/loss/inefficiency; an AreaOfObservation that ho:coversInterest an AoI realizes that intent. Its size is not meaningful (it is intent, not consumed input — contrast ho:AreaOfObservation, which carries ho:tokenEstimate). Bound to its space by ho:hasAreaOfInterest and rolled up to the binding harness by the ho:hasComponent propertyChainAxiom (hasComponent o agentObservation o hasAreaOfInterest), so it is a reachable, orphan-free component without a bespoke shape." .
 
 ho:AreaOfObservation a owl:Class ;
-    rdfs:subClassOf ho:HarnessComponent ;
+    rdfs:subClassOf ho:ObservationalComponent ;
     rdfs:label "Area of Observation" ;
     skos:definition "An area of observation (AoO) within an Agent's ObservationSpace: the input data ACTUALLY observed in a single inference (a realized observation), as distinct from what the role merely wants (ho:AreaOfInterest). By ho:observationKind it is either \"internal\" (observing the agent's OWN constituent components — introspection over its role/memory/functions, via ho:observesComponent) or \"external\" (observing BEYOND its components — channels via ho:observesChannel, external files via ho:observedFileScope). ho:observesMemory ties it to a memory tier (the agent's beliefs), and ho:unobserved records what it deliberately does NOT see. Its ho:tokenEstimate records the realized size it contributes to one inference; the summed size across an agent's AreasOfObservation must fit that agent's ho:cognitiveCapacity (loss-free fit — over-budget means context-rot and signals that the role should be decomposed or the observation narrowed; the fit is inspected by tool/review since SHACL cannot sum). It ho:coversInterest the AreasOfInterest it realizes (the alignment of actual to wanted). An AreaOfObservation is bound to its space by ho:hasAreaOfObservation and rolled up to the binding harness by the ho:hasComponent propertyChainAxiom (hasComponent o agentObservation o hasAreaOfObservation), so it is a reachable, orphan-free component without a bespoke shape (mirroring ho:WorkflowStep and ho:PromptSection)." .
 
 # Non-component concepts
 
+# Non-component intermediate superclasses (top-level, NOT ho:HarnessComponent).
+# They group the abstract specs a harness targets and the information spaces
+# it projects observation from; leaves gain an rdfs:subClassOf they lacked.
+# No direct instances; carry no ho:hasComponent wiring or shape coverage.
+
+ho:SpecConcept a owl:Class ;
+    rdfs:label "Spec Concept" ;
+    skos:definition "An abstract specification a harness relates to but does not itself contain as a component — the abilities it REQUIRES/PROVIDES, the domain it TARGETS, the use-cases it ADDRESSES, the patterns it APPLIES and the non-functional limits that CONSTRAIN it. Its leaves are ho:Capability, ho:Task, ho:Domain, ho:DesignPattern and ho:Constraint. A top-level taxonomy layer (NOT a ho:HarnessComponent, so no ho:hasComponent wiring and no ho:ComponentConnectivityShape coverage) with no direct instances." .
+
+ho:InformationSpace a owl:Class ;
+    rdfs:label "Information Space" ;
+    skos:definition "A space of information from which an agent's observation is projected — a level of the observation projection chain (EnvironmentSpace -> Domain -> GlobalState -> ObservationSpace) that lies outside the harness's own components. Its leaves are ho:EnvironmentSpace and ho:GlobalState. A top-level taxonomy layer (NOT a ho:HarnessComponent, so no ho:hasComponent wiring and no ho:ComponentConnectivityShape coverage) with no direct instances." .
+
 ho:Capability a owl:Class ;
+    rdfs:subClassOf ho:SpecConcept ;
     rdfs:label "Capability" ;
     skos:definition "An abstract ability (e.g. web-search, code-exec, citation). Harnesses/tasks REQUIRE capabilities; components PROVIDE them. This required/provided pairing drives composition. Distinguished from ho:Tool (the concrete invokable that realises the ability): a Capability is the abstract ability, a Tool is the concrete means." .
 
 ho:Domain a owl:Class ;
+    rdfs:subClassOf ho:SpecConcept ;
     rdfs:label "Domain" ;
     skos:definition "A problem area a harness targets (coding, research, customer-support, data-analysis)." .
 
 ho:EnvironmentSpace a owl:Class ;
+    rdfs:subClassOf ho:InformationSpace ;
     rdfs:label "Environment Space" ;
     skos:definition "The environment space: all reality/system space and its unbounded information — the infinite source outside the system from which a Domain is selected by problem definition. Not a harness component (like ho:Domain, it is a non-component concept, so it carries no ho:hasComponent wiring and is not covered by ho:ComponentConnectivityShape); it is the top of the observation projection chain (EnvironmentSpace -> Domain -> GlobalState -> ObservationSpace). A Domain narrows it by problem definition via ho:scopedFrom." .
 
 ho:GlobalState a owl:Class ;
+    rdfs:subClassOf ho:InformationSpace ;
     rdfs:label "Global State" ;
     skos:definition "The global state space: the full information describing the system within a chosen Domain (the S of a decentralized POMDP). Each agent's ObservationSpace is a partial projection of it, bounded by the agent's cognitive limit (via ho:projectsFrom). Not a harness component (a non-component concept like ho:Domain, so it is not covered by ho:ComponentConnectivityShape and MUST NOT be a sub-property target of ho:hasComponent); it is the system-description of its Domain (via ho:describesDomain) and is bound to a harness by ho:hasGlobalState (which is NOT a sub-property of ho:hasComponent, since GlobalState is not a HarnessComponent)." .
 
 ho:Task a owl:Class ;
+    rdfs:subClassOf ho:SpecConcept ;
     rdfs:label "Task" ;
     skos:definition "A concrete use-case / request pattern a harness addresses." .
 
 ho:DesignPattern a owl:Class ;
+    rdfs:subClassOf ho:SpecConcept ;
     rdfs:label "Design Pattern" ;
     skos:definition "An abstract, named composition pattern a harness ho:appliesPattern as a classification tag (orchestrator-workers, peer-mesh, pipeline, fan-out-fan-in, reflection). It is never instantiated into steps and several may apply to one harness at once. Distinguished from a concrete ho:Workflow (the instantiated control flow realized by ho:hasStep): a DesignPattern names the shape, a Workflow enacts it." .
 
 ho:Constraint a owl:Class ;
+    rdfs:subClassOf ho:SpecConcept ;
     rdfs:label "Constraint" ;
     skos:definition "A declarative non-functional requirement or limitation placed on a harness (latency, cost, privacy, offline). Distinguished from ho:Guardrail (an imperative behavioural policy): a Constraint is an NFR / limit on the harness, not a rule the agent follows." .
 

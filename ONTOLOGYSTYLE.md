@@ -178,12 +178,23 @@ kebab 세그먼트로, 독립 repo 간 slug 충돌·orphan을 막는다.
   참조하면 그 data 문서 IRI도 import). federation loader가 이 imports를 catalog로 해석해
   union을 조립한다(`docs/federation-design.md` D1). shapes는 import하지 않는다(검증 전용).
 - **[지킴]** 한 도메인의 data를 **여러 문서로 쪼개도 된다** — 중앙 `core`는 컴포넌트 타입별로
-  분할해 `ontology/abox/core/<type>.ttl`에 담는다(중립 부품 라이브러리). 각 per-type 문서는
-  자기 `owl:Ontology` 헤더(문서 IRI `.../data/<domain>/<type>`, 예: `.../data/core/guardrails`)를
-  갖고 **중앙 TBox만** import한다. cross-unit 참조(harness가 자기 Tool/Guardrail을 지목하는 등)는
-  각 unit을 서로 import하지 않고 **root union에서 해석**한다(root `owl:imports`가 모든 per-type
-  unit을 나열하고 catalog가 IRI→파일을 매핑) — 한 방식으로 일관되게 한다. 개체 IRI는 문서 위치와
-  무관하게 그대로 `.../id/core/<slug>`에 남는다(파일만 옮김).
+  분할해 담는다(중립 부품 라이브러리). 각 per-type 문서는 자기 `owl:Ontology` 헤더(문서 IRI
+  `.../data/<domain>/<type>`, 예: `.../data/core/guardrails`)를 갖고 **중앙 TBox만** import한다.
+  cross-unit 참조(harness가 자기 Tool/Guardrail을 지목하는 등)는 각 unit을 서로 import하지 않고
+  **root union에서 해석**한다(root `owl:imports`가 모든 per-type unit을 나열하고 catalog가
+  IRI→파일을 매핑) — 한 방식으로 일관되게 한다. 개체 IRI는 문서 위치와 무관하게 그대로
+  `.../id/core/<slug>`에 남는다(파일만 옮김).
+- **[지킴]** 파일은 **DA-4 상위 taxonomy 그룹 디렉토리**에 물리적으로 놓는다 —
+  `ontology/abox/core/<group>/<type>.ttl`. 그룹은 담는 타입의 상위계층을 반영한다:
+  `behavioral/`(system-prompts·guardrails) · `operational/`(tools) · `substrate/`(model-configs) ·
+  `organization/`(roles·channels) · `process/`(workflows) · `vocab/`(concepts) ·
+  `spec/`(capabilities·patterns·constraints·domains-tasks) · `observational/`(observation) ·
+  `state/`(memory) · `information-space/`(information-space) · `assembly/`(assembly-sections) ·
+  `wholes/`(harnesses). **논리 IRI는 서브디렉토리와 무관하게 `.../data/core/<type>`로 유지**되고
+  (파일 이동은 경로만 바뀜) **catalog(`catalog-v001.xml`)가 IRI→파일경로를 매핑**하므로 tool엔
+  투명하다 — 디렉토리는 사람이 읽는 조직화일 뿐이다. 중앙 individual이 없는 그룹(예:
+  `verification/`)은 파일을 만들지 않는다(TBox 클래스만 존재). grab-bag 파일은 타입별로 split해
+  각 타입을 자기 그룹에 둔다(예: roles.ttl→roles+observation+memory).
 - **[지킴]** 스키마(클래스·프로퍼티)는 `tbox/`, 개체는 `abox/`. abox에서 새 클래스·프로퍼티를
   선언하지 않는다.
 - **[권장]** 짧은 노드(레이블만)는 **한 줄**로:

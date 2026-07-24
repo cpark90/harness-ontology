@@ -30,10 +30,17 @@
                 <https://harness-ontology.dev/data/core/harnesses> ,
                 <https://harness-ontology.dev/data/core/roles> ,
                 <https://harness-ontology.dev/data/core/channels> ,
+                <https://harness-ontology.dev/data/core/observation> ,
+                <https://harness-ontology.dev/data/core/memory> ,
+                <https://harness-ontology.dev/data/core/information-space> ,
+                <https://harness-ontology.dev/data/core/assembly-sections> ,
                 <https://harness-ontology.dev/data/authored> .
 # NOTE: the central `core` data unit is stored as MULTIPLE documents split by
-# component type (ontology/abox/core/*.ttl), not one seed.ttl — a neutral parts
-# library partitioned per ho: type. Each per-type unit imports only the schema;
+# component type, grouped into DA-4 taxonomy subdirectories
+# (ontology/abox/core/<group>/<type>.ttl), not one seed.ttl — a neutral parts
+# library partitioned per ho: type. The logical unit IRI stays
+# .../data/core/<type> regardless of subdirectory; the catalog maps IRI→path.
+# Each per-type unit imports only the schema;
 # cross-unit references (a Harness naming its Tools/Guardrails, etc.) resolve in
 # THIS root union. See ONTOLOGYSTYLE §4 and docs/federation-design.md (D1).
 # NOTE: no external domain data unit is currently imported. The `lpranging`

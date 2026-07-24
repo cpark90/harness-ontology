@@ -85,7 +85,7 @@ against the union, push / open a PR.
    |---|---|
    | `…/ontology` | `ontology/harness-ontology.ttl` |
    | `…/schema` | `ontology/tbox/harness.ttl` |
-   | `…/data/core/<type>` | `ontology/abox/core/<type>.ttl` (11 per-component-type units) |
+   | `…/data/core/<type>` | `ontology/abox/core/<group>/<type>.ttl` (per-component-type units, grouped into DA-4 taxonomy subdirs; logical IRI is position-independent, the catalog is the IRI→path map) |
    | `…/data/<domain>` | *external pure-data repo — none active today (see Status below)* |
    | `…/data/authored` | `ontology/abox/authored.ttl` (webui output, optional) |
 
@@ -176,8 +176,8 @@ Status of external data units:
   (verify-then-proceed, design-for-loss, traceability, no-arbitrary-decision,
   least-privilege, report-over-prompt, controlled-vocabulary guardrails; the
   orchestrator-workers pattern + multi-agent workflow; a methodical persona) were
-  neutralised and folded into the `core` data units (`ontology/abox/core/*.ttl`,
-  split per component type),
+  neutralised and folded into the `core` data units (`ontology/abox/core/**/*.ttl`,
+  split per component type and grouped into DA-4 taxonomy subdirs),
   and the domain-coupled nodes (UWB/RTLS/low-power tasks, tools, persona and
   concepts) were dropped. Consequently `…/data/lpranging` appears in **no**
   catalog entry or root `owl:imports`, and `staging/` holds no payload. The
@@ -246,8 +246,10 @@ using the **central** `validate.py` (shapes and tools always come from central):
    ```
 
    The data repo's catalog maps `…/schema` → `central/ontology/tbox/harness.ttl`,
-   each central `…/data/core/<type>` → `central/ontology/abox/core/<type>.ttl`
-   (the core unit is split per component type), and `…/data/<domain>` → its local
+   each central `…/data/core/<type>` → `central/ontology/abox/core/<group>/<type>.ttl`
+   (the core unit is split per component type, grouped into DA-4 taxonomy subdirs;
+   the logical IRI is position-independent, so only the catalog path mirrors the
+   move), and `…/data/<domain>` → its local
    `<domain>.ttl`. Nothing in central changes.
 
 2. **Run from central over all repos.** Clone the external data repo somewhere,

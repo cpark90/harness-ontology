@@ -1,0 +1,58 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Memory partition of the `core` domain (split out of the
+# roles unit: the agent memory tiers). Imports the central TBox only;
+# cross-unit references (the h-multiagent harness binding these via hasMemory,
+# each role's ho:roleMemoryPolicy, the areas that ho:observesMemory them)
+# resolve in the root union (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/memory> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+########################################################################
+# Agent memory tiers — the neutral memory architecture an agent maintains,
+# co-located with the roles (agent-state) because ho:roleMemoryPolicy above is
+# a single free-text directive that cannot express the THREE distinct tiers an
+# agent keeps. Each tier is a first-class ho:Memory component distinguished by
+# WHEN it is read (ho:memoryReadTiming) and HOW LONG it persists
+# (ho:memoryPersistence): firmware (always read in full, durable baseline),
+# cache (accumulated within one spawned task, ephemeral) and long-term (read
+# only on a trigger, durable, consulted selectively). All three are bound to
+# the neutral id:h-multiagent template via ho:hasMemory (subPropertyOf
+# hasComponent) so each is a connected, orphan-free HarnessComponent.
+########################################################################
+
+#===================== MEMORY TIERS ====================================
+
+id:mem-firmware a ho:Memory ;
+    skos:prefLabel "Firmware memory" ;
+    skos:definition "The fixed baseline memory an agent MUST read in full on every execution/spawn: its always-loaded, mandatory ruleset, read whole each time so it frames behaviour before any task-specific state." ;
+    ho:memoryReadTiming "every-execution" ;
+    ho:memoryPersistence "durable" ;
+    ho:memoryReadScope "full" ;
+    ho:tagged id:c-memory, id:c-multiagent ;
+    ho:tokenEstimate 55 ; ho:maturity "draft" .
+
+id:mem-cache a ho:Memory ;
+    skos:prefLabel "Cache memory" ;
+    skos:definition "The task-scoped working memory that accumulates the agent's behaviour rules within a single spawned task and is discarded when that task ends: volatile, internal to the spawn, never surviving it." ;
+    ho:memoryReadTiming "task-continuous" ;
+    ho:memoryPersistence "ephemeral" ;
+    ho:memoryReadScope "full" ;
+    ho:tagged id:c-memory, id:c-multiagent ;
+    ho:tokenEstimate 55 ; ho:maturity "draft" .
+
+id:mem-longterm a ho:Memory ;
+    skos:prefLabel "Long-term memory" ;
+    skos:definition "Durable memory NOT read on every execution/spawn; the agent consults and reflects only the relevant portion when a defined condition is met, pulling it in selectively on demand rather than loading it each time." ;
+    ho:memoryReadTiming "conditional" ;
+    ho:memoryPersistence "durable" ;
+    ho:memoryReadScope "selective" ;
+    ho:memoryActivationCondition "A defined trigger condition is met (e.g. the current task matches the memory's applicability); only then is the relevant portion consulted and reflected." ;
+    ho:tagged id:c-memory, id:c-multiagent ;
+    ho:tokenEstimate 80 ; ho:maturity "draft" .

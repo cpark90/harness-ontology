@@ -13,12 +13,14 @@
 #                       <https://harness-ontology.dev/data/core/tools> ,
 #                       ... (each central .../data/core/<type> unit it references) .
 #     and mints individuals under .../id/<domain>/<slug> (ONTOLOGYSTYLE §2a). The
-#     central core is split per component type (ontology/abox/core/*.ttl), so map
+#     central core is split per component type, grouped into DA-4 taxonomy subdirs
+#     (ontology/abox/core/<group>/<type>.ttl; the logical .../data/core/<type> IRI
+#     is position-independent, the catalog is the IRI->path map), so map
 #     every .../data/core/<type> IRI, not a single .../data/core.
 #   * this repo ships a catalog-v001.xml mapping the central IRIs to the checked
 #     -out central clone and its own data unit to the local file, e.g.:
 #       <uri name="https://harness-ontology.dev/schema"    uri="central/ontology/tbox/harness.ttl"/>
-#       <uri name="https://harness-ontology.dev/data/core/tools" uri="central/ontology/abox/core/tools.ttl"/>
+#       <uri name="https://harness-ontology.dev/data/core/tools" uri="central/ontology/abox/core/operational/tools.ttl"/>
 #       ... (one <uri> per central .../data/core/<type> unit) ...
 #       <uri name="https://harness-ontology.dev/data/<domain>" uri="<domain>.ttl"/>
 name: validate-ontology-data

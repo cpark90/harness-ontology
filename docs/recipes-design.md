@@ -9,8 +9,10 @@ D4 two-tier validation gate); read that first.
 
 The central repo (`cpark90/harness-ontology`) is deliberately a **neutral parts
 library**: generalised, domain-independent guardrails, patterns, workflows,
-prompts, tools, capabilities and concepts, split per component type under
-`ontology/abox/core/*.ttl`. It never describes one specific harness — that is the
+prompts, tools, capabilities and concepts, split per component type and grouped
+into DA-4 taxonomy subdirs under `ontology/abox/core/<group>/<type>.ttl` (the
+logical `…/data/core/<type>` IRI is position-independent; the catalog maps
+IRI→path). It never describes one specific harness — that is the
 neutral-parts principle recorded in `federation-design.md` (Status of external
 data units).
 
