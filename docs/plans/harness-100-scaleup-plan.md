@@ -98,9 +98,49 @@ batch 시작 前에 넣는다. CI는 100 entry면 과금·시간이 커지므로
   리뷰 + 나머지 `draft` 유지, (c) 전량 `draft`. Phase 1 수용 시험이 ②로 분류한 "판단성 결정" 목록의 크기를
   보고 정하는 것이 합리적이다. (D3가 95→30~40으로 줄어 이 비용은 이미 크게 낮아졌다.)
 
-## 6. 실행 순서 (요약)
+## 5c. Phase 0.5 인벤토리 결과 반영 (2026-07-25) — **계획 수정 4건 + orchestrator 결정 2건**
+
+전수 실측 완료: `docs/plans/harness-100-attribute-inventory.md` (harness 100 / agent 489 / skill 315).
+
+### 계획 수정
+- **M1. "30~40"의 근거를 정정한다.** 구조·중립 값(U1 85종)은 **15개 하네스에서 100% 포화**한다.
+  따라서 35개의 정당화는 "구조 커버리지"가 아니라 **카테고리 대표성 + 도메인 어휘 예시 + role 이름 변이(U2 80%)**다.
+  §5 표의 "변이 span" 표현을 이 근거로 읽을 것. (35 유지 — 근거만 정직하게 교체.)
+- **M2. ★이미 land된 8 recipe에 coverage-audit 미이행이 있다.** `hasExecutionMode` **0건** · `TestScenario`
+  **0건** · `FailurePolicy` **0건**인데, 소스는 셋 다 거의 전수 제공한다(topology 100/100 · scenario 90/100 ·
+  failure 95/100). **어휘 GAP이 아니라 반영 누락**이며, CLAUDE.md step-7(coverage-audit 게이트)이 잡았어야 할 것이다.
+  → **Phase 0.7 신설: 기존 8 recipe 재감사·보정**을 대량 임포트 **전에** 수행한다(같은 누락을 35× 복제하지 않기 위해).
+- **M3. importer 계약 수정.** agent frontmatter에 `tools:`도 `model:`도 **0/489**다. roadmap §1의
+  "tool 사용 → `roleTool`"은 기계 변환이 아니라 **판단성 결정**이므로 SHOULD가 아니라 **MUST NOT(사람 몫)** 으로 옮긴다.
+- **M4. 게이트 축소.** 실행 topology 변이가 **0**(전량 `Agent Team`)이라 wave 게이트에서 topology 판별은 할 일이 없다.
+  대신 M2의 세 축이 실제로 채워졌는지를 게이트로 삼는다.
+
+### orchestrator 결정
+- **T1 (scale mode 표현) → (i) 신규 클래스로 간다.** 95/100 재발이고, `ho:ExecutionMode`는 definition이
+  topology 축으로 못박혀 있어 재사용하면 **바로 직전에 해소한 conflate drift를 재도입**한다(`appliesPattern`이
+  두 축을 싣던 문제와 동형). 목표의 "충분히 세분화"와도 정합. **단 GAP-4 전례대로 개체·assembly section·
+  materialize 렌더러를 한 세트로** 계획한다. 별도 브리프로 분리한다.
+- **D1 (도메인 정책) → 카테고리 도메인을 중앙 승격한다.** 근거: 중앙 4 도메인이 코퍼스의 **27~28/100만** 덮어
+  72~73이 미대응이고, recipe-local 유지 시 중복 배수 **3.3×**(전량이면 9.4×)인데 승격 시 1×. 카테고리 라벨
+  (content/business/legal/education 등)은 **일반 도메인 어휘라 중립성 위배가 아니다**(코퍼스 특수 용어가 아님).
+  → 승격 대상은 기존 4개로 안 덮이는 카테고리. **부수 정리**: 기존 중앙 4 도메인 모두 `skos:definition`이
+  **없다**(통일성 결함) → 이번에 함께 채운다.
+
+## 6. 실행 순서 (2026-07-25 갱신)
+
 ```
-P0-a retrieve 결정성 (진행 중)  ─┐
-P0-b catalog/CI 자동생성        ─┴→ P1 importer + 파일럿 5 재생성 대조 → D1/D2/D3 확정 → P2 wave A…G
+[완료] P0-a retrieve 결정성          → 수정·검증 완료, land 진행 중
+[완료] Phase 0.5 전수 속성 인벤토리   → 32 GAP · T1 · D1 근거 확보
+
+다음 ─┬─ Phase 0.6  중앙 어휘 GAP 저작   (①신규 17 + ②altLabel 8, ③은 중앙 금지)
+      │              + 부수 정리: 중앙 4 도메인 definition 채우기 · 카테고리 도메인 승격(D1)
+      ├─ Phase 0.7  ★기존 8 recipe 재감사·보정 (M2: 3축 누락 — 대량 임포트 前 필수)
+      └─ T1        scale mode 신규 클래스 세트 (TBox+개체+section+렌더러, 별도 브리프)
+                    ↓
+        P0-b catalog/CI glob 생성  →  P1 importer(+파일럿 5 재생성 대조)  →  P2 대표 35 임포트
 ```
-각 단계는 완료 후 **inspection land**(git은 inspection 소관)를 거쳐 다음 단계로 간다.
+
+- **Phase 0.6·0.7·T1은 서로 파일이 겹칠 수 있다**(둘 다 `abox/core/` 저작) → 순차 또는 엄격한 소유권 분할로.
+- 각 단계는 완료 후 **inspection land**(git은 inspection 전담)를 거쳐 다음 단계로 간다.
+- **D2(리뷰 깊이)** 는 P1 수용시험의 "판단성 결정" 목록 크기를 보고 확정한다. M3으로 그 목록이 커질 것이 예상된다
+  (tool/model 배정이 전부 사람 몫으로 이동).

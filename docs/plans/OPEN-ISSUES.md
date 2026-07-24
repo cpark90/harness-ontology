@@ -20,7 +20,7 @@
 | `harness-100-augmentation.md` | **진행 중** | Phase 0.5 전수 속성 인벤토리 **dispatch 실행 중** → 중앙 어휘 GAP 저작 → P0-b catalog/CI glob 생성 → importer → 대표 recipe 임포트. 계획: `harness-100-scaleup-plan.md` |
 | `harness-repo-survey.md` | **미착수** (승인+답변 완료) | ①전체 로드맵(c) ②**`ho:Hook` 신설** ③agent-rules-books는 온톨로지에만 ④role 원형: 온톨로지 전량 + 예제 10~20. 계획: `harness-repo-survey/mining-plan.md` Wave 0~4 |
 | `revfactory-harness-reflection.md` | **거의 완료** | P1·P2 land 완료. **잔여 확인 필요** — delta-inventory 대조로 미반영분이 정말 없는지 1회 감사 |
-| `retrieve-nondeterministic-pack.md` | **수정 완료, land 대기** | 파일 `status:`가 아직 `open`(사용자 승인은 대화로 받음). land 브리프: `inspection-brief-retrieve-determinism.md` |
+| `retrieve-nondeterministic-pack.md` | **land 완료** (`d1ac476`, CI green) | 파일 태그만 `open` 유지 — 사용자가 `approved`로 고치면 즉시 refresh 가능. 근거: `verified/retrieve-determinism-finalize.md`. negative control로 가드 실효 확인(8/8 FAIL) |
 
 ## B. 기술 GAP (이번 세션에서 판정 보류한 것)
 
@@ -28,7 +28,17 @@
    누락이 에러가 아니라 **조용한 부분 closure**로 나타나는 실패 양식을 이미 한 번 겪었다.
 2. **retrieve tie-break 정책**: 지금은 IRI 사전순(재현성 확보용). 동점 17개에 슬롯 5개인 질의가 실재하므로
    **검색 품질** 관점의 정책(maturity/salience/tokenEstimate 가중)은 미결. → Q2와 함께 다루면 좋다.
-3. **`INSTANCE_CLASSES`에 `TestScenario`/`FailurePolicy` 미등록** → MANIFEST에서 type이 `HarnessComponent`로 표기.
+3. **`INSTANCE_CLASSES` 미등록 — 범위 정정(inspection 실측)**: 2개가 아니라 **7클래스·32개체**
+   (`Agent` 5 · `AreaOfInterest` 5 · `AreaOfObservation` 10 · `ObservationSpace` 5 · `Memory` 3 ·
+   `TestScenario` 2 · `FailurePolicy` 2). MANIFEST type 표기뿐 아니라 카운트·reachability·retrieve 노출에 영향.
+5. **★`tokenEstimate` 의미 과부하 → 팩 조기 절단** (`docs/feedback/retrieve-pack-quality-defects.md` 결함 A).
+   `retrieve.py "what does the inspection agent observe"` → **nodes=3, budget 125/900**. 원인 ① 같은 프로퍼티가
+   "팩 비용"과 "1회 추론 관측량"(12000 등) 두 뜻 ② `traverse()`가 예산 초과 노드에서 `break`. → **수정 dispatch 진행 중.**
+6. **★deprecated 노드가 후계보다 상위 검색** (같은 항목 결함 B). `retrieve.py`가 `ho:maturity`를 안 읽어
+   폐기된 `pat-sub-agents`가 rel 8.1로 1위, 후계 `mode-sub-agents` 6.3. **→ 같은 dispatch에서 수정 중.**
+7. **산출 하네스 문서로 내부 IRI 유출** (`docs/feedback/emitted-harness-iri-leak.md`). `materialize.py`가
+   definition/promptText를 그대로 렌더해 CLAUDE.md에 `id:`/`ho:` dangling reference — 21노드·50회
+   (h-peer-mesh 10 · h-harness-factory 9 · h-workspace-synthesis 7 · h-multiagent 1). **미착수.**
 4. **execution-mode 범위 한정이 로컬 주석에만 존재** — `mode-sub-agents`를 읽는 다른 소비자에겐 안 보인다.
    같은 충돌이 다른 하네스에서 재발하면 (B)정의정정/(C)신규모드 재검토 신호.
 
@@ -43,6 +53,21 @@
 - **Q3. 세분화 감사**: 아직 blob인 노드가 남았는가. 이미 분해된 축(Workflow→WorkflowStep, SystemPrompt→
   PromptSection, Harness→AssemblySection)과 달리, **한 노드가 여러 책임을 지고 있는 곳**을 찾는다
   (ONTOLOGYSTYLE §1 "노드는 작고 단일 책임"). 코퍼스 인벤토리 결과가 여기 근거를 준다.
+
+### C-0. 초벌 감사 실측치 (inspection, 2026-07-25) — 다음 저작 브리프의 근거
+> **방법론**: 품질 감사는 **그래프 스캔만으로 부족하다** — `retrieve.py`·`materialize.py`를 **실제로 돌려야**
+> 드러나는 결함군이 있다(예산 절단·랭킹·유출). 위 §B.5~7이 전부 그렇게 발견됐다.
+
+- **Q1**: `tokenEstimate` 누락 **98/189**(예산 과소계상 ~5,200토큰; 최악 `chan-peer` ~212·`h-harness-factory` ~204) ·
+  `maturity` 누락 **58**(전부 SpecConcept 계열 — shapes가 일부 클래스에만 minCount를 거는 **비대칭**이 원인) ·
+  `definition` 누락 **56**(`Guardrail` 34/34는 관례상 `promptText`가 본문) · **접두사 위반 0**.
+  → 진단 정정: ONTOLOGYSTYLE §1c의 **명시 범위 위반은 0**이다. "규칙 위반"이 아니라 **규칙 범위가 좁다**.
+- **Q2**: 라벨 근사중복 J≥0.5 **81쌍**(대부분 `os-*`/`as-*` 작명 패밀리 노이즈) · 정의 근사중복 J≥0.55 **9쌍**
+  (전부 `AreaOfObservation` internal 패밀리, 최고 J=0.86 `oa-developer-internal`↔`oa-synthesizer-internal`
+  — **템플릿 저작인지 복붙 blob인지 판단 필요**) · deprecated 3개 inbound 참조 0(그래프는 clean).
+- **Q3**: definition 길이 median 210 / p90 485 / **max 1019**(`wf-compose-harness`). blob 후보: `chan-peer` 832 ·
+  `h-harness-factory` 818 · `h-workspace-synthesis` 771 · `pat-peer-mesh` 770 · `h-multiagent` 746.
+  **다중정책 Guardrail 10/34** — 특히 `gr-design-for-loss`는 한 문장에 정책 4개.
 
 ## D. 현재 건전성 기준선 (2026-07-25)
 `validate.py` **PASS** · 205 individuals · TBox 클래스 44 · abox 18파일 · 기본 assembly order 12 sections ·
