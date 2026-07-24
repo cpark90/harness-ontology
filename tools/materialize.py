@@ -21,6 +21,13 @@ ho:implementationRef fetched/copied into tools/<basename>) and standard/docs
 scaffold (P5: ho:scaffold / ho:artifactTemplate fragments rendered into the
 tree). See docs/materialize-design.md.
 
+Emitted text is SELF-CONTAINED. Graph text (skos:definition / ho:promptText) may
+name a neighbouring node by its authoring token — id:chan-dispatch,
+ho:appliesPattern — which disambiguates nodes for the ontology AUTHOR but dangles
+for the agent reading the built document. The build therefore renders from a
+projection of the graph in which those tokens are resolved to prefLabel/rdfs:label
+(see IriTokenResolver); the stored ontology keeps its disambiguation unchanged.
+
 Usage:
     /usr/bin/python3 tools/materialize.py h-techdoc --out build/techdoc
     /usr/bin/python3 tools/materialize.py https://harness-ontology.dev/id/techdoc/h-techdoc \
@@ -41,8 +48,8 @@ import shutil
 import sys
 import tempfile
 
-from rdflib import Graph, RDF, URIRef
-from rdflib.namespace import SKOS
+from rdflib import Graph, Literal, RDF, RDFS, URIRef
+from rdflib.namespace import SKOS, XSD
 
 import ontology_lib as lib
 from ontology_lib import HO
@@ -103,6 +110,192 @@ def resolve_harness(g: Graph, ref: str) -> URIRef:
         known = ", ".join(sorted(str(h).rsplit("/", 1)[-1] for h in harnesses))
         raise ValueError(f"no harness matches '{ref}'. Known harnesses: {known}")
     raise ValueError(f"'{ref}' is ambiguous across {len(matches)} harnesses; use the full IRI")
+
+
+# --- 1b. projection contract: ontology-internal IRI tokens ------------
+# skos:definition and ho:promptText serve TWO audiences. Inside the graph they
+# may name a neighbouring node by its AUTHORING token — "contrast
+# id:chan-dispatch", "declares ho:appliesPattern". For the ontology author that
+# disambiguation is correct and valuable (docs/plans/disambiguation-audit.md
+# planted it deliberately, and retrieve.py's context pack is read by authors).
+# For the agent that reads an EMITTED harness document those prefixes resolve to
+# nothing: `id:` is not a namespace it can look up, so the reference dangles.
+#
+# The fix therefore belongs at the PROJECTION boundary, never in the graph: the
+# stored text keeps its disambiguation, and rendering resolves each token to the
+# human-readable name the emitted document's audience can use.
+
+_TOKEN_RE = re.compile(r"\b(id|core|ho):([A-Za-z][A-Za-z0-9_-]*)")
+
+
+def _decamel(name: str) -> str:
+    """Fallback human form of a schema term with no rdfs:label, following the
+    TBox's own labelling convention: a Class-style (leading upper-case) name
+    keeps its word capitals ('ExecutionMode' -> 'Execution Mode'), a
+    property-style name is lower-cased ('appliesPattern' -> 'applies pattern')."""
+    words = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", name).replace("_", " ")
+    return words if name[:1].isupper() else words.lower()
+
+
+class IriTokenResolver:
+    """Resolves the ontology-internal IRI tokens carried by GRAPH TEXT into the
+    names an emitted document can actually be read with.
+
+    Contract:
+      * ``id:<slug>`` / ``core:<slug>`` -> that individual's skos:prefLabel.
+      * ``ho:<Name>``                   -> that schema term's rdfs:label, else a
+        de-camel-cased form of the name.
+      * a token that names NOTHING in the composed union is a genuine dangling
+        reference (a typo, or a node that did not travel into this union): it is
+        REPORTED on stderr and rendered defensively as its bare name, so the
+        build neither crashes nor silently hides the defect.
+
+    Resolution is deterministic (same union + same text -> same output) and
+    idempotent (a resolved label carries no token), so it is safe to apply on
+    more than one path. A bare mention with no name after the colon (``ho:``)
+    is not a reference and is left alone."""
+
+    def __init__(self, g: Graph):
+        self.g = g
+        self._cache: dict[str, str] = {}
+        self._by_slug: dict[str, list[URIRef]] | None = None
+        self._shape_terms: set | None = None
+        self.unresolved: dict[str, str] = {}
+
+    # -- resolution ----------------------------------------------------
+    def _slug_index(self) -> dict[str, list[URIRef]]:
+        """Last IRI segment -> the named individuals carrying it (IRI-sorted).
+        Keyed off skos:prefLabel because that is exactly the set of nodes with a
+        human-readable name to resolve to; schema terms (rdfs:label) are looked
+        up directly under the ho: namespace instead."""
+        if self._by_slug is None:
+            idx: dict[str, set] = {}
+            for node in self.g.subjects(SKOS.prefLabel):
+                if isinstance(node, URIRef):
+                    slug = str(node).rsplit("/", 1)[-1].rsplit("#", 1)[-1]
+                    idx.setdefault(slug, set()).add(node)
+            self._by_slug = {k: _sorted(v) for k, v in idx.items()}
+        return self._by_slug
+
+    def _individual(self, prefix: str, slug: str) -> URIRef | None:
+        """The individual a ``core:``/``id:`` token names, or None. ``core:`` is
+        always the central library namespace. ``id:`` is namespace-relative to
+        the document that authored the text (central ABox: core; a recipe: that
+        recipe's domain), so it resolves by slug: a unique match wins, and when a
+        slug exists in several domains the central one wins deterministically."""
+        matches = self._slug_index().get(slug, [])
+        core = lib.ID_CORE[slug]
+        if prefix == "core":
+            return core if core in matches else None
+        if len(matches) == 1:
+            return matches[0]
+        if not matches:
+            return None
+        if core in matches:
+            return core
+        self._note(f"{prefix}:{slug}",
+                   f"names {len(matches)} individuals across domains "
+                   f"({', '.join(str(m) for m in matches)}); resolved to the "
+                   f"first by IRI")
+        return matches[0]
+
+    def _shape_vocabulary(self) -> set:
+        """The ho: terms declared by the SHACL shapes document rather than by the
+        schema (ho:ComponentConnectivityShape, ho:TestScenarioShape, …). They are
+        real names of this namespace — graph text cites them when explaining what
+        covers a component — but they carry no rdfs:label and never enter the
+        data graph, so without this they would look dangling. Loaded lazily (only
+        when a ho: token has no label) and defensively (an unreadable shapes file
+        simply yields no terms)."""
+        if self._shape_terms is None:
+            shapes = Graph()
+            try:
+                shapes.parse(os.path.join(lib.ONT_DIR, "shapes",
+                                          "harness-shapes.ttl"), format="turtle")
+            except Exception:  # noqa: BLE001 - absent/unreadable shapes: no terms
+                pass
+            self._shape_terms = {s for s in shapes.subjects()
+                                 if isinstance(s, URIRef) and s.startswith(str(HO))}
+        return self._shape_terms
+
+    def _note(self, token: str, reason: str) -> None:
+        self.unresolved.setdefault(token, reason)
+
+    def _resolve_token(self, prefix: str, name: str) -> str:
+        if prefix == "ho":
+            label = self.g.value(HO[name], RDFS.label)
+            if label is not None:
+                return str(label)
+            if HO[name] not in self._shape_vocabulary():
+                self._note(f"ho:{name}",
+                           "no such term in the ho: schema or shapes (rendered "
+                           "de-camel-cased)")
+            return _decamel(name)
+        node = self._individual(prefix, name)
+        if node is not None:
+            return str(self.g.value(node, SKOS.prefLabel))
+        self._note(f"{prefix}:{name}",
+                   "names no individual in the composed union (rendered as its "
+                   "bare name)")
+        return name
+
+    def _substitute(self, match: re.Match) -> str:
+        token = match.group(0)
+        if token not in self._cache:
+            self._cache[token] = self._resolve_token(match.group(1),
+                                                     match.group(2))
+        return self._cache[token]
+
+    def resolve(self, text: str) -> str:
+        """`text` with every internal IRI token replaced by its readable name."""
+        if not text or ":" not in text:
+            return text
+        return _TOKEN_RE.sub(self._substitute, text)
+
+    # -- the projection ------------------------------------------------
+    def resolve_literal(self, obj):
+        """One literal, projected. Only text literals are touched; a typed
+        literal (ho:tokenEstimate, ho:userFacing, …) is returned unchanged."""
+        if not isinstance(obj, Literal) or obj.datatype not in (None, XSD.string):
+            return obj
+        text = str(obj)
+        resolved = self.resolve(text)
+        if resolved == text:
+            return obj
+        if obj.language:
+            return Literal(resolved, lang=obj.language)
+        return Literal(resolved, datatype=obj.datatype)
+
+    def project(self, g: Graph) -> Graph:
+        """A COPY of `g` whose text literals are resolved — the SINGLE point at
+        which stored text becomes emitted text. Every renderer downstream reads
+        the projected graph, so no render path (CLAUDE.md sections, role agent
+        files, channel records, skill bodies, the manifest — or one added later)
+        can re-open the leak, and no per-predicate allow-list has to be kept in
+        sync. The stored ontology is untouched: this is an in-memory projection.
+
+        Template FILES are deliberately NOT rewritten. A hand-authored
+        ho:artifactTemplate body is already written for the emitted document's
+        audience (a harness whose subject IS this ontology may name ho:* terms on
+        purpose), and it is byte-copied/fetched, not graph text; only the
+        ``{{...}}`` values it interpolates come from the graph, and those arrive
+        already resolved through this projection."""
+        out = Graph()
+        for s, p, o in g:
+            out.add((s, p, self.resolve_literal(o)))
+        return out
+
+    # -- reporting -----------------------------------------------------
+    def report(self, stream=sys.stderr) -> list[str]:
+        """Print one warning per genuinely dangling reference met while
+        projecting the graph's text, token-sorted so the output is deterministic;
+        return the tokens. A dangling reference is a real defect worth seeing
+        (a typo, or a node that did not travel into this union), so it is never
+        swallowed — the build still succeeds with the defensive rendering."""
+        for token, reason in sorted(self.unresolved.items()):
+            print(f"⚠ dangling reference '{token}' in graph text: {reason}",
+                  file=stream)
+        return sorted(self.unresolved)
 
 
 # --- 2. template mechanism (P2) ---------------------------------------
@@ -1207,7 +1400,15 @@ def materialize(g: Graph, h: URIRef, out_dir: str,
     on FULL success is staging placed at `out_dir`; on ANY failure the staging
     dir is removed and `out_dir` is left untouched (or absent). A previously
     non-existent `out_dir` therefore never appears at all when a build fails,
-    and an existing one is never partially overwritten."""
+    and an existing one is never partially overwritten.
+
+    Projection contract: the tree is rendered from the graph PROJECTED through
+    IriTokenResolver, so the ontology-internal IRI tokens that graph text uses to
+    disambiguate neighbouring nodes are emitted as the readable names the
+    document's audience can use (see IriTokenResolver). The stored ontology is
+    never modified; genuinely dangling references are reported on stderr."""
+    resolver = IriTokenResolver(g)
+    g = resolver.project(g)
     out_dir = os.path.abspath(out_dir)
     parent = os.path.dirname(out_dir) or os.getcwd()
     os.makedirs(parent, exist_ok=True)
@@ -1222,6 +1423,7 @@ def materialize(g: Graph, h: URIRef, out_dir: str,
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise
+    resolver.report()
     _place_atomically(staging, out_dir)
     return manifest
 
