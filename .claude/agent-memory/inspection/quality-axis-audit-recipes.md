@@ -23,6 +23,18 @@
   과소) → anti-rot 방어가 샌다. 단 ONTOLOGYSTYLE §1c의 [지킴] **명시 범위**는
   SystemPrompt/Instruction/Guardrail/Example/Tool/Workflow뿐이고 그 범위 위반은 **0**이다 —
   "규칙 위반"이 아니라 **규칙의 범위가 좁다**고 보고해야 정확하다.
+  - **★규범 문서 두 개가 서로 다르다** (2026-07-25 발견, 미결): `CLAUDE.md` "Composing a new
+    harness" step 5는 **"`ho:tokenEstimate` on any node carrying text"**로 §1c보다 **넓다**.
+    "붙였나/안 붙였나"를 판정할 땐 어느 쪽을 기준으로 재는지 먼저 밝혀라 — 같은 증분이
+    §1c로는 위반 0, CLAUDE.md로는 위반 다수가 된다.
+  - **규칙 확대의 진짜 비용은 예산이 아니라 팩 크기다.** `retrieve.token_cost`를 monkeypatch해
+    (미기재 노드는 15 대신 `chars/4`) `project(g,q,900)`을 before/after 돌리면 실측된다:
+    팩이 **41→10 · 44→19 · 36→22 노드**로 **40~76% 축소**된다. 즉 지금 팩은 그만큼
+    **과다 admit** 중이며, 규칙만 넓히고 `DEFAULT_BUDGET`을 그대로 두면 검색 recall이
+    급감한다. "스타일 통일" 문제로 보고하면 오도다 — **budget 재조정과 한 세트**로 올려라.
+  - 추이(같은 방법 재측정): HEAD 205개체 시점 **98노드 / 5,075토큰 과소** →
+    223개체 시점 **107노드 / 6,246토큰 과소**(+9노드는 Role 6·Concept 3). 어휘가 늘 때마다
+    이 격차는 **자동으로 커진다**(Role·Concept가 규칙 범위 밖이므로).
 - **`maturity` 누락 58**: 전부 SpecConcept 계열(Concept 35·Capability 8·Task 6·Domain 4·
   DesignPattern 4·Constraint 1). shapes가 Memory/TestScenario/FailurePolicy/Agent/
   ObservationSpace에만 `maturity minCount 1`을 걸어서 생긴 비대칭.
@@ -32,6 +44,16 @@
 
 ## 2. Q2 건전성 — 근사 중복 탐지
 라벨/정의를 토큰집합 Jaccard로 같은 클래스 안에서 짝지어 본다.
+- **★Jaccard는 "원형 vs 구체" 근사동의어에 눈이 멀다** (2026-07-25 어휘통제 감사).
+  신규 원형 18개를 전 peer와 재보니 **라벨 J는 거의 전부 0.00**, 최고가
+  `fp-agent-failure-retry`↔`fp-dispatch-timeout` L0.40뿐이었다. 실제 판단거리
+  (`role-implementer`↔`role-developer`)는 **L0.00/D0.15**로 바닥이었다 — 원형은 일반어로,
+  구체는 도메인어로 쓰이므로 **어휘가 겹치지 않는데 의미는 겹친다.** ⇒ 신규 원형 감사는
+  Jaccard를 **negative screen**으로만 쓰고(높으면 볼 것) **definition을 직접 읽어**
+  "구별 기준이 검증 가능한 술어로 서술됐는가"로 판정하라.
+- **cross-class 라벨 공유는 drift가 아니다**: `c-X`/`gr-X` 쌍이 같은 altLabel을 갖는 것은
+  이 repo의 확립된 관례(HEAD에 이미 20+쌍). `validate.py`의 중복검사도 **클래스 내부**만
+  본다. 감사 스크립트가 전 그래프 라벨 충돌을 세면 이 패밀리가 대량으로 잡혀 노이즈가 된다.
 - **라벨 J≥0.5는 대부분 노이즈**다 — `os-*`("X observation space"), `as-*`("Assembly: X section")
   같은 **작명 패밀리**가 대량으로 걸린다(81쌍 중 대부분). 패밀리는 drift가 아니라 통일성의 증거다.
   실제로 볼 값어치가 있는 건 J≥0.6이면서 패밀리가 아닌 쌍(예: `role-inspection` vs
