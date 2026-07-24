@@ -96,9 +96,14 @@ diff를 그대로 보고하라. 기준선: `/tmp/claude-1000/-home-cpark-git-har
 - **TBox 신규 선언 정확히 2개**: `ho:ExecutionMode`(⊑`ho:SpecConcept`) · `ho:hasExecutionMode`. 그 외 발명 0.
 - **확장성의 구조적 근거 확인**: shape는 `sh:class ho:ExecutionMode`이고 **신규 `sh:in` 0**. 렌더러 diff에
   **특정 모드 IRI 하드코딩 0**(프로퍼티만 읽음). ⇒ 새 모드 = 개체 1개, 스키마·shape·tools 무변경이 성립.
-- **회귀 0**: `h-multiagent` CLAUDE.md 삭제·변경 줄 **0**, `## Execution mode` 헤딩만 추가. MANIFEST는 3 하네스 모두
-  byte-identical(모드는 컴포넌트가 아니라 `all_components`·tokenEstimate 불변).
+- **회귀 0**: `h-multiagent` CLAUDE.md 삭제·변경 줄 **0**, `## Execution mode` 헤딩만 추가. MANIFEST는 선언 하네스
+  **4개 모두** byte-identical(모드는 컴포넌트가 아니라 `all_components`·tokenEstimate 불변).
 - tools 변경분의 모든 `HO.*`가 TBox 실재.
+
+> **문서 영향 정정 (inspection 지적 반영, 2026-07-25)**: 이 절 최초 작성 시점에는 신규 선언 하네스가 3개였으나,
+> 이후 GAP-b 종결로 `h-workspace-synthesis`가 추가돼 **최종 선언 4개**(h-multiagent·h-workspace-synthesis=sub-agents,
+> h-peer-mesh=agent-teams, h-harness-factory=hybrid), **CLAUDE.md 신규 섹션이 붙은 하네스도 4개**다.
+> 위 「선언 결과」표와 GAP-b 판정은 이미 최종 상태로 갱신돼 있다.
 
 ## 선언 결과
 | harness | mode | 근거 |

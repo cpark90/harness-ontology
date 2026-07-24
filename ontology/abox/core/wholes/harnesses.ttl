@@ -82,6 +82,17 @@ id:h-support a ho:Harness ;
 
 #===================== HARNESSES =======================================
 
+# SCOPE of ho:hasExecutionMode on this harness: the mode describes the
+# coordination topology of the agents this harness DISPATCHES -- the workers
+# spawned over id:chan-dispatch, which run for the span of their brief and are
+# reclaimed by the orchestrator (id:mode-sub-agents). id:role-inspection is NOT
+# a dispatched agent: it is a maintainer-side lane in its own standing session
+# that coordinates through a persistent file channel with status markers
+# (id:chan-orchestrator-inspection), so it lies OUTSIDE this axis. Recording the
+# scope here because without it the mode's "only for the span of its delegated
+# task / lead is the single integration point" and the channel's "separate
+# sessions ... each side scans the channel on its own cycle" read as
+# contradicting each other on one harness.
 id:h-multiagent a ho:Harness ;
     skos:prefLabel "Multi-agent orchestration harness" ; skos:altLabel "orchestrator-workers harness" ;
     skos:definition "A neutral, domain-independent harness that assembles the reusable governance parts decomposed from harness governance docs: an orchestrator plans and dispatches node-scoped briefs to specialised workers (author / verify / inspect) under least-privilege, with traceability, verify-then-proceed and escalation guardrails. Its PURPOSE is to make each role's agent perform its role clearly: it composes, per role, the role's scope of tools and guardrails (ho:roleTool / ho:roleGuardrail), its memory discipline and (where present) its user-facing stance, plus the coordination channels the roles exchange work over — so every dispatched agent has an unambiguous mandate. Use as a template for any structured, multi-agent design or authoring workflow." ;

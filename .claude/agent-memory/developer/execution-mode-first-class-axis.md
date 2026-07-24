@@ -27,8 +27,14 @@ a FOREIGN domain namespace and a scratch harness declaring it → validate PASS
    only listed `INSTANCE_LINK_PREDICATES`; the count gate (202→205) is what
    exposes the omission.
 3. `INSTANCE_LINK_PREDICATES` += the new property (edge visibility / anti-orphan
-   BFS). `retrieve.PREDICATE_WEIGHT` is optional — unknown predicates default to
-   0.5 and the modes already surface at rel 3.6.
+   BFS), AND `retrieve.PREDICATE_WEIGHT` += it at its sister axis's tier
+   (`hasExecutionMode: 0.7`, next to `appliesPattern`) — the unregistered default
+   is 0.5, i.e. a discriminating axis silently ranked like `skos:broader`.
+   Weight-tuning arithmetic worth reusing: a weight only ADDS a path and `best[]`
+   keeps the max, so **no node's relevance can decrease** (measured: 0 decreases,
+   13 increases); the only cost is admission displacement under the fixed token
+   budget, and a weight sweep (0.5/0.6/0.65/0.7/0.75/0.85 with `--format json`
+   label→relevance diffing) is the cheap way to show it.
 4. `ONTOLOGYSTYLE §2` prefix row (`ExecutionMode | mode- |`), placed next to the
    sibling class row.
 5. Any ABox node whose definition DESCRIBES the old mechanism (here
@@ -79,3 +85,20 @@ document — they only move retrieval budget admission.
   workflow + the ROLES' invocation wording before concluding "no evidence".
 - Left UNDECLARED: single-agent `h-coding`/`h-research`/`h-support` (the property
   is optional and they run no second agent).
+
+## SCOPE of the axis: dispatched agents only (approved option A)
+inspection found a real contradiction on `h-multiagent`: `mode-sub-agents` says an
+agent lives "only for the span of its delegated task" with the lead as "single
+integration point", yet the same harness carries `role-inspection` +
+`chan-orchestrator-inspection` ("SEPARATE sessions … each side scans on its own
+cycle"). Resolution the user approved is the CHEAP one: keep the triple, add a TTL
+comment fixing the SCOPE — the mode describes the topology of the agents the
+harness DISPATCHES; a maintainer-side standing lane coordinating over a persistent
+file channel is outside the axis. Rejected: editing `mode-sub-agents`'s
+`skos:definition` (regresses 2 materialized CLAUDE.md bodies) and minting a
+lane-mixing mode individual (consumer of 1 → friction with
+`gr-controlled-vocabulary`/`gr-reuse-first`). General rule: when an axis and a
+neighbouring node's definition appear to contradict, first ask whether the axis's
+SCOPE is merely unstated — a comment is a zero-triple, zero-document fix
+(proved: validate PASS 205 unchanged, `materialize h-multiagent` tree byte-identical
+including CLAUDE.md/MANIFEST/role files). Comments never reach any emitter.

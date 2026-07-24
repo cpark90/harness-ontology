@@ -1,5 +1,5 @@
 ---
-status: open            # 사용자만 approved로 바꾼다
+status: approved            # 사용자만 approved로 바꾼다
 targets: [id:mode-sub-agents, id:h-multiagent, id:chan-orchestrator-inspection]
 kind: decision
 related: [docs/feedback/verified/execution-mode-axis-finalize.md]
@@ -44,3 +44,6 @@ inspection은 하네스가 띄우는 대상이 아니라 별도 세션의 메인
 ## 판단 필요
 어느 선택지로 갈지. 승인 시 `status: open` → `approved`로 고치면 orchestrator가 developer dispatch로
 적용한다. (A)~(C) 외의 방향을 원하면 여기에 적어달라.
+
+## 사용자 피드백
+(A)
