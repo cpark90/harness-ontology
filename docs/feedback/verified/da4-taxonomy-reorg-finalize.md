@@ -40,6 +40,11 @@ refactor(재부모화·이동·split, 의미 무변경)이므로 **개체 수 18
 ## 후속 (orchestrator 소관)
 - **★ 선행 게이트 해소**: `docs/plans/dispatch-revfactory-p1-residual.md`가 요구한
   "DA-4/REORG land 후 착수" 조건 충족 — 중앙 tree clean @ `af31594`. 이제 fire 가능.
+- ~~**CI 매트릭스 커버리지 갭**~~ → **해소 (사용자 요청, `829aa87`)**: recipes 매트릭스에 6줄
+  추가해 **8 recipe 전부 게이트**(catalog IRI와 1:1 일치 확인). CI run 30070...  **8 job 전부 green**
+  (21/contract-demo/lpranging/03/31/46/16/techdoc). staging 사본
+  `staging/harness-recipes/.github/workflows/validate.yml`도 동일하게 갱신(다음 payload 복사가
+  되돌리지 않도록). 아래는 발견 당시 기록:
 - **CI 매트릭스 커버리지 갭 (신규 발견, 비차단)**: recipes repo의
   `.github/workflows/validate.yml` 매트릭스는 **lpranging·techdoc 2건뿐**이다. contract-demo와
   pilot 5(21/16/31/03/46)는 **CI 게이트 밖**이라 중앙 변경 시 회귀를 자동 검출하지 못한다

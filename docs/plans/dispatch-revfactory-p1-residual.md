@@ -4,11 +4,10 @@
 > `docs/feedback/revfactory-harness/delta-inventory.md`(소스 진실). 검증 보고: `docs/feedback/verified/methodology-round-finalize.md`.
 > 실행: **developer dispatch (opus)**. orchestrator는 이 brief 작성·assemble·`validate.py` 확인만.
 
-## ★선행 게이트 (반드시 확인 후 착수)
-이 증분은 **신규 개체를 추가**한다(개체 수 185→증가). 현재 working tree의 **DA-4/REORG(순수 구조 refactor, "185 불변")가
-아직 미커밋**이다 — `docs/plans/inspection-brief-da4-taxonomy.md`로 **inspection 세션이 먼저 land**해야 한다.
-**DA-4/REORG land(git commit) 이전에는 이 brief를 fire하지 않는다** — 안 그러면 inspection의 `git add -A`가 신규
-개체를 순수-구조 커밋에 흡수해 "185 불변" 불변식을 깨뜨린다. Land 확인(clean tree at DA-4 commit) 후 착수.
+## ★선행 게이트 — **해소됨 (2026-07-24 orchestrator 확인)**
+이 증분은 **신규 개체를 추가**한다(개체 수 185→증가). DA-4/REORG("185 불변" 순수 구조 refactor)가 먼저 land돼야 했고,
+**land 완료 확인**: `af31594`(Taxonomy DA-4 + reorg) → `f6a5317`(finalize) → `81740f5`. **tree clean**(미커밋 온톨로지
+변경 0), 평면 abox 잔재 0, `validate.py` **PASS @185**. ⇒ 커밋 경계가 깨끗하므로 **착수 가능**.
 
 ## 배경 — 이미 land된 것 (재저작 금지)
 `revfactory-harness-reflection`의 delta 다수는 96→185 통합에서 이미 land: **TBox 클래스/속성 전부**(ExecutionMode·

@@ -32,11 +32,15 @@ recipe catalog의 `uri=` 물리 경로를 전부 깨뜨린다 — 중앙 push와
 working tree를 그대로 federate할 수 있다:
 `HARNESS_CATALOG=$PWD/catalog-v001.xml HARNESS_ROOT_ONTOLOGY=https://harness-ontology.dev/recipes/<R> /usr/bin/python3 central/tools/validate.py`
 
-## ⚠ recipes CI는 8 recipe를 게이트하지 않는다 (2026-07-24 실측)
-`harness-recipes/.github/workflows/validate.yml` 매트릭스는 **lpranging·techdoc 2건뿐**이다
-(run 29988434992·30069377159 모두 job 2개). contract-demo·pilot 5는 CI 밖 — 과거 완료 보고서의
-"8 recipe 매트릭스 CI green" 기술은 **부정확**하다. 따라서 중앙 push마다 **로컬 8건 federate를
-직접** 돌려야 하며, CI green을 회귀 부재의 근거로 삼지 않는다.
+## recipes CI 매트릭스 = catalog와 1:1로 유지 (2026-07-24 해소)
+2026-07-24 이전 `harness-recipes/.github/workflows/validate.yml` 매트릭스는 **lpranging·techdoc
+2건뿐**이었다(run 29988434992·30069377159 모두 job 2개) — contract-demo·pilot 5는 CI 밖이었고,
+그 시기 완료 보고서의 "8 recipe 매트릭스 CI green" 기술은 **부정확**하다. `829aa87`에서 8건으로
+확장(8 job green). **교훈**: recipe를 추가하면 catalog `<uri>`뿐 아니라 **매트릭스에도** 넣어야
+CI가 지킨다. 점검 1줄(빈 출력 = 일치):
+`comm -3 <(grep -oP '(?<=- )https://\S+recipes/\S+' .github/workflows/validate.yml|sort) <(grep -oP 'name="\Khttps://[^"]*recipes/[^"]+' catalog-v001.xml|sort)`
+`staging/harness-recipes/.github/`에도 사본이 있어 payload 복사 시 되돌아갈 수 있으니 함께 갱신.
+CI job 수를 세지 않고 "CI green"만 보면 커버리지 축소를 놓친다.
 
 ## 관련
 [[federation-physical-split]] (recipes repo 구조·federate 재현 명령).
