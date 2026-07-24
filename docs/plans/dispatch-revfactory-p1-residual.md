@@ -83,3 +83,41 @@ absolute-paths·well-formed-skill). ⇒ **P2(중립 라이브러리) 완료**. *
 
 ## 반환 시 보고 항목
 저작한 개체 IRI 목록 + 연결 edge + validate PASS 로그 + retrieve 확인 + (있으면) TBox/shape/federation GAP.
+
+---
+
+# 실행 결과 (2026-07-24, developer dispatch 완료 · orchestrator 독립검증)
+
+**저작 13개체 → `validate.py` PASS, 185→198.** 파일: `abox/core/process/workflows.ttl`(+117) ·
+`abox/core/wholes/harnesses.ttl`(+11/−5, h-harness-factory 블록만).
+
+- Workflow 2: `wf-harness-evolution` · `wf-verify-harness`
+- WorkflowStep 7: `wfs-audit`·`wfs-feedback-route`·`wfs-change-log` / `wfs-structure-check`·`wfs-trigger-validation`·`wfs-baseline-compare`·`wfs-dryrun`
+- TestScenario 2: `scn-compose-smoke`·`scn-trigger-near-miss` · FailurePolicy 2: `fp-dispatch-timeout`·`fp-validation-fail`
+
+**orchestrator 독립검증**: 사용된 속성/클래스 전부 TBox 실재(발명 0) · abox 내 클래스/프로퍼티 선언 0 ·
+신규 13노드 전부 `tokenEstimate`+`maturity "draft"` · SHACL/reachability/capabilities/assemblyOrder 전부 ✓.
+
+## orchestrator 판정 — GAP 처리
+
+- **GAP-1 (ExecutionMode) → 브리프 전제 오류 확정, 미저작이 옳음.** `ho:ExecutionMode`·`hasExecutionMode`·
+  `stepExecutionMode`·`stepFailurePolicy`는 **TBox에 없다**(grep 0). 이 브리프 §1이 "클래스는 있고 개체만 0"이라고
+  쓴 것은 오기였다. 해당 축은 Wave A의 **D2 경량화 결정**으로 `pat-agent-teams`/`pat-sub-agents`/`pat-hybrid`
+  (DesignPattern, `tagged c-execution-mode`)로 이미 land돼 있고 retrieve로 검색된다. `mode-*` 저작은 클래스 발명 +
+  중복(drift) 이중 위반이므로 **미저작 유지**(현행 D2 존속). ⇒ **조치 없음**.
+- **GAP-2 (호스트 편차) → 승인.** 브리프는 `h-multiagent`를 지시했으나 developer가 `h-harness-factory`를 택함.
+  근거 검증됨: ① 기존 주석이 정확히 이 노드들을 예약("Wave B2 will add the harness-lifecycle workflows; Wave C …
+  demo test scenarios / failure policies") ② `h-harness-factory`의 `skos:definition`이 설계의도를 명시("the parts live
+  here rather than on id:h-multiagent so binding them leaves that harness's materialized document byte-identical")
+  ③ diff상 `h-multiagent` 트리플 **무변경**. ⇒ 브리프보다 developer 선택이 옳다. **편차 승인**.
+- **GAP-3 (verification/ unit 부재) → 후속 과제.** DA-4상 TestScenario/FailurePolicy의 자리는 `core/verification/`인데
+  중앙 unit이 없어 `process/workflows.ttl`에 co-locate됨. 이제 중앙 individual이 생겼으므로 ONTOLOGYSTYLE §4의
+  레이아웃 규칙상 unit 신설이 맞다. 델타 = 새 파일 + root `owl:imports` 1줄 + `catalog-v001.xml` 1 uri +
+  **recipe staging catalog 동기화**(recipes repo push 파급). 개체 IRI 불변 = 순수 relocation.
+- **GAP-4 (미렌더) → 후속(Wave C, tools 영역).** `sectionKind` test-scenarios/error-handling/execution-mode/data-flow용
+  AssemblySection 개체 + `materialize.py` 렌더러 부재 → scenario/failure-policy는 그래프 데이터로만 존재, CLAUDE.md에
+  렌더되지 않음. 또 `scenarioReferences`가 `tools/ontology_lib.py:INSTANCE_LINK_PREDICATES` 미등록(도달성 무영향).
+- **GAP-5 (네이밍표) → 후속.** `ONTOLOGYSTYLE §2` 표에 `scn-`·`fp-`(및 기존 `wfs-`·`dlv-`) 접두사 누락. 표 갱신 필요.
+
+## 다음 단계
+git land는 **inspection 세션** 소관(이 증분 미커밋). GAP-3/4/5는 별도 증분으로 계획한다.

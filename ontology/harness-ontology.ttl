@@ -34,6 +34,7 @@
                 <https://harness-ontology.dev/data/core/memory> ,
                 <https://harness-ontology.dev/data/core/information-space> ,
                 <https://harness-ontology.dev/data/core/assembly-sections> ,
+                <https://harness-ontology.dev/data/core/verification> ,
                 <https://harness-ontology.dev/data/authored> .
 # NOTE: the central `core` data unit is stored as MULTIPLE documents split by
 # component type, grouped into DA-4 taxonomy subdirectories

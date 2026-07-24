@@ -103,7 +103,8 @@ id:h-multiagent a ho:Harness ;
         id:agent-synthesizer ;
     ho:hasGlobalState id:global-state ;
     ho:hasAssemblySection id:as-overview, id:as-persona, id:as-operating-rules, id:as-process,
-        id:as-model, id:as-roles, id:as-channels, id:as-skills ;
+        id:as-model, id:as-roles, id:as-channels, id:as-skills, id:as-execution-mode,
+        id:as-data-flow, id:as-error-handling, id:as-test-scenarios ;
     ho:appliesPattern id:pat-orchestrator-workers, id:pat-ontology-composition ;
     ho:requiresCapability id:cap-orchestration, id:cap-traceability, id:cap-codeexec, id:cap-fileedit ;
     ho:tagged id:c-design, id:c-multiagent, id:c-traceability ;
@@ -181,10 +182,16 @@ id:h-workspace-synthesis a ho:Harness ;
 # stability). It is a library carrier, not a domain pilot, and names no specific
 # problem domain, tool or technology. Reuses central parts by IRI (sp-methodical /
 # wf-multiagent / tool-editor / tool-shell / mc-opus / dom-design /
-# task-designdecision). Wave B2 will add the harness-lifecycle workflows and the
-# cap-skill requirement; Wave C will add the execution-mode / data-flow /
-# error-handling / test-scenarios assembly sections and demo test scenarios /
-# failure policies.
+# task-designdecision). It now also carries the meta-workflows whose SUBJECT is a
+# harness -- the lifecycle loop (id:wf-harness-evolution) and the verification
+# pass (id:wf-verify-harness) -- together with the neutral behaviour-acceptance
+# fixtures and error-handling rows they judge with; those belong to the
+# methodology, not to the general multi-agent template, and hosting them here
+# again leaves id:h-multiagent's materialized document byte-identical. Those
+# fixtures and rows now reach the emitted document through the run-behaviour
+# assembly sections (error-handling / test-scenarios, plus execution-mode and
+# data-flow) carried by the central default order. Still missing (later wave):
+# the cap-skill requirement.
 id:h-harness-factory a ho:Harness ;
     skos:prefLabel "Harness-factory harness" ; skos:altLabel "harness-authoring methodology host" ;
     skos:definition "A neutral, domain-independent template that wires the harness-authoring methodology parts: the guardrails that bound multi-agent orchestration complexity and govern faithful authoring, verification and model selection, plus the shared task-board channel (id:chan-task-board) over which workers claim and report tasks. It is a meta-harness -- its subject is the methodology of composing, verifying and evolving harnesses themselves. Like id:h-workspace-synthesis it exists to make those parts connected, reusable components (anti-orphan) and stands as a neutral template -- the parts live here rather than on id:h-multiagent so binding them leaves that harness's materialized document byte-identical. It names no specific problem domain, tool or technology, derives from id:h-multiagent and reuses central parts by IRI." ;
@@ -192,13 +199,15 @@ id:h-harness-factory a ho:Harness ;
     ho:addressesTask id:task-designdecision ;
     ho:hasSystemPrompt id:sp-methodical ;
     ho:usesTool id:tool-editor, id:tool-shell ;
-    ho:hasWorkflow id:wf-multiagent ;
+    ho:hasWorkflow id:wf-multiagent, id:wf-harness-evolution, id:wf-verify-harness ;
     ho:hasGuardrail id:gr-lang, id:gr-depth-limit, id:gr-no-nested-teams, id:gr-single-active-team,
         id:gr-bottleneck-avoidance, id:gr-flatten-hierarchy, id:gr-bounded-iteration,
         id:gr-integration-coherence, id:gr-discriminating-eval, id:gr-single-responsibility,
         id:gr-generalize-not-overfit, id:gr-absolute-paths, id:gr-well-formed-skill, id:gr-opus-required ;
     ho:usesModel id:mc-opus ;
     ho:hasChannel id:chan-task-board ;
+    ho:hasTestScenario id:scn-compose-smoke, id:scn-trigger-near-miss ;
+    ho:hasFailurePolicy id:fp-dispatch-timeout, id:fp-validation-fail ;
     ho:appliesPattern id:pat-orchestrator-workers ;
     ho:requiresCapability id:cap-orchestration, id:cap-fileedit, id:cap-codeexec ;
     ho:tagged id:c-multiagent, id:c-composition, id:c-agent-methodology ;

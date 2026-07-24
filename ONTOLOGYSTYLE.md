@@ -125,22 +125,33 @@ kebab 세그먼트로, 독립 repo 간 slug 충돌·orphan을 막는다.
 | Domain | `dom-` | `id:dom-coding` |
 | Task | `task-` | `id:task-bugfix` |
 | Capability | `cap-` | `id:cap-codeexec` |
+| Contract | `contract-` | `id:contract-greeter-emitted` |
 | Concept | `c-` | `id:c-softeng` |
 | DesignPattern | `pat-` | `id:pat-react` |
 | Constraint | `con-` | `id:con-lowlatency` |
 | ModelConfig | `mc-` | `id:mc-opus` |
 | Tool | `tool-` | `id:tool-shell` |
+| Candidate | `cand-` | `id:cand-greeter-stable` |
 | Workflow | `wf-` | `id:wf-react` |
+| WorkflowStep | `wfs-` | `id:wfs-plan-dispatch` |
+| Deliverable | `dlv-` | `id:dlv-dispatch-brief` |
 | Guardrail | `gr-` | `id:gr-cite` |
 | SystemPrompt | `sp-` | `id:sp-coding` |
-| Instruction | `ins-` | `id:ins-verify-then-proceed` |
+| PromptSection | `ps-` | `id:ps-methodical-decisions` |
+| Instruction | `ins-` | `id:ins-check-docs` |
 | Example | `ex-` | `id:ex-…` |
+| Role | `role-` | `id:role-orchestrator` |
+| Channel | `chan-` | `id:chan-dispatch` |
+| Memory | `mem-` | `id:mem-firmware` |
+| TestScenario | `scn-` | `id:scn-compose-smoke` |
+| FailurePolicy | `fp-` | `id:fp-validation-fail` |
+| AssemblySection | `as-` | `id:as-overview` |
 | Harness | `h-` | `id:h-coding` |
 | Agent | `agent-` | `id:agent-orchestrator` |
 | ObservationSpace | `os-` | `id:os-orchestrator` |
-| AreaOfInterest | `aoi-` | `id:aoi-orchestrator-external` |
+| AreaOfInterest | `aoi-` | `id:aoi-orchestrator` |
 | AreaOfObservation | `oa-` | `id:oa-orchestrator-external` |
-| EnvironmentSpace / GlobalState | (singleton, no prefix) | `id:env-space` · `id:global-state` |
+| EnvironmentSpace / GlobalState / ConceptScheme | (singleton, no prefix) | `id:env-space` · `id:global-state` · `id:scheme` |
 
 - **[지킴]** slug은 **의미가 드러나는 full word**. 자체 약어를 만들지 않는다(코드 식별자
   규칙과 동일). 관용 축약(`mc`=model config 등 접두사)만 표에 등록된 대로 쓴다.
@@ -189,11 +200,14 @@ kebab 세그먼트로, 독립 repo 간 slug 충돌·orphan을 막는다.
   `behavioral/`(system-prompts·guardrails) · `operational/`(tools) · `substrate/`(model-configs) ·
   `organization/`(roles·channels) · `process/`(workflows) · `vocab/`(concepts) ·
   `spec/`(capabilities·patterns·constraints·domains-tasks) · `observational/`(observation) ·
-  `state/`(memory) · `information-space/`(information-space) · `assembly/`(assembly-sections) ·
+  `state/`(memory) · `information-space/`(information-space) · `verification/`(verification —
+  test-scenarios·failure-policies) · `assembly/`(assembly-sections) ·
   `wholes/`(harnesses). **논리 IRI는 서브디렉토리와 무관하게 `.../data/core/<type>`로 유지**되고
   (파일 이동은 경로만 바뀜) **catalog(`catalog-v001.xml`)가 IRI→파일경로를 매핑**하므로 tool엔
-  투명하다 — 디렉토리는 사람이 읽는 조직화일 뿐이다. 중앙 individual이 없는 그룹(예:
-  `verification/`)은 파일을 만들지 않는다(TBox 클래스만 존재). grab-bag 파일은 타입별로 split해
+  투명하다 — 디렉토리는 사람이 읽는 조직화일 뿐이다. 중앙 individual이 없는 타입(예:
+  `ho:Candidate`·`ho:Contract`·`ho:Instruction` — 실개체가 recipe data repo에만 있다)은 파일을
+  만들지 않는다(TBox 클래스만 존재). 그 타입만 담을 그룹 디렉토리도 마찬가지로 만들지 않는다.
+  grab-bag 파일은 타입별로 split해
   각 타입을 자기 그룹에 둔다(예: roles.ttl→roles+observation+memory).
 - **[지킴]** 스키마(클래스·프로퍼티)는 `tbox/`, 개체는 `abox/`. abox에서 새 클래스·프로퍼티를
   선언하지 않는다.

@@ -346,6 +346,146 @@ def _render_skills(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
     out.append("")
 
 
+def _execution_mode_patterns(g: Graph, h: URIRef) -> list:
+    """The harness's ho:appliesPattern picks that name a RUNTIME EXECUTION MODE,
+    sorted by IRI. There is no ho:ExecutionMode class — the execution-mode axis is
+    carried by DesignPatterns tagged with the execution-mode concept
+    (lib.EXECUTION_MODE_CONCEPT), e.g. agent-teams / sub-agents / hybrid — so this
+    reads the existing vocabulary rather than a bespoke one. Patterns that are not
+    execution modes (the architectural work-flow patterns) are left to the Process
+    section, which renders appliesPattern as a whole."""
+    return [p for p in _sorted(g.objects(h, HO.appliesPattern))
+            if (p, HO.tagged, lib.EXECUTION_MODE_CONCEPT) in g]
+
+
+def _render_execution_mode(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Execution mode: the runtime coordination topology, from the appliesPattern
+    picks tagged as execution modes. Conditional — a harness that declares no
+    execution-mode pattern emits nothing."""
+    modes = _execution_mode_patterns(g, h)
+    if not modes:
+        return
+    out.append("## Execution mode")
+    out.append("")
+    out.append("The runtime topology this harness spawns and coordinates its "
+               "agents in (chosen separately from the architectural pattern "
+               "named under Process).")
+    out.append("")
+    for pat in modes:
+        desc = g.value(pat, SKOS.definition)
+        tail = f" — {desc}" if desc else ""
+        out.append(f"- **{lib.label_of(g, pat)}**{tail}")
+    out.append("")
+
+
+def _deliverable_flow(g: Graph, h: URIRef) -> list:
+    """The harness's task-DAG data flow as (deliverable, producers, consumers)
+    rows sorted by deliverable IRI: every ho:Deliverable named by a step of one of
+    the harness's workflows, JOINED from the producing side (ho:stepProduces) to
+    the consuming side (ho:stepConsumes). The join is what makes the DAG
+    recoverable — a single ho:stepOrder integer cannot express which artifact
+    moves from which step to which. Producer/consumer lists are IRI-sorted and
+    de-duplicated (a step reachable through two workflows is listed once)."""
+    producers: dict = {}
+    consumers: dict = {}
+    for wf in g.objects(h, HO.hasWorkflow):
+        for step in g.objects(wf, HO.hasStep):
+            for dlv in g.objects(step, HO.stepProduces):
+                producers.setdefault(dlv, set()).add(step)
+            for dlv in g.objects(step, HO.stepConsumes):
+                consumers.setdefault(dlv, set()).add(step)
+    rows = []
+    for dlv in _sorted(set(producers) | set(consumers)):
+        rows.append((dlv,
+                     _sorted(producers.get(dlv, set())),
+                     _sorted(consumers.get(dlv, set()))))
+    return rows
+
+
+def _render_data_flow(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Data flow: the Deliverable DAG joined from the workflow steps'
+    ho:stepProduces / ho:stepConsumes. Conditional — a harness whose steps name no
+    deliverable emits nothing."""
+    rows = _deliverable_flow(g, h)
+    if not rows:
+        return
+    out.append("## Data flow")
+    out.append("")
+    out.append("The named artifacts that flow between the workflow steps — which "
+               "step emits each one and which step reads it.")
+    out.append("")
+    for dlv, produced_by, consumed_by in rows:
+        desc = g.value(dlv, SKOS.definition)
+        tail = f" — {desc}" if desc else ""
+        out.append(f"- **{lib.label_of(g, dlv)}**{tail}")
+        if produced_by:
+            names = ", ".join(lib.label_of(g, s) for s in produced_by)
+            out.append(f"    - produced by: {names}")
+        if consumed_by:
+            names = ", ".join(lib.label_of(g, s) for s in consumed_by)
+            out.append(f"    - consumed by: {names}")
+    out.append("")
+
+
+def _cell(text: str) -> str:
+    """One markdown table cell: pipes escaped and newlines flattened so a value
+    can never break the table's row structure."""
+    return text.replace("|", "\\|").replace("\n", " ").strip()
+
+
+def _render_error_handling(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Error handling: the hasFailurePolicy rows as a failure-condition ->
+    recovery-strategy table. Conditional — a harness that declares no failure
+    policy emits nothing."""
+    policies = _sorted(g.objects(h, HO.hasFailurePolicy))
+    if not policies:
+        return
+    out.append("## Error handling")
+    out.append("")
+    out.append("The failure situations this harness has a pre-decided answer "
+               "for, and the recovery each one takes.")
+    out.append("")
+    out.append("| Failure condition | Recovery strategy |")
+    out.append("| --- | --- |")
+    for pol in policies:
+        conditions = sorted(str(c) for c in g.objects(pol, HO.failureCondition))
+        strategies = sorted(str(s) for s in g.objects(pol, HO.recoveryStrategy))
+        out.append(f"| {_cell(' '.join(conditions))} "
+                   f"| {_cell(' '.join(strategies))} |")
+    out.append("")
+
+
+def _render_test_scenarios(g: Graph, h: URIRef, out: list[str], ctx: dict) -> None:
+    """Test scenarios: the hasTestScenario behaviour-acceptance fixtures (kind,
+    the request they run, what a correct run must exhibit, and the step they
+    exercise). Conditional — a harness that carries no scenario emits nothing."""
+    scenarios = _sorted(g.objects(h, HO.hasTestScenario))
+    if not scenarios:
+        return
+    out.append("## Test scenarios")
+    out.append("")
+    out.append("The behaviour-acceptance fixtures this harness is judged "
+               "against: a representative request and what a correct run must "
+               "exhibit.")
+    out.append("")
+    for scn in scenarios:
+        kind = g.value(scn, HO.scenarioKind)
+        head = f"- **{lib.label_of(g, scn)}**"
+        if kind is not None:
+            head += f" ({kind})"
+        desc = g.value(scn, SKOS.definition)
+        if desc:
+            head += f" — {desc}"
+        out.append(head)
+        for prompt in sorted(str(p) for p in g.objects(scn, HO.scenarioPrompt)):
+            out.append(f"    - prompt: {prompt}")
+        for expected in sorted(str(e) for e in g.objects(scn, HO.scenarioExpected)):
+            out.append(f"    - expects: {expected}")
+        for step in _sorted(g.objects(scn, HO.scenarioReferences)):
+            out.append(f"    - exercises step: {lib.label_of(g, step)}")
+    out.append("")
+
+
 # Maps each ho:sectionKind to the renderer that emits that section. The KEYS are
 # the CLOSED set of kinds an assembly order may name — an order that references a
 # kind absent here is a hard error (resolve_assembly_order). This is the single
@@ -360,6 +500,10 @@ SECTION_RENDERERS = {
     "roles": _render_roles,
     "channels": _render_channels,
     "skills": _render_skills,
+    "execution-mode": _render_execution_mode,
+    "data-flow": _render_data_flow,
+    "error-handling": _render_error_handling,
+    "test-scenarios": _render_test_scenarios,
 }
 
 

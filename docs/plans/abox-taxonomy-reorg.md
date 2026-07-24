@@ -22,6 +22,10 @@
 | `vocab/` | concepts.ttl | Concept | data/core/concepts |
 
 - **verification/**·**operational/candidate** 등 중앙 individual 없는 그룹은 파일 미생성(TBox 클래스만 존재).
+  > **갱신 (2026-07-24, GAP-3)**: `verification/`은 더 이상 빈 그룹이 아니다 — revfactory P1 증분에서 TestScenario 2
+  > (`scn-compose-smoke`·`scn-trigger-near-miss`) + FailurePolicy 2(`fp-dispatch-timeout`·`fp-validation-fail`)가
+  > 생기면서 `ontology/abox/core/verification/verification.ttl`(문서 IRI `.../data/core/verification`)이 신설되고
+  > root imports·catalog에 등록됐다. 위 문장은 작성 시점(2026-07-23) 기준이며 `verification/` 예시는 무효.
 - **신규 유닛 4**: observation · memory · information-space · assembly-sections (root imports +4, catalog +4).
 - **grab-bag split 3**: roles→(roles + observation + memory) · domains-tasks→(domains-tasks + information-space) · harnesses→(harnesses + assembly-sections). 논리 IRI는 잔류분 유지 + split분 신규.
 

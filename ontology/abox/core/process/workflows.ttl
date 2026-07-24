@@ -25,6 +25,14 @@ id:wf-multiagent a ho:Workflow ; skos:prefLabel "Multi-agent orchestration loop"
     ho:providesCapability id:cap-orchestration ;
     ho:derivedFrom id:wf-planexec ;
     ho:tagged id:c-multiagent, id:c-design ; ho:tokenEstimate 74 ; ho:maturity "reviewed" .
+id:wf-harness-evolution a ho:Workflow ; skos:prefLabel "Harness evolution loop" ;
+    skos:definition "Keep an already-deployed harness correct as its subject drifts: audit the harness's current state against the source it reflects, route each piece of incoming feedback to the layer that actually owns it -- output quality to the skill or instruction, a missing responsibility to a role or agent, wrong sequencing to the orchestration, weak activation to the trigger description -- and record the applied change so the next audit starts from a known state. Choose when MAINTAINING an existing harness; choose id:wf-compose-harness instead when building a new one." ;
+    ho:hasStep id:wfs-audit, id:wfs-feedback-route, id:wfs-change-log ;
+    ho:tagged id:c-agent-methodology ; ho:tokenEstimate 130 ; ho:maturity "draft" .
+id:wf-verify-harness a ho:Workflow ; skos:prefLabel "Harness verification loop" ;
+    skos:definition "Judge an assembled harness before it is trusted: check its structure against the spec, confirm that the requests which SHOULD activate it do and the near-misses which should NOT do not, compare behaviour with and without the component under test, and close with an end-to-end dry run on a representative request. Choose when accepting a newly composed or newly changed harness -- verification is a separate judgment pass, not something the authoring step declares about its own output." ;
+    ho:hasStep id:wfs-structure-check, id:wfs-trigger-validation, id:wfs-baseline-compare, id:wfs-dryrun ;
+    ho:tagged id:c-agent-methodology, id:c-verify-proceed ; ho:tokenEstimate 128 ; ho:maturity "draft" .
 id:wf-compose-harness a ho:Workflow ; skos:prefLabel "Harness composition" ;
     skos:definition "Assemble a new harness out of the ontology's reusable, typed parts: (1) retrieve a budget-capped context pack for the request; (2) take the top base-harness candidate as a template, or a DesignPattern when none fits; (3) bind every requiresCapability in scope to a component that providesCapability it, filling each capability gap by reusing an existing part or authoring a new one; (4) assemble the HarnessShape minimums -- one SystemPrompt, at least one Workflow, tools, guardrails and one ModelConfig; (5) write it back as new individuals carrying prefLabel, maturity draft, derivedFrom the template, tokenEstimate on every node with text, and existing Concept tags; (6) run validate.py for connectivity, typing and capability satisfaction; (7) pass the coverage-audit gate that maps every source element to a representation; then materialize -- the ODR EMIT axis renders the validated spec into artifacts. Choose when building a harness by selecting and wiring existing parts rather than authoring one from scratch." ;
     ho:tagged id:c-composition ; ho:tokenEstimate 205 ; ho:maturity "reviewed" .
@@ -62,6 +70,68 @@ id:wfs-integrate-gate a ho:WorkflowStep ;
     ho:stepConsumes id:dlv-verified-result ;
     ho:stepDependsOn id:wfs-author-verify ;
     ho:stepOrder 3 ; ho:tokenEstimate 40 ; ho:maturity "reviewed" .
+
+# Ordered decomposition of the two meta-workflows above -- the lifecycle loop
+# that evolves a harness and the judgment pass that verifies one. Same
+# part-to-part convention as the steps of id:wf-multiagent: each step names the
+# role that performs it, the tool it uses and/or the guardrail that bounds it,
+# reusing EXISTING core parts by IRI, and is rolled up to any binding harness
+# via the ho:hasComponent (hasComponent o hasStep) propertyChainAxiom.
+id:wfs-audit a ho:WorkflowStep ;
+    skos:prefLabel "Audit harness state" ;
+    skos:definition "Enumerate the harness's current parts and compare them against the source it reflects and its recorded spec, naming drift and coverage gaps before anything is changed. Choose as the entry step of an evolution round: it establishes what is ACTUALLY there rather than what the last change assumed." ;
+    ho:stepByRole id:role-inspection ;
+    ho:stepGuardedBy id:gr-structural-coverage ;
+    ho:stepOrder 1 ; ho:tokenEstimate 48 ; ho:maturity "draft" .
+
+id:wfs-feedback-route a ho:WorkflowStep ;
+    skos:prefLabel "Route feedback to its layer" ;
+    skos:definition "Classify each piece of feedback by the layer that owns it -- output quality to the skill or instruction, a missing responsibility to a role or agent, wrong sequencing to the orchestration, weak activation to the trigger description -- and send the fix there. Choose to stop symptom-patching: routing to the owning layer is what makes a correction generalise instead of accumulating one-off exceptions." ;
+    ho:stepByRole id:role-orchestrator ;
+    ho:stepGuardedBy id:gr-generalize-not-overfit ;
+    ho:stepDependsOn id:wfs-audit ;
+    ho:stepOrder 2 ; ho:tokenEstimate 66 ; ho:maturity "draft" .
+
+id:wfs-change-log a ho:WorkflowStep ;
+    skos:prefLabel "Record the change" ;
+    skos:definition "Write the applied change, its rationale and the audit finding it answers into the durable record, marking what it supersedes instead of overwriting it. Choose as the closing step so the next evolution round starts from a known, traceable state rather than re-deriving history." ;
+    ho:stepByRole id:role-inspection ;
+    ho:stepGuardedBy id:gr-traceability ;
+    ho:stepDependsOn id:wfs-feedback-route ;
+    ho:stepOrder 3 ; ho:tokenEstimate 50 ; ho:maturity "draft" .
+
+id:wfs-structure-check a ho:WorkflowStep ;
+    skos:prefLabel "Check structure against spec" ;
+    skos:definition "Run the structural gate over the assembled harness: every component typed, wired into the harness and present where the spec requires it, preferring connection checks over mere existence checks. Choose as the first verification step -- behavioural checks run on a structurally broken harness spend a run to learn nothing." ;
+    ho:stepByRole id:role-vnv ;
+    ho:stepUsesTool id:tool-shell ;
+    ho:stepGuardedBy id:gr-integration-coherence ;
+    ho:stepOrder 1 ; ho:tokenEstimate 55 ; ho:maturity "draft" .
+
+id:wfs-trigger-validation a ho:WorkflowStep ;
+    skos:prefLabel "Validate activation triggers" ;
+    skos:definition "Exercise the requests that SHOULD activate the harness or skill together with near-miss requests that should NOT, and require both arms to come out right. Choose to separate a description that is too narrow (never fires) from one that is too broad (fires on everything) -- a check that only tests positive requests cannot tell the two apart." ;
+    ho:stepByRole id:role-vnv ;
+    ho:stepGuardedBy id:gr-well-formed-skill ;
+    ho:stepDependsOn id:wfs-structure-check ;
+    ho:stepOrder 2 ; ho:tokenEstimate 60 ; ho:maturity "draft" .
+
+id:wfs-baseline-compare a ho:WorkflowStep ;
+    skos:prefLabel "Compare against baseline" ;
+    skos:definition "Run the same representative requests with and without the component under test and keep only the assertions that separate the two arms. Choose to prove the component actually changes behaviour: an assertion that passes in both arms says nothing about it." ;
+    ho:stepByRole id:role-vnv ;
+    ho:stepGuardedBy id:gr-discriminating-eval ;
+    ho:stepDependsOn id:wfs-trigger-validation ;
+    ho:stepOrder 3 ; ho:tokenEstimate 52 ; ho:maturity "draft" .
+
+id:wfs-dryrun a ho:WorkflowStep ;
+    skos:prefLabel "Dry-run end to end" ;
+    skos:definition "Execute the assembled harness end to end on a representative request and observe the whole run rather than inferring behaviour from its parts. Choose as the closing verification step: it is the only one that exercises the whole, and its observed outcome -- not elapsed effort -- is what admits the harness." ;
+    ho:stepByRole id:role-vnv ;
+    ho:stepUsesTool id:tool-shell ;
+    ho:stepGuardedBy id:gr-verify-proceed ;
+    ho:stepDependsOn id:wfs-baseline-compare ;
+    ho:stepOrder 4 ; ho:tokenEstimate 56 ; ho:maturity "draft" .
 
 #===================== Deliverables (task-DAG data flow) ===============
 # The named artifacts that flow between id:wf-multiagent's steps — the OUTPUT

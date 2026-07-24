@@ -1,0 +1,62 @@
+@prefix ho:    <https://harness-ontology.dev/schema#> .
+@prefix id:    <https://harness-ontology.dev/id/core/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+
+# Core data unit -- Verification partition of the `core` domain (relocated out
+# of the workflows unit, where these leaves were co-located while this unit did
+# not exist). Imports the central TBox only; cross-unit references (each
+# scenario's ho:scenarioReferences step of the verification workflow, the
+# harness binding these via ho:hasTestScenario / ho:hasFailurePolicy) resolve in
+# the root union (docs/federation-design.md D1, ONTOLOGYSTYLE 4).
+<https://harness-ontology.dev/data/core/verification> a owl:Ontology ;
+    owl:imports <https://harness-ontology.dev/schema> .
+
+########################################################################
+# Run-time acceptance parts — the behaviour fixtures (ho:TestScenario) and
+# error-handling rows (ho:FailurePolicy) that judge a harness while it RUNS,
+# as opposed to the structural gate that judges its assembled shape. Neutral:
+# they name no problem domain, tool or technology. Bound to a harness by
+# ho:hasTestScenario / ho:hasFailurePolicy (direct sub-properties of
+# ho:hasComponent), which is what keeps them connected.
+########################################################################
+
+#===================== Test scenarios ==================================
+id:scn-compose-smoke a ho:TestScenario ;
+    skos:prefLabel "Compose smoke scenario" ;
+    skos:definition "The happy-path acceptance fixture of a composing harness: it pins what a representative compose request must actually PRODUCE, so a run that merely completed is never mistaken for one that produced a usable harness. Choose as the minimum behaviour gate to clear before any richer scenario is worth writing." ;
+    ho:scenarioReferences id:wfs-structure-check ;
+    ho:scenarioKind "normal" ;
+    ho:scenarioPrompt "Compose a harness for a representative request out of the existing parts." ;
+    ho:scenarioExpected "The assembled harness carries the required minimums: one system prompt, at least one workflow, at least one tool, at least one guardrail and one model configuration." ,
+        "Every capability the harness requires is provided by one of its own bound components -- no capability gap is left open." ,
+        "The structural validation gate passes, with no orphaned node and no untyped edge." ;
+    ho:tokenEstimate 120 ; ho:maturity "draft" .
+
+id:scn-trigger-near-miss a ho:TestScenario ;
+    skos:prefLabel "Trigger near-miss scenario" ;
+    skos:definition "The negative half of activation testing: a request that resembles the harness's stated purpose but falls outside it, which must NOT activate it. Choose because positive triggers alone cannot distinguish a well-scoped description from one so broad that it fires on everything." ;
+    ho:scenarioReferences id:wfs-trigger-validation ;
+    ho:scenarioKind "trigger-negative" ;
+    ho:scenarioPrompt "Issue a request that is superficially similar to the harness's stated purpose but lies outside its declared scope." ;
+    ho:scenarioExpected "The harness does not activate and no worker is dispatched for the out-of-scope request." ,
+        "The out-of-scope condition is stated back rather than reinterpreted into an in-scope task." ;
+    ho:tokenEstimate 105 ; ho:maturity "draft" .
+
+#===================== Failure policies ================================
+id:fp-dispatch-timeout a ho:FailurePolicy ;
+    skos:prefLabel "Dispatched worker does not return" ;
+    skos:definition "Makes the commonest multi-agent failure an explicit, pre-decided row instead of prose: without it a dispatch that never returns either hangs the run or is silently counted as complete. Choose for any harness that delegates work it cannot itself observe." ;
+    ho:failureCondition "A dispatched worker returns no result within the run's give-up bound." ;
+    ho:recoveryStrategy "Re-dispatch the same brief once, then stop: report a clearly flagged partial that names the scope still missing, rather than waiting longer or assuming the work was done." ;
+    ho:tokenEstimate 95 ; ho:maturity "draft" .
+
+id:fp-validation-fail a ho:FailurePolicy ;
+    skos:prefLabel "Validation gate fails after a change" ;
+    skos:definition "Fixes in advance what a failing gate means, because the tempting recovery -- relaxing the check until it passes -- is exactly the move that erodes every structural guarantee the gate exists to hold. Choose for any harness whose output is admitted by an automated gate." ;
+    ho:failureCondition "The validation gate rejects an authored change: a shape violation, an orphaned node or an unsatisfied capability." ;
+    ho:recoveryStrategy "Do not admit the change; return it to the authoring step with the failing check named and repair the model, never weaken the check to make it pass." ;
+    ho:tokenEstimate 100 ; ho:maturity "draft" .
