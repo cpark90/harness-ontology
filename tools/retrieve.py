@@ -4,7 +4,9 @@
 This is the context-rot defense. The ontology is NEVER handed to an agent
 whole. Given a request we:
 
-  1. select entry points   — lexically rank individuals against the request
+  1. select entry points   — lexically rank individuals against the request,
+                             handicapping parts retired by ho:maturity
+                             "deprecated" so a successor outranks them
   2. bounded traversal     — priority BFS along typed edges, decaying by
                              hop distance and predicate weight, capped by a
                              TOKEN BUDGET so the pack cannot grow without limit
@@ -39,6 +41,17 @@ HOP_DECAY = 0.75
 DEFAULT_BUDGET = 900          # token budget for the projected pack
 MAX_SEEDS = 8
 MIN_NODE_TOKENS = 5
+
+# Rank multiplier for a node marked ho:maturity "deprecated" — a HANDICAP, not
+# a filter: a retired part must show roughly three times the lexical evidence
+# of a live alternative to be ranked above it, so it lands below the successor
+# that superseded it while STAYING retrievable. It is deliberately not excluded
+# from the pack: the migration fact ("this was replaced by X") lives on the
+# retired node, and hiding it invites re-inventing the same near-synonym — the
+# drift this repo exists to prevent. Set it much lower and a query *about* the
+# retired part stops returning it (measured); much higher and the retired part
+# can still outrank its own successor.
+DEPRECATED_RANK_FACTOR = 0.35
 
 PREDICATE_WEIGHT = {
     HO.hasComponent: 0.9, HO.componentOf: 0.9, HO.hasSystemPrompt: 0.9,
@@ -80,6 +93,31 @@ def node_text_fields(g: Graph, node) -> list[tuple[str, float]]:
     return fields
 
 
+def maturity_values(g: Graph, node) -> list[str]:
+    # Sorted, not g.value(): ho:maturity has no sh:maxCount, and picking an
+    # arbitrary one of several would leak iteration order into the pack.
+    return sorted(str(v) for v in g.objects(node, HO.maturity))
+
+
+def maturity_of(g: Graph, node) -> str | None:
+    vals = maturity_values(g, node)
+    return vals[0] if vals else None
+
+
+def lifecycle_factor(g: Graph, node) -> float:
+    """Rank multiplier from the node's lifecycle status.
+
+    Only ho:maturity "deprecated" is demoted (DEPRECATED_RANK_FACTOR); every
+    other value AND the absence of the property are neutral (1.0) — a node
+    that never declared a maturity is not retired, and treating it as such
+    would silently demote most of the store. The demotion is applied wherever
+    a node's score is established (seed selection and hop propagation), so a
+    retired part cannot be lifted back above its successor by a neighbour.
+    """
+    return (DEPRECATED_RANK_FACTOR
+            if "deprecated" in maturity_values(g, node) else 1.0)
+
+
 def lexical_score(g: Graph, node, terms: list[str]) -> float:
     fields = node_text_fields(g, node)
     score = 0.0
@@ -91,7 +129,7 @@ def lexical_score(g: Graph, node, terms: list[str]) -> float:
         score += best
     salience = g.value(node, HO.salience)
     prior = 0.5 + (float(salience) if salience is not None else 0.4)
-    return score * prior
+    return score * prior * lifecycle_factor(g, node)
 
 
 def _rank_key(item: tuple[object, float]):
@@ -139,6 +177,7 @@ def traverse(g: Graph, seeds, budget: int):
     best = {n: s for n, s in seeds}
     heap = [(-s, str(n), n) for n, s in seeds]
     heapq.heapify(heap)
+    factor = {}
 
     admitted, used, done = [], 0, set()
     while heap:
@@ -148,15 +187,24 @@ def traverse(g: Graph, seeds, budget: int):
         score = -neg
         cost = token_cost(g, node)
         if used + cost > budget and admitted:
-            # budget exhausted; stop admitting (seeds already anchored)
-            break
+            # This node does not fit in what is left of the budget: SKIP it and
+            # keep looking. A `break` here made one oversized node truncate the
+            # whole pack — every smaller, still-affordable candidate behind it
+            # in the queue was dropped with hundreds of tokens unspent. The node
+            # is not marked done and its neighbours are not expanded (it is not
+            # in the pack, so it cannot carry relevance into it); it is never
+            # re-queued either, because a later pop's score is <= this one's and
+            # `best` already holds this node's maximum.
+            continue
         done.add(node)
         admitted.append((node, score))
         used += cost
         for nbr, _p, w in adj[node]:
             if nbr in done:
                 continue
-            cand = score * HOP_DECAY * w
+            if nbr not in factor:
+                factor[nbr] = lifecycle_factor(g, nbr)
+            cand = score * HOP_DECAY * w * factor[nbr]
             if cand > best.get(nbr, 0.0):
                 best[nbr] = cand
                 heapq.heappush(heap, (-cand, str(nbr), nbr))
@@ -183,6 +231,10 @@ def project(g: Graph, request: str, budget: int) -> dict:
         "relevance": round(sc, 3),
         "definition": (str(g.value(n, SKOS.definition))
                        if g.value(n, SKOS.definition) else None),
+        # Lifecycle status as a STRUCTURED field: "deprecated" used to be
+        # discoverable only as a `DEPRECATED:` phrase buried in the definition
+        # prose, so a pack reader could bind a retired part unaware.
+        "maturity": maturity_of(g, n),
         "promptText": _truncate(g.value(n, HO.promptText)),
         "provides": [lib.label_of(g, c) for c in g.objects(n, HO.providesCapability)],
         "requires": [lib.label_of(g, c) for c in g.objects(n, HO.requiresCapability)],
@@ -274,7 +326,10 @@ def render_markdown(pack: dict) -> str:
             if n["requires"]:
                 extra.append("requires: " + ", ".join(n["requires"]))
             tail = (" — " + " · ".join(extra)) if extra else ""
-            out.append(f"- **{n['label']}** (rel {n['relevance']}){tail}")
+            # Retired parts are ranked down, not hidden — mark them so a reader
+            # of the pack cannot mistake one for a part to build on.
+            badge = " ⚠ DEPRECATED" if n.get("maturity") == "deprecated" else ""
+            out.append(f"- **{n['label']}**{badge} (rel {n['relevance']}){tail}")
         out.append("")
 
     # Structure view: hide inferred inverses and the generic hasComponent

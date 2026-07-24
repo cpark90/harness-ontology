@@ -234,7 +234,7 @@ ho:FailurePolicyShape a sh:NodeShape ;
 # capacity (>=1 cognitiveCapacity — the loss-free context bound within
 # which its observation must fit). agentFunction stays optional here (an
 # agent's action space may be recorded via roleTool). The capacity FIT
-# (summed area tokenEstimate <= cognitiveCapacity) is not SHACL-enforceable
+# (summed area observedTokenVolume <= cognitiveCapacity) is not SHACL-enforceable
 # (no aggregation) and is checked by tool/review; this shape enforces the
 # structural minimums.
 ho:AgentShape a sh:NodeShape ;
@@ -272,7 +272,7 @@ ho:AgentShape a sh:NodeShape ;
 # AreaOfInterestShape below requires each interest be well-formed; at least
 # one interest is expected but the realized-observation minimum is the hard
 # structural floor here). The capacity FIT (summed AreaOfObservation
-# tokenEstimate <= the agent's cognitiveCapacity) is not SHACL-enforceable.
+# observedTokenVolume <= the agent's cognitiveCapacity) is not SHACL-enforceable.
 ho:ObservationSpaceShape a sh:NodeShape ;
     sh:targetClass ho:ObservationSpace ;
     sh:property [
@@ -296,9 +296,9 @@ ho:ObservationSpaceShape a sh:NodeShape ;
 
 #--- AreaOfInterest: a well-formed information requirement (intent) --
 # Every ho:AreaOfInterest must be labelled and mature and declare its kind
-# (internal vs external, from the closed set). No ho:tokenEstimate is
+# (internal vs external, from the closed set). No ho:observedTokenVolume is
 # required — an interest is intent, not consumed input (contrast
-# AreaOfObservation, whose realized size is budgeted).
+# AreaOfObservation, whose realized volume is budgeted against capacity).
 ho:AreaOfInterestShape a sh:NodeShape ;
     sh:targetClass ho:AreaOfInterest ;
     sh:property [
@@ -319,8 +319,11 @@ ho:AreaOfInterestShape a sh:NodeShape ;
 
 #--- AreaOfObservation: a well-formed realized observation ----------
 # Every ho:AreaOfObservation must be labelled and mature, declare its kind
-# (internal vs external) and carry a ho:tokenEstimate (the realized size it
-# contributes to one inference, summed against the agent's capacity). The
+# (internal vs external) and carry a ho:observedTokenVolume (the realized size
+# it contributes to one inference, summed against the agent's capacity). That
+# is deliberately NOT ho:tokenEstimate — an area's runtime volume is not the
+# cost of projecting the node's text into a context pack, and requiring it here
+# on tokenEstimate is what let a 12000-token observation truncate packs. The
 # observes* edges stay SOFT (an area may declare only a file scope or an
 # unobserved boundary), so they are not required here.
 ho:AreaOfObservationShape a sh:NodeShape ;
@@ -337,10 +340,10 @@ ho:AreaOfObservationShape a sh:NodeShape ;
         sh:in ( "internal" "external" ) ;
         sh:message "AreaOfObservation must have exactly one ho:observationKind from the closed set (internal/external)." ] ;
     sh:property [
-        sh:path ho:tokenEstimate ;
+        sh:path ho:observedTokenVolume ;
         sh:minCount 1 ;
         sh:datatype xsd:integer ;
-        sh:message "AreaOfObservation must have >=1 ho:tokenEstimate (realized size contributed to one inference, for capacity fit)." ] ;
+        sh:message "AreaOfObservation must have >=1 ho:observedTokenVolume (realized size contributed to one inference, for capacity fit)." ] ;
     sh:property [
         sh:path ho:maturity ;
         sh:minCount 1 ;

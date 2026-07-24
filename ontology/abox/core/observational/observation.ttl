@@ -80,7 +80,7 @@ id:os-synthesizer a ho:ObservationSpace ;
 # Areas of interest — the per-agent information requirements (intent).
 # Each is a target the role NEEDS/WANTS to observe, independent of whether
 # it is realized; the realized AreaOfObservation ho:coversInterest it. No
-# ho:tokenEstimate: an interest is intent, not consumed input.
+# ho:observedTokenVolume: an interest is intent, not consumed input.
 ########################################################################
 
 #===================== AREAS OF INTEREST ===============================
@@ -121,9 +121,13 @@ id:aoi-synthesizer a ho:AreaOfInterest ;
 # (observing beyond its components: channels via ho:observesChannel, the
 # file read-boundary via ho:observedFileScope, the firmware+long-term memory
 # tiers) and an INTERNAL area (introspection over its own Role via
-# ho:observesComponent and its cache memory). ho:tokenEstimate records the
-# realized size each area contributes; the per-agent sum stays far under
-# ho:cognitiveCapacity (150000). The external area ho:coversInterest the
+# ho:observesComponent and its cache memory). ho:observedTokenVolume records
+# the realized RUNTIME size each area contributes; the per-agent sum stays far
+# under ho:cognitiveCapacity (150000). That volume is kept apart from
+# ho:tokenEstimate, which (as on every other node) is only the cost of
+# projecting THIS NODE'S OWN TEXT into a context pack — the two lived on one
+# predicate before, so a 12000-token observation volume was read as a pack cost
+# and truncated any pack the area appeared in. The external area ho:coversInterest the
 # agent's AreaOfInterest (realized meets intended). These areas roll up to
 # id:h-multiagent through the two-hop hasComponent chain (hasComponent o
 # agentObservation o hasAreaOfObservation), so each is orphan-free.
@@ -140,7 +144,7 @@ id:oa-orchestrator-external a ho:AreaOfObservation ;
     ho:observedFileScope "docs/plans/** and docs/feedback/** (plan and brief documents, read)" ;
     ho:observesMemory id:mem-firmware, id:mem-longterm ;
     ho:unobserved "The execution internals of the workers it dispatches (spawn is opaque; only returned results are perceived)." ;
-    ho:tokenEstimate 9000 ; ho:maturity "draft" .
+    ho:observedTokenVolume 9000 ; ho:tokenEstimate 60 ; ho:maturity "draft" .
 
 id:oa-orchestrator-internal a ho:AreaOfObservation ;
     skos:prefLabel "Orchestrator internal observation" ;
@@ -149,7 +153,7 @@ id:oa-orchestrator-internal a ho:AreaOfObservation ;
     ho:observesComponent id:role-orchestrator ;
     ho:observesMemory id:mem-cache ;
     ho:unobserved "Any component of another agent (only its own parts are introspected)." ;
-    ho:tokenEstimate 2000 ; ho:maturity "draft" .
+    ho:observedTokenVolume 2000 ; ho:tokenEstimate 45 ; ho:maturity "draft" .
 
 id:oa-developer-external a ho:AreaOfObservation ;
     skos:prefLabel "Developer external observation" ;
@@ -160,7 +164,7 @@ id:oa-developer-external a ho:AreaOfObservation ;
     ho:observedFileScope "The assigned brief and only the assigned ontology/abox nodes, as a budget-capped retrieval pack" ;
     ho:observesMemory id:mem-firmware, id:mem-longterm ;
     ho:unobserved "Nodes of the graph outside the brief and the internals of other workers." ;
-    ho:tokenEstimate 6000 ; ho:maturity "draft" .
+    ho:observedTokenVolume 6000 ; ho:tokenEstimate 75 ; ho:maturity "draft" .
 
 id:oa-developer-internal a ho:AreaOfObservation ;
     skos:prefLabel "Developer internal observation" ;
@@ -169,7 +173,7 @@ id:oa-developer-internal a ho:AreaOfObservation ;
     ho:observesComponent id:role-developer ;
     ho:observesMemory id:mem-cache ;
     ho:unobserved "Any component of another agent." ;
-    ho:tokenEstimate 1500 ; ho:maturity "draft" .
+    ho:observedTokenVolume 1500 ; ho:tokenEstimate 30 ; ho:maturity "draft" .
 
 id:oa-vnv-external a ho:AreaOfObservation ;
     skos:prefLabel "Verification external observation" ;
@@ -180,7 +184,7 @@ id:oa-vnv-external a ho:AreaOfObservation ;
     ho:observedFileScope "The composition artifacts under verification and the validate.py/tool output, read" ;
     ho:observesMemory id:mem-firmware, id:mem-longterm ;
     ho:unobserved "The authoring internals of the components it judges and the internals of other workers." ;
-    ho:tokenEstimate 5000 ; ho:maturity "draft" .
+    ho:observedTokenVolume 5000 ; ho:tokenEstimate 65 ; ho:maturity "draft" .
 
 id:oa-vnv-internal a ho:AreaOfObservation ;
     skos:prefLabel "Verification internal observation" ;
@@ -189,7 +193,7 @@ id:oa-vnv-internal a ho:AreaOfObservation ;
     ho:observesComponent id:role-vnv ;
     ho:observesMemory id:mem-cache ;
     ho:unobserved "Any component of another agent." ;
-    ho:tokenEstimate 1500 ; ho:maturity "draft" .
+    ho:observedTokenVolume 1500 ; ho:tokenEstimate 30 ; ho:maturity "draft" .
 
 id:oa-inspection-external a ho:AreaOfObservation ;
     skos:prefLabel "Inspection external observation" ;
@@ -200,7 +204,7 @@ id:oa-inspection-external a ho:AreaOfObservation ;
     ho:observedFileScope "The whole design graph (ontology/** and docs/**) read, plus docs/feedback/** " ;
     ho:observesMemory id:mem-firmware, id:mem-longterm ;
     ho:unobserved "The internal sessions of the dispatched workers." ;
-    ho:tokenEstimate 12000 ; ho:maturity "draft" .
+    ho:observedTokenVolume 12000 ; ho:tokenEstimate 70 ; ho:maturity "draft" .
 
 id:oa-inspection-internal a ho:AreaOfObservation ;
     skos:prefLabel "Inspection internal observation" ;
@@ -209,7 +213,7 @@ id:oa-inspection-internal a ho:AreaOfObservation ;
     ho:observesComponent id:role-inspection ;
     ho:observesMemory id:mem-cache ;
     ho:unobserved "Any component of another agent." ;
-    ho:tokenEstimate 1500 ; ho:maturity "draft" .
+    ho:observedTokenVolume 1500 ; ho:tokenEstimate 30 ; ho:maturity "draft" .
 
 id:oa-synthesizer-external a ho:AreaOfObservation ;
     skos:prefLabel "Synthesizer external observation" ;
@@ -220,7 +224,7 @@ id:oa-synthesizer-external a ho:AreaOfObservation ;
     ho:observedFileScope "All worker deliverable artifacts in the shared workspace directory, read" ;
     ho:observesMemory id:mem-firmware, id:mem-longterm ;
     ho:unobserved "Each worker's internal reasoning behind the deliverables it converges." ;
-    ho:tokenEstimate 8000 ; ho:maturity "draft" .
+    ho:observedTokenVolume 8000 ; ho:tokenEstimate 60 ; ho:maturity "draft" .
 
 id:oa-synthesizer-internal a ho:AreaOfObservation ;
     skos:prefLabel "Synthesizer internal observation" ;
@@ -229,4 +233,4 @@ id:oa-synthesizer-internal a ho:AreaOfObservation ;
     ho:observesComponent id:role-synthesizer ;
     ho:observesMemory id:mem-cache ;
     ho:unobserved "Any component of another agent." ;
-    ho:tokenEstimate 1500 ; ho:maturity "draft" .
+    ho:observedTokenVolume 1500 ; ho:tokenEstimate 30 ; ho:maturity "draft" .
